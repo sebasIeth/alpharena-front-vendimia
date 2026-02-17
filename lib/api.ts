@@ -17,7 +17,11 @@ import type {
   AgentStatsResponse,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+// Client-side: use Next.js rewrite proxy to avoid CORS
+// Server-side: call the API directly (no CORS restrictions)
+const API_URL = typeof window !== "undefined"
+  ? "/api/backend"
+  : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000");
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000";
 
 class ApiClient {
