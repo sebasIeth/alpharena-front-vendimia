@@ -1,0 +1,209 @@
+import type {
+  AuthResponse,
+  LoginPayload,
+  RegisterPayload,
+  User,
+  Agent,
+  CreateAgentPayload,
+  UpdateAgentPayload,
+  Match,
+  MatchesResponse,
+  Move,
+  QueueEntry,
+  QueueStatus,
+  QueueSize,
+  LeaderboardAgent,
+  LeaderboardUser,
+  AgentStatsResponse,
+} from "./types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000";
+
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  private getToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("arena_token");
+  }
+
+  private getHeaders(includeAuth: boolean = true): HeadersInit {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    if (includeAuth) {
+      const token = this.getToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+    return headers;
+  }
+
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    includeAuth: boolean = true
+  ): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const options: RequestInit = {
+      method,
+      headers: this.getHeaders(includeAuth),
+    };
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("arena_token");
+        localStorage.removeItem("arena_user");
+        window.location.href = "/login";
+      }
+      throw new Error("Unauthorized");
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        message: `Request failed with status ${response.status}`,
+      }));
+      throw new Error(error.message || `Request failed with status ${response.status}`);
+    }
+
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return response.json();
+  }
+
+  async get<T>(path: string, includeAuth: boolean = true): Promise<T> {
+    return this.request<T>("GET", path, undefined, includeAuth);
+  }
+
+  async post<T>(path: string, body?: unknown, includeAuth: boolean = true): Promise<T> {
+    return this.request<T>("POST", path, body, includeAuth);
+  }
+
+  async put<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>("PUT", path, body);
+  }
+
+  async del<T>(path: string): Promise<T> {
+    return this.request<T>("DELETE", path);
+  }
+
+  // ========== Auth ==========
+  async login(payload: LoginPayload): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/login", payload, false);
+  }
+
+  async register(payload: RegisterPayload): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/register", payload, false);
+  }
+
+  async getMe(): Promise<{ user: User }> {
+    return this.get<{ user: User }>("/auth/me");
+  }
+
+  // ========== Agents ==========
+  async createAgent(payload: CreateAgentPayload): Promise<{ agent: Agent }> {
+    return this.post<{ agent: Agent }>("/agents", payload);
+  }
+
+  async getAgents(): Promise<{ agents: Agent[] }> {
+    return this.get<{ agents: Agent[] }>("/agents");
+  }
+
+  async getAgent(id: string): Promise<{ agent: Agent }> {
+    return this.get<{ agent: Agent }>(`/agents/${id}`);
+  }
+
+  async updateAgent(id: string, payload: UpdateAgentPayload): Promise<{ agent: Agent }> {
+    return this.put<{ agent: Agent }>(`/agents/${id}`, payload);
+  }
+
+  async deleteAgent(id: string): Promise<void> {
+    return this.del<void>(`/agents/${id}`);
+  }
+
+  // ========== Matchmaking ==========
+  async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
+    return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {
+      agentId,
+      stakeAmount,
+      gameType,
+    });
+  }
+
+  async cancelQueue(agentId: string): Promise<void> {
+    return this.post<void>("/matchmaking/cancel", { agentId });
+  }
+
+  async getQueueStatus(agentId: string): Promise<QueueStatus> {
+    return this.get<QueueStatus>(`/matchmaking/status/${agentId}`);
+  }
+
+  async getQueueSize(gameType: string): Promise<QueueSize> {
+    return this.get<QueueSize>(`/matchmaking/queue-size?gameType=${gameType}`, false);
+  }
+
+  // ========== Matches ==========
+  async getMatches(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<MatchesResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set("status", params.status);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    const query = searchParams.toString();
+    return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`, false);
+  }
+
+  async getActiveMatches(): Promise<{ matches: Match[] }> {
+    return this.get<{ matches: Match[] }>("/matches/active", false);
+  }
+
+  async getMatch(id: string): Promise<{ match: Match }> {
+    return this.get<{ match: Match }>(`/matches/${id}`, false);
+  }
+
+  async getMatchMoves(id: string): Promise<{ moves: Move[] }> {
+    return this.get<{ moves: Move[] }>(`/matches/${id}/moves`, false);
+  }
+
+  // ========== Leaderboard ==========
+  async getLeaderboardAgents(limit?: number): Promise<{ agents: LeaderboardAgent[] }> {
+    const query = limit ? `?limit=${limit}` : "";
+    return this.get<{ agents: LeaderboardAgent[] }>(`/leaderboard/agents${query}`, false);
+  }
+
+  async getLeaderboardUsers(limit?: number): Promise<{ users: LeaderboardUser[] }> {
+    const query = limit ? `?limit=${limit}` : "";
+    return this.get<{ users: LeaderboardUser[] }>(`/leaderboard/users${query}`, false);
+  }
+
+  async getAgentStats(id: string): Promise<AgentStatsResponse> {
+    return this.get<AgentStatsResponse>(`/leaderboard/agents/${id}/stats`, false);
+  }
+
+  // ========== WebSocket ==========
+  connectMatchWS(matchId: string): WebSocket | null {
+    const token = this.getToken();
+    if (typeof window === "undefined") return null;
+    const url = `${WS_URL}/ws/matches/${matchId}${token ? `?token=${token}` : ""}`;
+    return new WebSocket(url);
+  }
+}
+
+export const api = new ApiClient(API_URL);

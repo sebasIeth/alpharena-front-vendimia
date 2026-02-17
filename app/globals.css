@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  body {
+    @apply bg-arena-bg text-arena-text antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-arena-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-arena-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-arena-muted;
+  }
+
+  ::selection {
+    @apply bg-arena-primary/30 text-arena-text;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+  }
+
+  .page-title {
+    @apply text-2xl sm:text-3xl font-bold text-arena-text mb-2;
+  }
+
+  .page-subtitle {
+    @apply text-arena-muted mb-8;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-arena-primary to-arena-primary-light bg-clip-text text-transparent;
+  }
+
+  .glow-border {
+    @apply border border-arena-primary/30 shadow-[0_0_15px_rgba(193,154,62,0.1)];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
