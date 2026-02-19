@@ -144,6 +144,14 @@ class ApiClient {
     return this.get<HealthCheckResponse>(`/agents/${id}/health`);
   }
 
+  async testOpenClawConnection(openclawUrl: string, openclawToken: string, openclawAgentId?: string): Promise<HealthCheckResponse> {
+    return this.post<HealthCheckResponse>("/agents/test-connection", {
+      openclawUrl,
+      openclawToken,
+      openclawAgentId: openclawAgentId || "main",
+    });
+  }
+
   // ========== Matchmaking ==========
   async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
     return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {

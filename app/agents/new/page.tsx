@@ -54,40 +54,21 @@ function CreateAgentContent() {
     setHealthCheck({ status: "checking" });
 
     try {
-      const url = `${formData.openclawUrl.trim().replace(/\/$/, "")}/v1/chat/completions`;
-      const startTime = Date.now();
+      const result = await api.testOpenClawConnection(
+        formData.openclawUrl.trim(),
+        formData.openclawToken.trim(),
+        formData.openclawAgentId.trim() || "main",
+      );
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${formData.openclawToken.trim()}`,
-          "x-openclaw-agent-id": formData.openclawAgentId.trim() || "main",
-        },
-        body: JSON.stringify({
-          model: `openclaw:${formData.openclawAgentId.trim() || "main"}`,
-          messages: [
-            { role: "system", content: "Respond: pong" },
-            { role: "user", content: "ping" },
-          ],
-          temperature: 0,
-          max_tokens: 10,
-        }),
-      });
-
-      const latencyMs = Date.now() - startTime;
-
-      if (!response.ok) {
-        const body = await response.text().catch(() => "unknown");
+      if (result.ok) {
+        setHealthCheck({ status: "success", latencyMs: result.latencyMs });
+      } else {
         setHealthCheck({
           status: "error",
-          latencyMs,
-          error: `HTTP ${response.status}: ${body}`,
+          latencyMs: result.latencyMs,
+          error: result.error || "Connection failed",
         });
-        return;
       }
-
-      setHealthCheck({ status: "success", latencyMs });
     } catch (err) {
       setHealthCheck({
         status: "error",
