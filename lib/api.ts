@@ -6,6 +6,7 @@ import type {
   Agent,
   CreateAgentPayload,
   UpdateAgentPayload,
+  HealthCheckResponse,
   Match,
   MatchesResponse,
   Move,
@@ -137,6 +138,10 @@ class ApiClient {
 
   async deleteAgent(id: string): Promise<void> {
     return this.del<void>(`/agents/${id}`);
+  }
+
+  async agentHealthCheck(id: string): Promise<HealthCheckResponse> {
+    return this.get<HealthCheckResponse>(`/agents/${id}/health`);
   }
 
   // ========== Matchmaking ==========
