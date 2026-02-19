@@ -29,6 +29,9 @@ function AgentDetailContent() {
   const [editForm, setEditForm] = useState({
     name: "",
     endpointUrl: "",
+    openclawUrl: "",
+    openclawToken: "",
+    openclawAgentId: "",
     marrakech: true,
   });
   const [editLoading, setEditLoading] = useState(false);
@@ -51,7 +54,10 @@ function AgentDetailContent() {
           setAgent(a);
           setEditForm({
             name: a.name,
-            endpointUrl: a.endpointUrl,
+            endpointUrl: a.endpointUrl || "",
+            openclawUrl: a.openclawUrl || "",
+            openclawToken: "",
+            openclawAgentId: a.openclawAgentId || "",
             marrakech: a.gameTypes.includes("marrakech"),
           });
         } else {
@@ -79,11 +85,18 @@ function AgentDetailContent() {
     if (editForm.marrakech) gameTypes.push("marrakech");
 
     try {
-      const data = await api.updateAgent(agentId, {
+      const updatePayload: Record<string, unknown> = {
         name: editForm.name.trim(),
-        endpointUrl: editForm.endpointUrl.trim(),
         gameTypes,
-      });
+      };
+      if (agent?.type === "openclaw") {
+        if (editForm.openclawUrl.trim()) updatePayload.openclawUrl = editForm.openclawUrl.trim();
+        if (editForm.openclawToken.trim()) updatePayload.openclawToken = editForm.openclawToken.trim();
+        if (editForm.openclawAgentId.trim()) updatePayload.openclawAgentId = editForm.openclawAgentId.trim();
+      } else {
+        if (editForm.endpointUrl.trim()) updatePayload.endpointUrl = editForm.endpointUrl.trim();
+      }
+      const data = await api.updateAgent(agentId, updatePayload as any);
       setAgent(data.agent);
       setEditing(false);
     } catch (err) {
@@ -156,8 +169,15 @@ function AgentDetailContent() {
             <Badge status={agent.status} />
           </div>
           <p className="text-sm text-arena-muted font-mono">
-            {agent.endpointUrl}
+            {agent.type === "openclaw"
+              ? agent.openclawUrl
+              : agent.endpointUrl}
           </p>
+          {agent.type === "openclaw" && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-500/10 text-purple-400 rounded">
+              OpenClaw
+            </span>
+          )}
           <div className="flex items-center gap-2 mt-2">
             {agent.gameTypes.map((gt) => (
               <span
@@ -209,13 +229,40 @@ function AgentDetailContent() {
                 setEditForm({ ...editForm, name: e.target.value })
               }
             />
-            <Input
-              label="Endpoint URL"
-              value={editForm.endpointUrl}
-              onChange={(e) =>
-                setEditForm({ ...editForm, endpointUrl: e.target.value })
-              }
-            />
+            {agent.type === "openclaw" ? (
+              <>
+                <Input
+                  label="OpenClaw URL"
+                  value={editForm.openclawUrl}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, openclawUrl: e.target.value })
+                  }
+                />
+                <Input
+                  label="Gateway Token (leave empty to keep current)"
+                  type="password"
+                  value={editForm.openclawToken}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, openclawToken: e.target.value })
+                  }
+                />
+                <Input
+                  label="Agent ID"
+                  value={editForm.openclawAgentId}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, openclawAgentId: e.target.value })
+                  }
+                />
+              </>
+            ) : (
+              <Input
+                label="Endpoint URL"
+                value={editForm.endpointUrl}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, endpointUrl: e.target.value })
+                }
+              />
+            )}
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"

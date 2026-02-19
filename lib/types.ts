@@ -35,11 +35,17 @@ export interface AgentStats {
   totalEarnings: number;
 }
 
+export type AgentType = "http" | "openclaw";
+
 export interface Agent {
   id: string;
   userId: string;
   name: string;
-  endpointUrl: string;
+  type: AgentType;
+  endpointUrl?: string;
+  openclawUrl?: string;
+  openclawToken?: string;
+  openclawAgentId?: string;
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
@@ -50,14 +56,28 @@ export interface Agent {
 
 export interface CreateAgentPayload {
   name: string;
-  endpointUrl: string;
+  type?: AgentType;
+  endpointUrl?: string;
+  openclawUrl?: string;
+  openclawToken?: string;
+  openclawAgentId?: string;
   gameTypes: string[];
 }
 
 export interface UpdateAgentPayload {
   name?: string;
   endpointUrl?: string;
+  openclawUrl?: string;
+  openclawToken?: string;
+  openclawAgentId?: string;
   gameTypes?: string[];
+}
+
+export interface HealthCheckResponse {
+  ok: boolean;
+  latencyMs: number;
+  response?: string;
+  error?: string;
 }
 
 // ========== Match ==========

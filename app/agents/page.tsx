@@ -82,7 +82,14 @@ function AgentsContent() {
                 onClick={() => router.push(`/agents/${agent.id}`)}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-arena-text">{agent.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-arena-text">{agent.name}</h3>
+                    {agent.type === "openclaw" && (
+                      <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/10 text-purple-400 rounded">
+                        OC
+                      </span>
+                    )}
+                  </div>
                   <Badge status={agent.status} />
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
@@ -136,9 +143,16 @@ function AgentsContent() {
                       onClick={() => router.push(`/agents/${agent.id}`)}
                     >
                       <TableCell>
-                        <span className="font-medium text-arena-text">
-                          {agent.name}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-arena-text">
+                            {agent.name}
+                          </span>
+                          {agent.type === "openclaw" && (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/10 text-purple-400 rounded">
+                              OpenClaw
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge status={agent.status} />

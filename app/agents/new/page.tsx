@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import type { AgentType } from "@/lib/types";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -11,13 +12,22 @@ import Card from "@/components/ui/Card";
 
 function CreateAgentContent() {
   const router = useRouter();
+  const [agentType, setAgentType] = useState<AgentType>("openclaw");
   const [formData, setFormData] = useState({
     name: "",
     endpointUrl: "",
+    openclawUrl: "",
+    openclawToken: "",
+    openclawAgentId: "",
     marrakech: true,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [healthCheck, setHealthCheck] = useState<{
+    status: "idle" | "checking" | "success" | "error";
+    latencyMs?: number;
+    error?: string;
+  }>({ status: "idle" });
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -25,6 +35,64 @@ function CreateAgentContent() {
       return true;
     } catch {
       return false;
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!formData.openclawUrl.trim() || !formData.openclawToken.trim()) {
+      setHealthCheck({
+        status: "error",
+        error: "URL and token are required to test connection.",
+      });
+      return;
+    }
+    if (!validateUrl(formData.openclawUrl.trim())) {
+      setHealthCheck({ status: "error", error: "Invalid URL format." });
+      return;
+    }
+
+    setHealthCheck({ status: "checking" });
+
+    try {
+      const url = `${formData.openclawUrl.trim().replace(/\/$/, "")}/v1/chat/completions`;
+      const startTime = Date.now();
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${formData.openclawToken.trim()}`,
+          "x-openclaw-agent-id": formData.openclawAgentId.trim() || "main",
+        },
+        body: JSON.stringify({
+          model: `openclaw:${formData.openclawAgentId.trim() || "main"}`,
+          messages: [
+            { role: "system", content: "Respond: pong" },
+            { role: "user", content: "ping" },
+          ],
+          temperature: 0,
+          max_tokens: 10,
+        }),
+      });
+
+      const latencyMs = Date.now() - startTime;
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => "unknown");
+        setHealthCheck({
+          status: "error",
+          latencyMs,
+          error: `HTTP ${response.status}: ${body}`,
+        });
+        return;
+      }
+
+      setHealthCheck({ status: "success", latencyMs });
+    } catch (err) {
+      setHealthCheck({
+        status: "error",
+        error: err instanceof Error ? err.message : "Connection failed",
+      });
     }
   };
 
@@ -39,16 +107,39 @@ function CreateAgentContent() {
       return;
     }
 
-    if (!formData.endpointUrl.trim()) {
-      setError("Endpoint URL is required.");
-      setLoading(false);
-      return;
+    if (agentType === "http") {
+      if (!formData.endpointUrl.trim()) {
+        setError("Endpoint URL is required.");
+        setLoading(false);
+        return;
+      }
+      if (!validateUrl(formData.endpointUrl.trim())) {
+        setError(
+          "Please enter a valid URL (e.g., https://myagent.example.com/api)."
+        );
+        setLoading(false);
+        return;
+      }
     }
 
-    if (!validateUrl(formData.endpointUrl.trim())) {
-      setError("Please enter a valid URL (e.g., https://myagent.example.com/api).");
-      setLoading(false);
-      return;
+    if (agentType === "openclaw") {
+      if (!formData.openclawUrl.trim()) {
+        setError("OpenClaw URL is required.");
+        setLoading(false);
+        return;
+      }
+      if (!validateUrl(formData.openclawUrl.trim())) {
+        setError(
+          "Please enter a valid OpenClaw URL (e.g., https://my-vps.com:18789)."
+        );
+        setLoading(false);
+        return;
+      }
+      if (!formData.openclawToken.trim()) {
+        setError("Gateway token is required.");
+        setLoading(false);
+        return;
+      }
     }
 
     const gameTypes: string[] = [];
@@ -61,11 +152,23 @@ function CreateAgentContent() {
     }
 
     try {
-      const data = await api.createAgent({
+      const payload: Record<string, unknown> = {
         name: formData.name.trim(),
-        endpointUrl: formData.endpointUrl.trim(),
+        type: agentType,
         gameTypes,
-      });
+      };
+
+      if (agentType === "http") {
+        payload.endpointUrl = formData.endpointUrl.trim();
+      } else {
+        payload.openclawUrl = formData.openclawUrl.trim();
+        payload.openclawToken = formData.openclawToken.trim();
+        if (formData.openclawAgentId.trim()) {
+          payload.openclawAgentId = formData.openclawAgentId.trim();
+        }
+      }
+
+      const data = await api.createAgent(payload as any);
       router.push(`/agents/${data.agent.id}`);
     } catch (err) {
       setError(
@@ -112,17 +215,173 @@ function CreateAgentContent() {
               helperText="A unique name for your agent."
             />
 
-            <Input
-              label="Endpoint URL"
-              type="url"
-              placeholder="https://myagent.example.com/api"
-              value={formData.endpointUrl}
-              onChange={(e) =>
-                setFormData({ ...formData, endpointUrl: e.target.value })
-              }
-              required
-              helperText="The HTTP endpoint where your agent receives game state and returns moves."
-            />
+            {/* Agent Type Selector */}
+            <div>
+              <label className="block text-sm font-medium text-arena-text mb-3">
+                Agent Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAgentType("openclaw")}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    agentType === "openclaw"
+                      ? "border-arena-primary bg-arena-primary/10"
+                      : "border-arena-border bg-arena-bg hover:border-arena-primary/30"
+                  }`}
+                >
+                  <div className="text-sm font-semibold text-arena-text">
+                    OpenClaw
+                  </div>
+                  <div className="text-xs text-arena-muted mt-1">
+                    Connect your OpenClaw AI instance directly
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAgentType("http")}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    agentType === "http"
+                      ? "border-arena-primary bg-arena-primary/10"
+                      : "border-arena-border bg-arena-bg hover:border-arena-primary/30"
+                  }`}
+                >
+                  <div className="text-sm font-semibold text-arena-text">
+                    Custom HTTP
+                  </div>
+                  <div className="text-xs text-arena-muted mt-1">
+                    Your own HTTP endpoint that receives game state
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* OpenClaw Fields */}
+            {agentType === "openclaw" && (
+              <div className="space-y-4">
+                <Input
+                  label="OpenClaw URL"
+                  type="url"
+                  placeholder="https://my-vps.com:18789"
+                  value={formData.openclawUrl}
+                  onChange={(e) =>
+                    setFormData({ ...formData, openclawUrl: e.target.value })
+                  }
+                  required
+                  helperText="The URL where your OpenClaw instance is running."
+                />
+
+                <Input
+                  label="Gateway Token"
+                  type="password"
+                  placeholder="Your OpenClaw gateway token"
+                  value={formData.openclawToken}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      openclawToken: e.target.value,
+                    })
+                  }
+                  required
+                  helperText="Found in ~/.openclaw/gateway.token or your config."
+                />
+
+                <Input
+                  label="Agent ID (optional)"
+                  type="text"
+                  placeholder="main"
+                  value={formData.openclawAgentId}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      openclawAgentId: e.target.value,
+                    })
+                  }
+                  helperText='The OpenClaw agent to use. Defaults to "main".'
+                />
+
+                {/* Test Connection Button */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={healthCheck.status === "checking"}
+                    className="w-full px-4 py-2.5 rounded-lg border border-arena-border bg-arena-bg text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
+                  >
+                    {healthCheck.status === "checking"
+                      ? "Testing..."
+                      : "Test Connection"}
+                  </button>
+
+                  {healthCheck.status === "success" && (
+                    <div className="mt-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg px-4 py-2.5 text-sm">
+                      Connected successfully ({healthCheck.latencyMs}ms latency)
+                    </div>
+                  )}
+
+                  {healthCheck.status === "error" && (
+                    <div className="mt-2 bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-2.5 text-sm">
+                      Connection failed: {healthCheck.error}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-arena-bg border border-arena-border rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-arena-text mb-2">
+                    OpenClaw Setup
+                  </h4>
+                  <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
+                    <li>
+                      Enable{" "}
+                      <code className="text-arena-primary">
+                        /v1/chat/completions
+                      </code>{" "}
+                      in your OpenClaw config
+                    </li>
+                    <li>
+                      Make sure your instance is reachable from the internet
+                    </li>
+                    <li>
+                      Use a fast model for best results (30s move timeout)
+                    </li>
+                    <li>
+                      Your agent&apos;s memory helps it improve over time
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* HTTP Fields */}
+            {agentType === "http" && (
+              <div className="space-y-4">
+                <Input
+                  label="Endpoint URL"
+                  type="url"
+                  placeholder="https://myagent.example.com/api"
+                  value={formData.endpointUrl}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endpointUrl: e.target.value })
+                  }
+                  required
+                  helperText="The HTTP endpoint where your agent receives game state and returns moves."
+                />
+
+                <div className="bg-arena-bg border border-arena-border rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-arena-text mb-2">
+                    Agent Endpoint Requirements
+                  </h4>
+                  <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
+                    <li>Must accept POST requests with JSON body</li>
+                    <li>Should respond with a valid move within 30 seconds</li>
+                    <li>Must be publicly accessible</li>
+                    <li>
+                      Should handle game state payload and return move data
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-arena-text mb-3">
@@ -151,18 +410,6 @@ function CreateAgentContent() {
                   </div>
                 </label>
               </div>
-            </div>
-
-            <div className="bg-arena-bg border border-arena-border rounded-lg p-4">
-              <h4 className="text-sm font-medium text-arena-text mb-2">
-                Agent Endpoint Requirements
-              </h4>
-              <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
-                <li>Must accept POST requests with JSON body</li>
-                <li>Should respond with a valid move within 30 seconds</li>
-                <li>Must be publicly accessible</li>
-                <li>Should handle game state payload and return move data</li>
-              </ul>
             </div>
 
             <div className="flex gap-3 pt-2">
