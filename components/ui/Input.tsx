@@ -32,14 +32,14 @@ export default function Input({
       <input
         id={inputId}
         className={classNames(
-          "w-full px-4 py-2.5 bg-white border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
-          error ? "border-arena-accent" : "border-arena-border",
+          "w-full px-4 py-2.5 bg-arena-bg-card border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
+          error ? "border-arena-danger" : "border-arena-border",
           className
         )}
         {...props}
       />
       {error && (
-        <p className="mt-1 text-sm text-arena-accent">{error}</p>
+        <p className="mt-1 text-sm text-arena-danger">{error}</p>
       )}
       {helperText && !error && (
         <p className="mt-1 text-sm text-arena-muted">{helperText}</p>
@@ -77,8 +77,8 @@ export function Select({
       <select
         id={selectId}
         className={classNames(
-          "w-full px-4 py-2.5 bg-white border rounded-xl text-arena-text focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
-          error ? "border-arena-accent" : "border-arena-border",
+          "w-full px-4 py-2.5 bg-arena-bg-card border rounded-xl text-arena-text focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
+          error ? "border-arena-danger" : "border-arena-border",
           className
         )}
         {...props}
@@ -86,7 +86,7 @@ export function Select({
         {children}
       </select>
       {error && (
-        <p className="mt-1 text-sm text-arena-accent">{error}</p>
+        <p className="mt-1 text-sm text-arena-danger">{error}</p>
       )}
     </div>
   );

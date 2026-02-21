@@ -13,7 +13,7 @@ export default function Card({ children, className, hover = false, onClick }: Ca
     <div
       className={classNames(
         "bg-arena-card border border-arena-border rounded-2xl p-6 shadow-arena-sm",
-        hover && "hover:shadow-arena hover:border-arena-primary/20 transition-all duration-200 cursor-pointer",
+        hover && "hover:shadow-arena-glow hover:border-arena-primary/30 transition-all duration-300 cursor-pointer",
         onClick && "cursor-pointer",
         className
       )}

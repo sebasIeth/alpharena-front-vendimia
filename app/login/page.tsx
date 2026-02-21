@@ -62,7 +62,7 @@ export default function LoginPage() {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm">
+              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">
                 {error}
               </div>
             )}

@@ -95,7 +95,7 @@ export default function MatchDetailPage() {
                     key={agent.agentId}
                     className={`p-4 rounded-lg border ${
                       isWinner
-                        ? "bg-emerald-50 border-emerald-200"
+                        ? "bg-arena-success/10 border-arena-success/30"
                         : "bg-arena-card-hover border-arena-border"
                     }`}
                   >
@@ -119,7 +119,7 @@ export default function MatchDetailPage() {
                         </span>
                       </div>
                       {isWinner && (
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">
+                        <span className="text-xs bg-arena-success/20 text-arena-success px-2 py-0.5 rounded font-medium">
                           WINNER
                         </span>
                       )}

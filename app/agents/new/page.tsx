@@ -178,7 +178,7 @@ function CreateAgentContent() {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm">
+              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">
                 {error}
               </div>
             )}
@@ -286,7 +286,7 @@ function CreateAgentContent() {
                     type="button"
                     onClick={handleTestConnection}
                     disabled={healthCheck.status === "checking"}
-                    className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-white text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
+                    className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
                   >
                     {healthCheck.status === "checking"
                       ? "Testing webhook..."
@@ -294,13 +294,13 @@ function CreateAgentContent() {
                   </button>
 
                   {healthCheck.status === "success" && (
-                    <div className="mt-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-2.5 text-sm">
+                    <div className="mt-2 bg-arena-success/10 border border-arena-success/30 text-arena-success rounded-xl px-4 py-2.5 text-sm">
                       Webhook connected ({healthCheck.latencyMs}ms latency)
                     </div>
                   )}
 
                   {healthCheck.status === "error" && (
-                    <div className="mt-2 bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-2.5 text-sm">
+                    <div className="mt-2 bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-2.5 text-sm">
                       Webhook failed: {healthCheck.error}
                     </div>
                   )}

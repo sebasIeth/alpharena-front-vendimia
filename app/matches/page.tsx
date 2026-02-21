@@ -75,7 +75,7 @@ export default function MatchesPage() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
+        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
@@ -168,7 +168,7 @@ export default function MatchesPage() {
 
                   {/* Winner */}
                   {match.status === "completed" && match.winnerId && (
-                    <div className="bg-emerald-50 rounded-xl px-2 py-1 mb-3">
+                    <div className="bg-arena-success/10 rounded-xl px-2 py-1 mb-3">
                       <span className="text-xs text-arena-success font-medium">
                         Winner:{" "}
                         {match.agents.find(

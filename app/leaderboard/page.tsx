@@ -63,11 +63,11 @@ export default function LeaderboardPage() {
   const getRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
-        return "bg-amber-50 border-amber-200";
+        return "bg-amber-500/10 border-amber-500/30";
       case 2:
-        return "bg-slate-50 border-slate-200";
+        return "bg-slate-400/10 border-slate-400/30";
       case 3:
-        return "bg-orange-50 border-orange-200";
+        return "bg-orange-500/10 border-orange-500/30";
       default:
         return "";
     }
@@ -107,7 +107,7 @@ export default function LeaderboardPage() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
+        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
