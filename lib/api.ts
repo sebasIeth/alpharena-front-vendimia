@@ -152,6 +152,13 @@ class ApiClient {
     });
   }
 
+  async testOpenClawWebhook(openclawUrl: string, hookToken: string): Promise<HealthCheckResponse> {
+    return this.post<HealthCheckResponse>("/agents/test-webhook", {
+      openclawUrl,
+      hookToken,
+    });
+  }
+
   // ========== Matchmaking ==========
   async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
     return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {

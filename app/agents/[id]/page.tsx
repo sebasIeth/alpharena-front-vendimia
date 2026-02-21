@@ -232,26 +232,32 @@ function AgentDetailContent() {
             {agent.type === "openclaw" ? (
               <>
                 <Input
-                  label="OpenClaw URL"
+                  label="OpenClaw Base URL"
+                  placeholder="https://your-vps.com:18789"
                   value={editForm.openclawUrl}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawUrl: e.target.value })
                   }
+                  helperText="Base URL of your OpenClaw instance. /hooks/agent will be appended for requests."
                 />
                 <Input
-                  label="Gateway Token (leave empty to keep current)"
+                  label="Webhook Token (leave empty to keep current)"
                   type="password"
+                  placeholder="hooks.token from your OpenClaw config"
                   value={editForm.openclawToken}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawToken: e.target.value })
                   }
+                  helperText="The hooks.token value from ~/.openclaw/openclaw.json."
                 />
                 <Input
                   label="Agent ID"
+                  placeholder="main"
                   value={editForm.openclawAgentId}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawAgentId: e.target.value })
                   }
+                  helperText='The OpenClaw agent to route hooks to. Defaults to "main".'
                 />
               </>
             ) : (
