@@ -42,7 +42,7 @@ function CreateAgentContent() {
     if (!formData.openclawUrl.trim() || !formData.openclawToken.trim()) {
       setHealthCheck({
         status: "error",
-        error: "URL and token are required to test connection.",
+        error: "Base URL and webhook token are required to test connection.",
       });
       return;
     }
@@ -54,10 +54,9 @@ function CreateAgentContent() {
     setHealthCheck({ status: "checking" });
 
     try {
-      const result = await api.testOpenClawConnection(
+      const result = await api.testOpenClawWebhook(
         formData.openclawUrl.trim(),
         formData.openclawToken.trim(),
-        formData.openclawAgentId.trim() || "main",
       );
 
       if (result.ok) {
@@ -66,13 +65,13 @@ function CreateAgentContent() {
         setHealthCheck({
           status: "error",
           latencyMs: result.latencyMs,
-          error: result.error || "Connection failed",
+          error: result.error || "Webhook connection failed",
         });
       }
     } catch (err) {
       setHealthCheck({
         status: "error",
-        error: err instanceof Error ? err.message : "Connection failed",
+        error: err instanceof Error ? err.message : "Webhook connection failed",
       });
     }
   };
@@ -241,21 +240,21 @@ function CreateAgentContent() {
             {agentType === "openclaw" && (
               <div className="space-y-4">
                 <Input
-                  label="OpenClaw URL"
+                  label="OpenClaw Base URL"
                   type="url"
-                  placeholder="https://my-vps.com:18789"
+                  placeholder="https://your-vps.com:18789"
                   value={formData.openclawUrl}
                   onChange={(e) =>
                     setFormData({ ...formData, openclawUrl: e.target.value })
                   }
                   required
-                  helperText="The URL where your OpenClaw instance is running."
+                  helperText="Base URL of your OpenClaw instance. We'll append /hooks/agent for game moves."
                 />
 
                 <Input
-                  label="Gateway Token"
+                  label="Webhook Token"
                   type="password"
-                  placeholder="Your OpenClaw gateway token"
+                  placeholder="Your hooks.token from OpenClaw config"
                   value={formData.openclawToken}
                   onChange={(e) =>
                     setFormData({
@@ -264,7 +263,7 @@ function CreateAgentContent() {
                     })
                   }
                   required
-                  helperText="Found in ~/.openclaw/gateway.token or your config."
+                  helperText="The hooks.token value from your OpenClaw config (~/.openclaw/openclaw.json)."
                 />
 
                 <Input
@@ -278,7 +277,7 @@ function CreateAgentContent() {
                       openclawAgentId: e.target.value,
                     })
                   }
-                  helperText='The OpenClaw agent to use. Defaults to "main".'
+                  helperText='The OpenClaw agent to route hooks to. Defaults to "main".'
                 />
 
                 {/* Test Connection Button */}
@@ -290,43 +289,58 @@ function CreateAgentContent() {
                     className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-white text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
                   >
                     {healthCheck.status === "checking"
-                      ? "Testing..."
-                      : "Test Connection"}
+                      ? "Testing webhook..."
+                      : "Test Webhook Connection"}
                   </button>
 
                   {healthCheck.status === "success" && (
                     <div className="mt-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-2.5 text-sm">
-                      Connected successfully ({healthCheck.latencyMs}ms latency)
+                      Webhook connected ({healthCheck.latencyMs}ms latency)
                     </div>
                   )}
 
                   {healthCheck.status === "error" && (
                     <div className="mt-2 bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-2.5 text-sm">
-                      Connection failed: {healthCheck.error}
+                      Webhook failed: {healthCheck.error}
                     </div>
                   )}
                 </div>
 
                 <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
-                    OpenClaw Setup
+                    Webhook Setup
                   </h4>
                   <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
                     <li>
-                      Enable{" "}
+                      Enable webhooks:{" "}
                       <code className="text-arena-primary">
-                        /v1/chat/completions
+                        hooks.enabled: true
                       </code>{" "}
                       in your OpenClaw config
+                    </li>
+                    <li>
+                      Set a{" "}
+                      <code className="text-arena-primary">
+                        hooks.token
+                      </code>{" "}
+                      and paste it above
+                    </li>
+                    <li>
+                      We use{" "}
+                      <code className="text-arena-primary">
+                        /hooks/agent
+                      </code>{" "}
+                      to send game moves and{" "}
+                      <code className="text-arena-primary">
+                        /hooks/wake
+                      </code>{" "}
+                      to test
                     </li>
                     <li>
                       Make sure your instance is reachable from the internet
                     </li>
                     <li>
                       Use a fast model for best results (30s move timeout)
-                    </li>
-                    <li>
-                      Your agent&apos;s memory helps it improve over time
                     </li>
                   </ul>
                 </div>
