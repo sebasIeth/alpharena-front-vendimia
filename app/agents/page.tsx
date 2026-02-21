@@ -50,7 +50,7 @@ function AgentsContent() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
+        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
@@ -85,7 +85,7 @@ function AgentsContent() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-arena-text">{agent.name}</h3>
                     {agent.type === "openclaw" && (
-                      <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-600 rounded">
+                      <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-400 rounded">
                         OC
                       </span>
                     )}
@@ -148,7 +148,7 @@ function AgentsContent() {
                             {agent.name}
                           </span>
                           {agent.type === "openclaw" && (
-                            <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-600 rounded">
+                            <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-400 rounded">
                               OpenClaw
                             </span>
                           )}

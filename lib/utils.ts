@@ -51,25 +51,25 @@ export function formatStake(amount: number): string {
 export function getStatusColor(status: string): string {
   switch (status) {
     case "idle":
-      return "bg-emerald-100 text-emerald-700";
+      return "bg-emerald-500/15 text-emerald-400";
     case "queued":
-      return "bg-amber-100 text-amber-700";
+      return "bg-amber-500/15 text-amber-400";
     case "in_match":
-      return "bg-rose-100 text-rose-700";
+      return "bg-rose-500/15 text-rose-400";
     case "active":
-      return "bg-emerald-100 text-emerald-700";
+      return "bg-emerald-500/15 text-emerald-400";
     case "completed":
-      return "bg-slate-100 text-slate-600";
+      return "bg-slate-500/15 text-slate-400";
     case "pending":
-      return "bg-amber-100 text-amber-700";
+      return "bg-amber-500/15 text-amber-400";
     case "cancelled":
-      return "bg-slate-100 text-slate-600";
+      return "bg-slate-500/15 text-slate-400";
     case "error":
-      return "bg-red-100 text-red-700";
+      return "bg-red-500/15 text-red-400";
     case "disabled":
-      return "bg-slate-100 text-slate-500";
+      return "bg-slate-500/15 text-slate-500";
     default:
-      return "bg-slate-100 text-slate-600";
+      return "bg-slate-500/15 text-slate-400";
   }
 }
 

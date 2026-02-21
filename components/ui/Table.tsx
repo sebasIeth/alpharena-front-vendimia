@@ -18,7 +18,7 @@ export function Table({ children, className }: TableProps) {
 
 export function TableHeader({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="text-xs uppercase text-arena-muted bg-arena-bg/60 border-b border-arena-border">
+    <thead className="text-xs uppercase text-arena-muted bg-arena-bg-light border-b border-arena-border">
       {children}
     </thead>
   );
