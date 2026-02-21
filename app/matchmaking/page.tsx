@@ -158,7 +158,7 @@ function MatchmakingContent() {
         </div>
 
         {error && (
-          <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm mb-6">
+          <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
             {error}
           </div>
         )}
@@ -266,7 +266,7 @@ function MatchmakingContent() {
                   <label className="block text-sm font-medium text-arena-text mb-1.5">
                     Game Type
                   </label>
-                  <div className="bg-arena-bg border border-arena-border rounded-lg px-4 py-2.5 text-arena-text capitalize">
+                  <div className="bg-arena-bg border border-arena-border rounded-xl px-4 py-2.5 text-arena-text capitalize">
                     {gameType}
                   </div>
                 </div>

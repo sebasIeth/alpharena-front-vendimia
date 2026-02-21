@@ -58,14 +58,14 @@ export default function MatchesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 bg-arena-card rounded-lg p-1 inline-flex border border-arena-border">
+      <div className="flex items-center gap-1 mb-6 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border shadow-arena-sm">
         {(["all", "active", "completed"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => handleTabChange(t)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all capitalize ${
               tab === t
-                ? "bg-arena-primary text-arena-bg"
+                ? "bg-arena-primary text-white shadow-arena-sm"
                 : "text-arena-muted hover:text-arena-text"
             }`}
           >
@@ -75,7 +75,7 @@ export default function MatchesPage() {
       </div>
 
       {error && (
-        <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
@@ -130,12 +130,12 @@ export default function MatchesPage() {
                             style={{
                               backgroundColor:
                                 idx === 0
-                                  ? "#E74C3C"
+                                  ? "#EF4444"
                                   : idx === 1
-                                  ? "#3498DB"
+                                  ? "#3B82F6"
                                   : idx === 2
-                                  ? "#2ECC71"
-                                  : "#9B59B6",
+                                  ? "#10B981"
+                                  : "#8B5CF6",
                             }}
                           />
                           <span className="text-sm text-arena-text truncate max-w-[140px]">
@@ -168,7 +168,7 @@ export default function MatchesPage() {
 
                   {/* Winner */}
                   {match.status === "completed" && match.winnerId && (
-                    <div className="bg-arena-success/10 rounded-lg px-2 py-1 mb-3">
+                    <div className="bg-emerald-50 rounded-xl px-2 py-1 mb-3">
                       <span className="text-xs text-arena-success font-medium">
                         Winner:{" "}
                         {match.agents.find(
@@ -220,10 +220,10 @@ export default function MatchesPage() {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`w-8 h-8 rounded text-sm ${
+                        className={`w-8 h-8 rounded-lg text-sm transition-all ${
                           page === pageNum
-                            ? "bg-arena-primary text-arena-bg font-medium"
-                            : "text-arena-muted hover:text-arena-text hover:bg-arena-card"
+                            ? "bg-arena-primary text-white font-medium shadow-arena-sm"
+                            : "text-arena-muted hover:text-arena-text hover:bg-arena-card-hover"
                         }`}
                       >
                         {pageNum}

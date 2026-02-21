@@ -70,15 +70,15 @@ export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps
                 style={{
                   backgroundColor:
                     hasCarpet && playerId >= 0
-                      ? `${bgColor}40`
+                      ? `${bgColor}25`
                       : playerId === -1
-                      ? "#55555540"
-                      : "#0F0F0F",
+                      ? "#94A3B825"
+                      : "#F1F5F9",
                   borderColor:
                     hasCarpet && playerId >= 0
-                      ? `${bgColor}80`
+                      ? `${bgColor}60`
                       : isAssam
-                      ? "#C19A3E"
+                      ? "#6366F1"
                       : undefined,
                   borderWidth: isAssam ? "2px" : undefined,
                   width: cellSize ? cellSize : undefined,

@@ -51,40 +51,40 @@ export function formatStake(amount: number): string {
 export function getStatusColor(status: string): string {
   switch (status) {
     case "idle":
-      return "bg-arena-success/20 text-arena-success";
+      return "bg-emerald-100 text-emerald-700";
     case "queued":
-      return "bg-yellow-500/20 text-yellow-400";
+      return "bg-amber-100 text-amber-700";
     case "in_match":
-      return "bg-arena-accent/20 text-arena-accent";
+      return "bg-rose-100 text-rose-700";
     case "active":
-      return "bg-arena-success/20 text-arena-success";
+      return "bg-emerald-100 text-emerald-700";
     case "completed":
-      return "bg-arena-muted/20 text-arena-muted";
+      return "bg-slate-100 text-slate-600";
     case "pending":
-      return "bg-yellow-500/20 text-yellow-400";
+      return "bg-amber-100 text-amber-700";
     case "cancelled":
-      return "bg-arena-muted/20 text-arena-muted";
+      return "bg-slate-100 text-slate-600";
     case "error":
-      return "bg-red-500/20 text-red-400";
+      return "bg-red-100 text-red-700";
     case "disabled":
-      return "bg-arena-muted/20 text-arena-muted";
+      return "bg-slate-100 text-slate-500";
     default:
-      return "bg-arena-muted/20 text-arena-muted";
+      return "bg-slate-100 text-slate-600";
   }
 }
 
 export function getPlayerColor(playerId: number): string {
   switch (playerId) {
     case 0:
-      return "#E74C3C"; // red
+      return "#EF4444"; // red
     case 1:
-      return "#3498DB"; // blue
+      return "#3B82F6"; // blue
     case 2:
-      return "#2ECC71"; // green
+      return "#10B981"; // green
     case 3:
-      return "#9B59B6"; // purple
+      return "#8B5CF6"; // purple
     case -1:
-      return "#555555"; // neutralized (gray)
+      return "#94A3B8"; // neutralized (gray)
     default:
       return "transparent";
   }

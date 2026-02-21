@@ -12,8 +12,8 @@ export default function Card({ children, className, hover = false, onClick }: Ca
   return (
     <div
       className={classNames(
-        "bg-arena-card border border-arena-border rounded-xl p-6",
-        hover && "hover:bg-arena-card-hover hover:border-arena-primary/30 transition-all duration-200 cursor-pointer",
+        "bg-arena-card border border-arena-border rounded-2xl p-6 shadow-arena-sm",
+        hover && "hover:shadow-arena hover:border-arena-primary/20 transition-all duration-200 cursor-pointer",
         onClick && "cursor-pointer",
         className
       )}

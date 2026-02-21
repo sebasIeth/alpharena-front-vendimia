@@ -12,13 +12,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<string, string> = {
   primary:
-    "bg-arena-primary hover:bg-arena-primary-dark text-arena-bg font-semibold",
+    "bg-arena-primary hover:bg-arena-primary-dark text-white font-semibold shadow-arena-sm hover:shadow-arena",
   secondary:
-    "bg-arena-card hover:bg-arena-card-hover text-arena-text border border-arena-border",
+    "bg-white hover:bg-arena-card-hover text-arena-text border border-arena-border hover:border-arena-primary/30",
   danger:
-    "bg-arena-accent hover:bg-red-700 text-white font-semibold",
+    "bg-arena-accent hover:bg-rose-600 text-white font-semibold shadow-arena-sm",
   ghost:
-    "bg-transparent hover:bg-arena-card text-arena-text",
+    "bg-transparent hover:bg-arena-card-hover text-arena-muted hover:text-arena-text",
 };
 
 const sizeStyles: Record<string, string> = {
@@ -39,7 +39,7 @@ export default function Button({
   return (
     <button
       className={classNames(
-        "inline-flex items-center justify-center rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-arena-primary/50 disabled:opacity-50 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
         variantStyles[variant],
         sizeStyles[size],
         className
