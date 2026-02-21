@@ -95,8 +95,8 @@ export default function MatchDetailPage() {
                     key={agent.agentId}
                     className={`p-4 rounded-lg border ${
                       isWinner
-                        ? "bg-arena-success/10 border-arena-success/30"
-                        : "bg-arena-bg border-arena-border"
+                        ? "bg-emerald-50 border-emerald-200"
+                        : "bg-arena-card-hover border-arena-border"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -106,12 +106,12 @@ export default function MatchDetailPage() {
                           style={{
                             backgroundColor:
                               idx === 0
-                                ? "#E74C3C"
+                                ? "#EF4444"
                                 : idx === 1
-                                ? "#3498DB"
+                                ? "#3B82F6"
                                 : idx === 2
-                                ? "#2ECC71"
-                                : "#9B59B6",
+                                ? "#10B981"
+                                : "#8B5CF6",
                           }}
                         />
                         <span className="font-medium text-arena-text">
@@ -119,7 +119,7 @@ export default function MatchDetailPage() {
                         </span>
                       </div>
                       {isWinner && (
-                        <span className="text-xs bg-arena-success/20 text-arena-success px-2 py-0.5 rounded font-medium">
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">
                           WINNER
                         </span>
                       )}

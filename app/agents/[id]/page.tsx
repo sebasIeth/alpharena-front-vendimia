@@ -156,7 +156,7 @@ function AgentDetailContent() {
       </Link>
 
       {error && (
-        <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
@@ -174,7 +174,7 @@ function AgentDetailContent() {
               : agent.endpointUrl}
           </p>
           {agent.type === "openclaw" && (
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-500/10 text-purple-400 rounded">
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-600 rounded">
               OpenClaw
             </span>
           )}
@@ -218,7 +218,7 @@ function AgentDetailContent() {
           <form onSubmit={handleEdit} className="space-y-4">
             <CardTitle>Edit Agent</CardTitle>
             {editError && (
-              <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm">
+              <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm">
                 {editError}
               </div>
             )}
@@ -356,8 +356,8 @@ function AgentDetailContent() {
                           <span
                             className={`text-xs font-medium px-2 py-0.5 rounded ${
                               isWinner
-                                ? "bg-arena-success/20 text-arena-success"
-                                : "bg-arena-accent/20 text-arena-accent"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-rose-100 text-rose-700"
                             }`}
                           >
                             {isWinner ? "WON" : "LOST"}

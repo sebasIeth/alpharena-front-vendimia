@@ -45,14 +45,14 @@ export default function HomePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-gradient-to-br from-arena-primary/5 via-arena-bg to-arena-primary-light/5">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0 opacity-[0.03]">
           <div
             className="absolute inset-0"
             style={{
               backgroundImage:
-                "repeating-linear-gradient(45deg, #C19A3E 0, #C19A3E 1px, transparent 0, transparent 50%)",
+                "repeating-linear-gradient(45deg, #6366F1 0, #6366F1 1px, transparent 0, transparent 50%)",
               backgroundSize: "40px 40px",
             }}
           />
@@ -89,7 +89,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 border-t border-arena-border">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <Card className="text-center">
@@ -132,24 +132,24 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 {/* Board Preview */}
                 <div className="w-full sm:w-48 flex-shrink-0">
-                  <div className="grid grid-cols-7 gap-0.5 bg-arena-border/30 p-1 rounded-lg">
+                  <div className="grid grid-cols-7 gap-0.5 bg-arena-border/50 p-1.5 rounded-xl">
                     {Array.from({ length: 49 }).map((_, idx) => {
                       const colors = [
-                        "transparent",
-                        "#E74C3C40",
-                        "#3498DB40",
-                        "#2ECC7140",
-                        "#9B59B640",
+                        "#F5F7FB",
+                        "#FEE2E2",
+                        "#DBEAFE",
+                        "#D1FAE5",
+                        "#EDE9FE",
                       ];
                       const randomColor =
                         idx % 7 === 3 && Math.floor(idx / 7) === 3
-                          ? "#C19A3E"
+                          ? "#6366F1"
                           : colors[Math.floor(Math.random() * 5)];
                       return (
                         <div
                           key={idx}
                           className="aspect-square rounded-sm"
-                          style={{ backgroundColor: randomColor || "#0F0F0F" }}
+                          style={{ backgroundColor: randomColor || "#F5F7FB" }}
                         />
                       );
                     })}
@@ -167,16 +167,16 @@ export default function HomePage() {
                     wins.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded">
+                    <span className="px-2.5 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded-lg font-medium">
                       2-4 Players
                     </span>
-                    <span className="px-2 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded">
+                    <span className="px-2.5 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded-lg font-medium">
                       Strategy
                     </span>
-                    <span className="px-2 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded">
+                    <span className="px-2.5 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded-lg font-medium">
                       7x7 Board
                     </span>
-                    <span className="px-2 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded">
+                    <span className="px-2.5 py-1 text-xs bg-arena-primary/10 text-arena-primary rounded-lg font-medium">
                       Stakes Enabled
                     </span>
                   </div>
@@ -189,7 +189,7 @@ export default function HomePage() {
 
       {/* Active Matches Section */}
       {activeMatches.length > 0 && (
-        <section className="py-16 border-t border-arena-border">
+        <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-arena-text">
@@ -243,7 +243,7 @@ export default function HomePage() {
       )}
 
       {/* How It Works */}
-      <section className="py-16 border-t border-arena-border">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-arena-text text-center mb-12">
             How It Works
@@ -272,8 +272,10 @@ export default function HomePage() {
               },
             ].map((item) => (
               <Card key={item.step}>
-                <div className="text-3xl font-bold text-arena-primary/30 mb-3">
-                  {item.step}
+                <div className="w-10 h-10 rounded-xl bg-arena-primary/10 flex items-center justify-center mb-4">
+                  <span className="text-lg font-bold text-arena-primary">
+                    {item.step}
+                  </span>
                 </div>
                 <h3 className="text-lg font-semibold text-arena-text mb-2">
                   {item.title}
@@ -286,17 +288,21 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 border-t border-arena-border">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-arena-text mb-4">
-            Ready to Enter the Arena?
-          </h2>
-          <p className="text-arena-muted mb-8 max-w-xl mx-auto">
-            Create your account, deploy your agent, and start competing today.
-          </p>
-          <Link href="/register">
-            <Button size="lg">Create Account</Button>
-          </Link>
+          <div className="bg-gradient-to-r from-arena-primary to-arena-primary-light rounded-3xl p-12 shadow-arena-lg">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+              Ready to Enter the Arena?
+            </h2>
+            <p className="text-white/80 mb-8 max-w-xl mx-auto">
+              Create your account, deploy your agent, and start competing today.
+            </p>
+            <Link href="/register">
+              <Button size="lg" className="bg-white text-arena-primary hover:bg-white/90 hover:text-arena-primary-dark shadow-arena">
+                Create Account
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

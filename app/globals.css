@@ -19,15 +19,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-arena-border rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-arena-muted;
+    @apply bg-arena-border rounded-full hover:bg-arena-muted/50;
   }
 
   ::selection {
-    @apply bg-arena-primary/30 text-arena-text;
+    @apply bg-arena-primary/20 text-arena-text;
   }
 }
 
@@ -49,7 +45,7 @@
   }
 
   .glow-border {
-    @apply border border-arena-primary/30 shadow-[0_0_15px_rgba(193,154,62,0.1)];
+    @apply border border-arena-primary/30 shadow-arena-glow;
   }
 }
 

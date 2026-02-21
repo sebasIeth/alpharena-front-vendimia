@@ -18,7 +18,7 @@ export function Table({ children, className }: TableProps) {
 
 export function TableHeader({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="text-xs uppercase text-arena-muted border-b border-arena-border">
+    <thead className="text-xs uppercase text-arena-muted bg-arena-bg/60 border-b border-arena-border">
       {children}
     </thead>
   );
@@ -37,7 +37,7 @@ export function TableRow({
     <tr
       className={classNames(
         "border-b border-arena-border/50 text-arena-text",
-        onClick && "hover:bg-arena-card-hover cursor-pointer",
+        onClick && "hover:bg-arena-primary/5 cursor-pointer",
         className
       )}
       onClick={onClick}

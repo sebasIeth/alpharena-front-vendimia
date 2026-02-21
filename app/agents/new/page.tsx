@@ -179,7 +179,7 @@ function CreateAgentContent() {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm">
+              <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm">
                 {error}
               </div>
             )}
@@ -205,7 +205,7 @@ function CreateAgentContent() {
                 <button
                   type="button"
                   onClick={() => setAgentType("openclaw")}
-                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  className={`p-4 rounded-xl border-2 text-left transition-all ${
                     agentType === "openclaw"
                       ? "border-arena-primary bg-arena-primary/10"
                       : "border-arena-border bg-arena-bg hover:border-arena-primary/30"
@@ -221,7 +221,7 @@ function CreateAgentContent() {
                 <button
                   type="button"
                   onClick={() => setAgentType("http")}
-                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  className={`p-4 rounded-xl border-2 text-left transition-all ${
                     agentType === "http"
                       ? "border-arena-primary bg-arena-primary/10"
                       : "border-arena-border bg-arena-bg hover:border-arena-primary/30"
@@ -287,7 +287,7 @@ function CreateAgentContent() {
                     type="button"
                     onClick={handleTestConnection}
                     disabled={healthCheck.status === "checking"}
-                    className="w-full px-4 py-2.5 rounded-lg border border-arena-border bg-arena-bg text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
+                    className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-white text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
                   >
                     {healthCheck.status === "checking"
                       ? "Testing..."
@@ -295,19 +295,19 @@ function CreateAgentContent() {
                   </button>
 
                   {healthCheck.status === "success" && (
-                    <div className="mt-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="mt-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-2.5 text-sm">
                       Connected successfully ({healthCheck.latencyMs}ms latency)
                     </div>
                   )}
 
                   {healthCheck.status === "error" && (
-                    <div className="mt-2 bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-2.5 text-sm">
+                    <div className="mt-2 bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-2.5 text-sm">
                       Connection failed: {healthCheck.error}
                     </div>
                   )}
                 </div>
 
-                <div className="bg-arena-bg border border-arena-border rounded-lg p-4">
+                <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
                     OpenClaw Setup
                   </h4>
@@ -348,7 +348,7 @@ function CreateAgentContent() {
                   helperText="The HTTP endpoint where your agent receives game state and returns moves."
                 />
 
-                <div className="bg-arena-bg border border-arena-border rounded-lg p-4">
+                <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
                     Agent Endpoint Requirements
                   </h4>
@@ -369,7 +369,7 @@ function CreateAgentContent() {
                 Game Types
               </label>
               <div className="space-y-2">
-                <label className="flex items-center gap-3 cursor-pointer bg-arena-bg border border-arena-border rounded-lg p-3 hover:border-arena-primary/30 transition-colors">
+                <label className="flex items-center gap-3 cursor-pointer bg-arena-bg border border-arena-border rounded-xl p-3 hover:border-arena-primary/30 transition-colors">
                   <input
                     type="checkbox"
                     checked={formData.marrakech}

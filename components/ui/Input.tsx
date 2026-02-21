@@ -32,7 +32,7 @@ export default function Input({
       <input
         id={inputId}
         className={classNames(
-          "w-full px-4 py-2.5 bg-arena-bg border rounded-lg text-arena-text placeholder-arena-muted focus:outline-none focus:ring-2 focus:ring-arena-primary/50 focus:border-arena-primary transition-colors duration-200",
+          "w-full px-4 py-2.5 bg-white border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
           error ? "border-arena-accent" : "border-arena-border",
           className
         )}
@@ -77,7 +77,7 @@ export function Select({
       <select
         id={selectId}
         className={classNames(
-          "w-full px-4 py-2.5 bg-arena-bg border rounded-lg text-arena-text focus:outline-none focus:ring-2 focus:ring-arena-primary/50 focus:border-arena-primary transition-colors duration-200",
+          "w-full px-4 py-2.5 bg-white border rounded-xl text-arena-text focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200",
           error ? "border-arena-accent" : "border-arena-border",
           className
         )}

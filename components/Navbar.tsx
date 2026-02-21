@@ -33,13 +33,13 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-arena-card/80 backdrop-blur-md border-b border-arena-border sticky top-0 z-40">
+    <nav className="bg-white/80 backdrop-blur-md border-b border-arena-border sticky top-0 z-40 shadow-arena-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-arena-primary rounded-lg flex items-center justify-center">
-              <span className="text-arena-bg font-bold text-sm">AA</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-gradient-to-br from-arena-primary to-arena-primary-light rounded-xl flex items-center justify-center shadow-arena-sm">
+              <span className="text-white font-bold text-sm">AA</span>
             </div>
             <span className="text-arena-text font-bold text-lg hidden sm:block">
               AlphArena
@@ -53,7 +53,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={classNames(
-                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "px-3 py-2 rounded-xl text-sm font-medium transition-all",
                   isActive(link.href)
                     ? "bg-arena-primary/10 text-arena-primary"
                     : "text-arena-muted hover:text-arena-text hover:bg-arena-card-hover"
@@ -68,7 +68,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   className={classNames(
-                    "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "px-3 py-2 rounded-xl text-sm font-medium transition-all",
                     isActive(link.href)
                       ? "bg-arena-primary/10 text-arena-primary"
                       : "text-arena-muted hover:text-arena-text hover:bg-arena-card-hover"
@@ -83,12 +83,12 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-arena-muted">
+                <span className="text-sm text-arena-muted font-medium">
                   {user?.username}
                 </span>
                 <button
                   onClick={logout}
-                  className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-lg hover:bg-arena-card-hover transition-colors"
+                  className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card-hover transition-all"
                 >
                   Logout
                 </button>
@@ -97,13 +97,13 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-lg hover:bg-arena-card-hover transition-colors"
+                  className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card-hover transition-all"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-1.5 text-sm bg-arena-primary hover:bg-arena-primary-dark text-arena-bg font-semibold rounded-lg transition-colors"
+                  className="px-4 py-1.5 text-sm bg-arena-primary hover:bg-arena-primary-dark text-white font-semibold rounded-xl transition-all shadow-arena-sm hover:shadow-arena"
                 >
                   Sign Up
                 </Link>
@@ -114,7 +114,7 @@ export default function Navbar() {
           {/* Mobile Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden text-arena-muted hover:text-arena-text p-2"
+            className="md:hidden text-arena-muted hover:text-arena-text p-2 rounded-xl hover:bg-arena-card-hover transition-all"
           >
             <svg
               className="w-6 h-6"
@@ -144,7 +144,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-arena-border bg-arena-card">
+        <div className="md:hidden border-t border-arena-border bg-white">
           <div className="px-4 py-3 space-y-1">
             {navLinks.map((link) => (
               <Link
@@ -152,7 +152,7 @@ export default function Navbar() {
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
                 className={classNames(
-                  "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "block px-3 py-2 rounded-xl text-sm font-medium transition-all",
                   isActive(link.href)
                     ? "bg-arena-primary/10 text-arena-primary"
                     : "text-arena-muted hover:text-arena-text"
@@ -168,7 +168,7 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={classNames(
-                    "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "block px-3 py-2 rounded-xl text-sm font-medium transition-all",
                     isActive(link.href)
                       ? "bg-arena-primary/10 text-arena-primary"
                       : "text-arena-muted hover:text-arena-text"
@@ -188,7 +188,7 @@ export default function Navbar() {
                       logout();
                       setMobileOpen(false);
                     }}
-                    className="block w-full text-left px-3 py-2 text-sm text-arena-accent hover:bg-arena-card-hover rounded-lg"
+                    className="block w-full text-left px-3 py-2 text-sm text-arena-accent hover:bg-arena-card-hover rounded-xl"
                   >
                     Logout
                   </button>
@@ -198,14 +198,14 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setMobileOpen(false)}
-                    className="flex-1 text-center px-3 py-2 text-sm text-arena-muted hover:text-arena-text rounded-lg hover:bg-arena-card-hover"
+                    className="flex-1 text-center px-3 py-2 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card-hover"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setMobileOpen(false)}
-                    className="flex-1 text-center px-3 py-2 text-sm bg-arena-primary text-arena-bg font-semibold rounded-lg"
+                    className="flex-1 text-center px-3 py-2 text-sm bg-arena-primary text-white font-semibold rounded-xl"
                   >
                     Sign Up
                   </Link>

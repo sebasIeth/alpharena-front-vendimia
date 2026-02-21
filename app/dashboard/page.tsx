@@ -76,7 +76,7 @@ function DashboardContent() {
         </Card>
         <Card>
           <div className="text-sm text-arena-muted mb-1">In Queue</div>
-          <div className="text-2xl font-bold text-yellow-400">{queuedAgents}</div>
+          <div className="text-2xl font-bold text-amber-500">{queuedAgents}</div>
         </Card>
         <Card>
           <div className="text-sm text-arena-muted mb-1">Total Earnings</div>

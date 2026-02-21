@@ -50,11 +50,11 @@ export default function LeaderboardPage() {
   const getRankStyle = (rank: number) => {
     switch (rank) {
       case 1:
-        return "text-yellow-400 font-bold";
+        return "text-amber-500 font-bold";
       case 2:
-        return "text-gray-300 font-bold";
+        return "text-slate-400 font-bold";
       case 3:
-        return "text-amber-600 font-bold";
+        return "text-amber-700 font-bold";
       default:
         return "text-arena-muted";
     }
@@ -63,11 +63,11 @@ export default function LeaderboardPage() {
   const getRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
-        return "bg-yellow-400/10 border-yellow-400/30";
+        return "bg-amber-50 border-amber-200";
       case 2:
-        return "bg-gray-300/10 border-gray-300/30";
+        return "bg-slate-50 border-slate-200";
       case 3:
-        return "bg-amber-600/10 border-amber-600/30";
+        return "bg-orange-50 border-orange-200";
       default:
         return "";
     }
@@ -83,12 +83,12 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 bg-arena-card rounded-lg p-1 inline-flex border border-arena-border">
+      <div className="flex items-center gap-1 mb-6 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border shadow-arena-sm">
         <button
           onClick={() => setTab("agents")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
             tab === "agents"
-              ? "bg-arena-primary text-arena-bg"
+              ? "bg-arena-primary text-white shadow-arena-sm"
               : "text-arena-muted hover:text-arena-text"
           }`}
         >
@@ -96,9 +96,9 @@ export default function LeaderboardPage() {
         </button>
         <button
           onClick={() => setTab("users")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
             tab === "users"
-              ? "bg-arena-primary text-arena-bg"
+              ? "bg-arena-primary text-white shadow-arena-sm"
               : "text-arena-muted hover:text-arena-text"
           }`}
         >
@@ -107,7 +107,7 @@ export default function LeaderboardPage() {
       </div>
 
       {error && (
-        <div className="bg-arena-accent/10 border border-arena-accent/30 text-arena-accent rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-rose-50 border border-rose-200 text-arena-accent rounded-xl px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}

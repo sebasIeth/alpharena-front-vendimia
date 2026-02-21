@@ -149,12 +149,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     style={{
                       backgroundColor:
                         idx === 0
-                          ? "#E74C3C"
+                          ? "#EF4444"
                           : idx === 1
-                          ? "#3498DB"
+                          ? "#3B82F6"
                           : idx === 2
-                          ? "#2ECC71"
-                          : "#9B59B6",
+                          ? "#10B981"
+                          : "#8B5CF6",
                     }}
                   />
                   <div>

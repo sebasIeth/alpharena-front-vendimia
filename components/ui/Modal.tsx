@@ -33,15 +33,15 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-arena-text/20 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-arena-card border border-arena-border rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <div className="relative bg-arena-card border border-arena-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-arena-lg">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-arena-text">{title}</h2>
           <button
             onClick={onClose}
-            className="text-arena-muted hover:text-arena-text transition-colors"
+            className="text-arena-muted hover:text-arena-text transition-colors p-1 rounded-lg hover:bg-arena-card-hover"
           >
             <svg
               className="w-5 h-5"
