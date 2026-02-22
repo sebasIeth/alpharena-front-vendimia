@@ -14,6 +14,12 @@ import { PageSpinner } from "@/components/ui/Spinner";
 import { formatElo, formatWinRate, formatDate, formatRelativeTime } from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
+interface ChatMessage {
+  role: "user" | "agent";
+  text: string;
+  timestamp: number;
+}
+
 function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -36,6 +42,13 @@ function AgentDetailContent() {
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
+
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const chatEndRef = React.useRef<HTMLDivElement>(null);
 
   // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -118,6 +131,42 @@ function AgentDetailContent() {
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const handleChatSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const msg = chatInput.trim();
+    if (!msg || chatSending) return;
+
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", text: msg, timestamp: Date.now() },
+    ]);
+    setChatInput("");
+    setChatSending(true);
+
+    try {
+      const data = await api.chatWithAgent(agentId, msg);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "agent", text: data.reply, timestamp: Date.now() },
+      ]);
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          text: `Error: ${err instanceof Error ? err.message : "Failed to send message"}`,
+          timestamp: Date.now(),
+        },
+      ]);
+    } finally {
+      setChatSending(false);
     }
   };
 
@@ -335,6 +384,77 @@ function AgentDetailContent() {
           </div>
         </Card>
       </div>
+
+      {/* Mini Chat - only for OpenClaw agents */}
+      {agent.type === "openclaw" && (
+        <Card className="mb-8">
+          <div
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setChatOpen(!chatOpen)}
+          >
+            <CardTitle>Chat with Agent</CardTitle>
+            <span className="text-arena-muted text-sm">
+              {chatOpen ? "Hide" : "Show"}
+            </span>
+          </div>
+
+          {chatOpen && (
+            <div className="mt-4">
+              {/* Messages */}
+              <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border p-3 mb-3 space-y-2">
+                {chatMessages.length === 0 && (
+                  <p className="text-sm text-arena-muted text-center mt-8">
+                    Send a message to test your agent.
+                  </p>
+                )}
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                        msg.role === "user"
+                          ? "bg-arena-primary text-arena-bg"
+                          : "bg-arena-card border border-arena-border text-arena-text"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {chatSending && (
+                  <div className="flex justify-start">
+                    <div className="bg-arena-card border border-arena-border px-3 py-2 rounded-xl text-sm text-arena-muted">
+                      <span className="animate-pulse">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input */}
+              <form onSubmit={handleChatSend} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  disabled={chatSending}
+                  className="flex-1 px-4 py-2.5 bg-arena-bg-card border border-arena-border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
+                />
+                <Button
+                  type="submit"
+                  size="md"
+                  disabled={chatSending || !chatInput.trim()}
+                >
+                  Send
+                </Button>
+              </form>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Recent Matches */}
       <div>

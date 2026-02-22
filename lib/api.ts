@@ -159,6 +159,10 @@ class ApiClient {
     });
   }
 
+  async chatWithAgent(agentId: string, message: string): Promise<{ reply: string }> {
+    return this.post<{ reply: string }>(`/agents/${agentId}/chat`, { message });
+  }
+
   // ========== Matchmaking ==========
   async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
     return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {
