@@ -233,12 +233,12 @@ function AgentDetailContent() {
               <>
                 <Input
                   label="OpenClaw URL"
-                  placeholder="wss://your-vps.com:18789"
+                  placeholder="http://your-vps.com:64936"
                   value={editForm.openclawUrl}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawUrl: e.target.value })
                   }
-                  helperText="WebSocket URL of your OpenClaw instance."
+                  helperText="HTTP URL of your OpenClaw instance."
                 />
                 <Input
                   label="Gateway Token (leave empty to keep current)"
