@@ -39,10 +39,10 @@ function CreateAgentContent() {
   };
 
   const handleTestConnection = async () => {
-    if (!formData.openclawUrl.trim()) {
+    if (!formData.openclawUrl.trim() || !formData.openclawToken.trim()) {
       setHealthCheck({
         status: "error",
-        error: "Bridge URL is required to test connection.",
+        error: "OpenClaw URL and gateway token are required to test connection.",
       });
       return;
     }
@@ -65,13 +65,13 @@ function CreateAgentContent() {
         setHealthCheck({
           status: "error",
           latencyMs: result.latencyMs,
-          error: result.error || "Bridge connection failed",
+          error: result.error || "Connection failed",
         });
       }
     } catch (err) {
       setHealthCheck({
         status: "error",
-        error: err instanceof Error ? err.message : "Bridge connection failed",
+        error: err instanceof Error ? err.message : "Connection failed",
       });
     }
   };
@@ -104,14 +104,19 @@ function CreateAgentContent() {
 
     if (agentType === "openclaw") {
       if (!formData.openclawUrl.trim()) {
-        setError("OpenClaw bridge URL is required.");
+        setError("OpenClaw URL is required.");
         setLoading(false);
         return;
       }
       if (!validateUrl(formData.openclawUrl.trim())) {
         setError(
-          "Please enter a valid bridge URL (e.g., http://my-vps.com:3000)."
+          "Please enter a valid OpenClaw URL (e.g., wss://my-vps.com:18789)."
         );
+        setLoading(false);
+        return;
+      }
+      if (!formData.openclawToken.trim()) {
+        setError("Gateway token is required.");
         setLoading(false);
         return;
       }
@@ -209,7 +214,7 @@ function CreateAgentContent() {
                     OpenClaw
                   </div>
                   <div className="text-xs text-arena-muted mt-1">
-                    Connect via OpenClawHookTest bridge server
+                    Connect your OpenClaw AI instance via WebSocket
                   </div>
                 </button>
                 <button
@@ -235,21 +240,21 @@ function CreateAgentContent() {
             {agentType === "openclaw" && (
               <div className="space-y-4">
                 <Input
-                  label="OpenClaw Bridge URL"
-                  type="url"
-                  placeholder="http://your-vps.com:3000"
+                  label="OpenClaw URL"
+                  type="text"
+                  placeholder="wss://your-vps.com:18789"
                   value={formData.openclawUrl}
                   onChange={(e) =>
                     setFormData({ ...formData, openclawUrl: e.target.value })
                   }
                   required
-                  helperText="URL of your OpenClawHookTest bridge server. We use /api/agent for game moves and /api/wake to test."
+                  helperText="WebSocket URL of your OpenClaw instance (wss:// or ws://)."
                 />
 
                 <Input
-                  label="Gateway Token (optional)"
+                  label="Gateway Token"
                   type="password"
-                  placeholder="Your OPENCLAW_TOKEN from bridge .env"
+                  placeholder="Your OPENCLAW_TOKEN"
                   value={formData.openclawToken}
                   onChange={(e) =>
                     setFormData({
@@ -257,7 +262,8 @@ function CreateAgentContent() {
                       openclawToken: e.target.value,
                     })
                   }
-                  helperText="Optional. The OPENCLAW_TOKEN configured in your bridge server's .env file."
+                  required
+                  helperText="The token from your OpenClaw config (~/.openclaw/openclaw.json)."
                 />
 
                 <Input
@@ -283,60 +289,55 @@ function CreateAgentContent() {
                     className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
                   >
                     {healthCheck.status === "checking"
-                      ? "Testing bridge connection..."
-                      : "Test Bridge Connection"}
+                      ? "Testing connection..."
+                      : "Test Connection"}
                   </button>
 
                   {healthCheck.status === "success" && (
                     <div className="mt-2 bg-arena-success/10 border border-arena-success/30 text-arena-success rounded-xl px-4 py-2.5 text-sm">
-                      Bridge connected ({healthCheck.latencyMs}ms latency)
+                      Connected ({healthCheck.latencyMs}ms latency)
                     </div>
                   )}
 
                   {healthCheck.status === "error" && (
                     <div className="mt-2 bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-2.5 text-sm">
-                      Bridge connection failed: {healthCheck.error}
+                      Connection failed: {healthCheck.error}
                     </div>
                   )}
                 </div>
 
                 <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
-                    Bridge Setup (OpenClawHookTest)
+                    OpenClaw Setup
                   </h4>
                   <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
                     <li>
-                      Clone and run the{" "}
+                      Provide your OpenClaw WebSocket URL (e.g.{" "}
+                      <code className="text-arena-primary">
+                        wss://your-vps.com:18789
+                      </code>
+                      )
+                    </li>
+                    <li>
+                      Paste the{" "}
+                      <code className="text-arena-primary">
+                        token
+                      </code>{" "}
+                      from your OpenClaw config (
+                      <code className="text-arena-primary">
+                        ~/.openclaw/openclaw.json
+                      </code>
+                      )
+                    </li>
+                    <li>
+                      We connect via WebSocket using the same protocol as{" "}
                       <code className="text-arena-primary">
                         OpenClawHookTest
                       </code>{" "}
-                      bridge server on your VPS
+                      (ED25519 challenge-response auth)
                     </li>
                     <li>
-                      Configure{" "}
-                      <code className="text-arena-primary">
-                        OPENCLAW_URL
-                      </code>{" "}
-                      and{" "}
-                      <code className="text-arena-primary">
-                        OPENCLAW_TOKEN
-                      </code>{" "}
-                      in the bridge&apos;s{" "}
-                      <code className="text-arena-primary">.env</code>
-                    </li>
-                    <li>
-                      We use{" "}
-                      <code className="text-arena-primary">
-                        /api/agent
-                      </code>{" "}
-                      to send game moves and{" "}
-                      <code className="text-arena-primary">
-                        /api/wake
-                      </code>{" "}
-                      to test connectivity
-                    </li>
-                    <li>
-                      Make sure your bridge server is reachable from the
+                      Make sure your OpenClaw instance is reachable from the
                       internet
                     </li>
                     <li>
