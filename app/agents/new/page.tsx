@@ -110,7 +110,7 @@ function CreateAgentContent() {
       }
       if (!validateUrl(formData.openclawUrl.trim())) {
         setError(
-          "Please enter a valid OpenClaw URL (e.g., wss://my-vps.com:18789)."
+          "Please enter a valid OpenClaw URL (e.g., http://my-vps.com:64936)."
         );
         setLoading(false);
         return;
@@ -214,7 +214,7 @@ function CreateAgentContent() {
                     OpenClaw
                   </div>
                   <div className="text-xs text-arena-muted mt-1">
-                    Connect your OpenClaw AI instance via WebSocket
+                    Connect your OpenClaw AI instance
                   </div>
                 </button>
                 <button
@@ -242,13 +242,13 @@ function CreateAgentContent() {
                 <Input
                   label="OpenClaw URL"
                   type="text"
-                  placeholder="wss://your-vps.com:18789"
+                  placeholder="http://your-vps.com:64936"
                   value={formData.openclawUrl}
                   onChange={(e) =>
                     setFormData({ ...formData, openclawUrl: e.target.value })
                   }
                   required
-                  helperText="WebSocket URL of your OpenClaw instance (wss:// or ws://)."
+                  helperText="HTTP URL of your OpenClaw instance (http:// or https://)."
                 />
 
                 <Input
@@ -312,9 +312,9 @@ function CreateAgentContent() {
                   </h4>
                   <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
                     <li>
-                      Provide your OpenClaw WebSocket URL (e.g.{" "}
+                      Provide your OpenClaw HTTP URL (e.g.{" "}
                       <code className="text-arena-primary">
-                        wss://your-vps.com:18789
+                        http://your-vps.com:64936
                       </code>
                       )
                     </li>
@@ -330,11 +330,15 @@ function CreateAgentContent() {
                       )
                     </li>
                     <li>
-                      We connect via WebSocket using the same protocol as{" "}
+                      We authenticate via session cookie (POST /login) and
+                      communicate through{" "}
                       <code className="text-arena-primary">
-                        OpenClawHookTest
+                        /hooks/wake
                       </code>{" "}
-                      (ED25519 challenge-response auth)
+                      and{" "}
+                      <code className="text-arena-primary">
+                        /hooks/agent
+                      </code>
                     </li>
                     <li>
                       Make sure your OpenClaw instance is reachable from the
