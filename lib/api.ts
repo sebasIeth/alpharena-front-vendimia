@@ -68,12 +68,7 @@ class ApiClient {
     const response = await fetch(url, options);
 
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("arena_token");
-        localStorage.removeItem("arena_user");
-        window.location.href = "/login";
-      }
-      throw new Error("Unauthorized");
+      throw new Error("Your session has expired. Please log in again.");
     }
 
     if (!response.ok) {
