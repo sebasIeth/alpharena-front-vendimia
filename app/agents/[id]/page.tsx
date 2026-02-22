@@ -232,23 +232,23 @@ function AgentDetailContent() {
             {agent.type === "openclaw" ? (
               <>
                 <Input
-                  label="OpenClaw Base URL"
-                  placeholder="https://your-vps.com:18789"
+                  label="OpenClaw Bridge URL"
+                  placeholder="http://your-vps.com:3000"
                   value={editForm.openclawUrl}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawUrl: e.target.value })
                   }
-                  helperText="Base URL of your OpenClaw instance. /hooks/agent will be appended for requests."
+                  helperText="URL of your OpenClawHookTest bridge server. /api/agent will be used for game moves."
                 />
                 <Input
-                  label="Webhook Token (leave empty to keep current)"
+                  label="Gateway Token (leave empty to keep current)"
                   type="password"
-                  placeholder="hooks.token from your OpenClaw config"
+                  placeholder="OPENCLAW_TOKEN from bridge .env"
                   value={editForm.openclawToken}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawToken: e.target.value })
                   }
-                  helperText="The hooks.token value from ~/.openclaw/openclaw.json."
+                  helperText="Optional. The OPENCLAW_TOKEN configured in your bridge server's .env file."
                 />
                 <Input
                   label="Agent ID"
@@ -257,7 +257,7 @@ function AgentDetailContent() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawAgentId: e.target.value })
                   }
-                  helperText='The OpenClaw agent to route hooks to. Defaults to "main".'
+                  helperText='The OpenClaw agent ID to route commands to. Defaults to "main".'
                 />
               </>
             ) : (
