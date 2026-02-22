@@ -144,18 +144,18 @@ class ApiClient {
     return this.get<HealthCheckResponse>(`/agents/${id}/health`);
   }
 
-  async testOpenClawConnection(openclawUrl: string, openclawToken: string, openclawAgentId?: string): Promise<HealthCheckResponse> {
+  async testOpenClawConnection(openclawUrl: string, openclawToken?: string, openclawAgentId?: string): Promise<HealthCheckResponse> {
     return this.post<HealthCheckResponse>("/agents/test-connection", {
       openclawUrl,
-      openclawToken,
+      openclawToken: openclawToken || undefined,
       openclawAgentId: openclawAgentId || "main",
     });
   }
 
-  async testOpenClawWebhook(openclawUrl: string, hookToken: string): Promise<HealthCheckResponse> {
+  async testOpenClawWebhook(openclawUrl: string, openclawToken?: string): Promise<HealthCheckResponse> {
     return this.post<HealthCheckResponse>("/agents/test-webhook", {
       openclawUrl,
-      hookToken,
+      openclawToken: openclawToken || undefined,
     });
   }
 
