@@ -15,7 +15,7 @@ export default function Badge({ status, className }: BadgeProps) {
         className
       )}
     >
-      {status.replace(/_/g, " ")}
+      {(status || "unknown").replace(/_/g, " ")}
     </span>
   );
 }

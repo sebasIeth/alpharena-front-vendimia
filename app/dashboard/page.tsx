@@ -32,7 +32,10 @@ function DashboardContent() {
           setAgents(agentsRes.value.agents || []);
         }
         if (matchesRes.status === "fulfilled") {
-          setRecentMatches(matchesRes.value.matches || []);
+          setRecentMatches((matchesRes.value.matches || []).map((m) => ({
+            ...m,
+            id: m.id || (m as any)._id,
+          })));
         }
       } catch {
         // silently handle
@@ -202,9 +205,9 @@ function DashboardContent() {
                         {match.gameType}
                       </span>
                       <div className="text-sm text-arena-text">
-                        {match.agents
+                        {(Array.isArray(match.agents) ? match.agents : [])
                           .map((a) => a.agentName)
-                          .join(" vs ")}
+                          .join(" vs ") || "Unknown"}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-arena-muted">

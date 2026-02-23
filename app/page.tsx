@@ -153,7 +153,10 @@ export default function HomePage() {
         ]);
 
         if (activeData.status === "fulfilled") {
-          const matches = activeData.value.matches || [];
+          const matches = (activeData.value.matches || []).map((m) => ({
+            ...m,
+            id: m.id || (m as any)._id,
+          }));
           setActiveMatches(matches.slice(0, 5));
           setStats((prev) => ({ ...prev, activeCount: matches.length }));
         }
@@ -465,7 +468,7 @@ export default function HomePage() {
                       <Badge status={match.status} />
                     </div>
                     <div className="space-y-2">
-                      {match.agents.map((agent) => (
+                      {(Array.isArray(match.agents) ? match.agents : []).map((agent) => (
                         <div
                           key={agent.agentId}
                           className="flex items-center justify-between"

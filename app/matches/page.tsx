@@ -30,7 +30,10 @@ export default function MatchesPage() {
         page,
         limit: 12,
       });
-      setMatches(data.matches || []);
+      setMatches((data.matches || []).map((m) => ({
+        ...m,
+        id: m.id || (m as any)._id,
+      })));
       setTotalPages(data.pages || 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load matches.");
@@ -119,7 +122,7 @@ export default function MatchesPage() {
 
                   {/* Agents */}
                   <div className="space-y-2 mb-3">
-                    {match.agents.map((agent, idx) => (
+                    {(Array.isArray(match.agents) ? match.agents : []).map((agent, idx) => (
                       <div
                         key={agent.agentId}
                         className="flex items-center justify-between"
@@ -171,7 +174,7 @@ export default function MatchesPage() {
                     <div className="bg-arena-success/10 rounded-xl px-2 py-1 mb-3">
                       <span className="text-xs text-arena-success font-medium">
                         Winner:{" "}
-                        {match.agents.find(
+                        {(Array.isArray(match.agents) ? match.agents : []).find(
                           (a) => a.agentId === match.winnerId
                         )?.agentName || "Unknown"}
                       </span>

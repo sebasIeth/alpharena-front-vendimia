@@ -78,7 +78,10 @@ function AgentDetailContent() {
         }
 
         if (statsRes.status === "fulfilled") {
-          setRecentMatches(statsRes.value.recentMatches || []);
+          setRecentMatches((statsRes.value.recentMatches || []).map((m) => ({
+            ...m,
+            id: m.id || (m as any)._id,
+          })));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load agent.");
@@ -468,7 +471,8 @@ function AgentDetailContent() {
         ) : (
           <div className="space-y-3">
             {recentMatches.map((match) => {
-              const agentEntry = match.agents.find(
+              const agentsArr = Array.isArray(match.agents) ? match.agents : [];
+              const agentEntry = agentsArr.find(
                 (a) => a.agentId === agentId
               );
               const isWinner = match.winnerId === agentId;
@@ -490,9 +494,9 @@ function AgentDetailContent() {
                           </span>
                         )}
                         <span className="text-sm text-arena-text">
-                          {match.agents
+                          {agentsArr
                             .map((a) => a.agentName)
-                            .join(" vs ")}
+                            .join(" vs ") || "Unknown"}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-arena-muted">

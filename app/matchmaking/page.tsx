@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import AuthGuard from "@/components/AuthGuard";
 import Card, { CardTitle } from "@/components/ui/Card";
@@ -13,8 +13,15 @@ import { PageSpinner } from "@/components/ui/Spinner";
 import Spinner from "@/components/ui/Spinner";
 import type { Agent, QueueStatus } from "@/lib/types";
 
+interface QueuedAgent {
+  agentId: string;
+  status: QueueStatus | null;
+  cancelling: boolean;
+}
+
 function MatchmakingContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedAgentId = searchParams.get("agentId") || "";
 
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -23,16 +30,13 @@ function MatchmakingContent() {
 
   // Form state
   const [selectedAgentId, setSelectedAgentId] = useState(preselectedAgentId);
-  const [stakeAmount, setStakeAmount] = useState("1.0");
+  const [stakeAmount, setStakeAmount] = useState("0");
   const [gameType] = useState("marrakech");
   const [joining, setJoining] = useState(false);
 
-  // Queue state
-  const [inQueue, setInQueue] = useState(false);
-  const [queuedAgentId, setQueuedAgentId] = useState("");
-  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+  // Queue state — supports multiple agents
+  const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
-  const [cancelling, setCancelling] = useState(false);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -66,35 +70,76 @@ function MatchmakingContent() {
     return () => clearInterval(interval);
   }, [gameType]);
 
-  // Poll queue status
-  const pollQueueStatus = useCallback(async () => {
-    if (!queuedAgentId) return;
-    try {
-      const status = await api.getQueueStatus(queuedAgentId);
-      setQueueStatus(status);
-      if (status.status === "matched" || status.status === "cancelled") {
-        setInQueue(false);
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      }
-    } catch {
-      // silently handle
-    }
-  }, [queuedAgentId]);
+  // Keep a ref to queued agents so the poll interval always reads the latest
+  const queuedAgentsRef = useRef<QueuedAgent[]>([]);
+  queuedAgentsRef.current = queuedAgents;
 
+  // Poll queue status for all queued agents
   useEffect(() => {
-    if (inQueue && queuedAgentId) {
-      pollRef.current = setInterval(pollQueueStatus, 2000);
-      return () => {
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      };
+    if (queuedAgents.length === 0) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
     }
-  }, [inQueue, queuedAgentId, pollQueueStatus]);
+
+    pollRef.current = setInterval(async () => {
+      const current = queuedAgentsRef.current;
+      if (current.length === 0) return;
+
+      const agentIds = current.map((qa) => qa.agentId);
+      const updates = await Promise.allSettled(
+        agentIds.map((id) => api.getQueueStatus(id))
+      );
+
+      // Build maps: agentId -> new status, agentId -> failed
+      const statusMap = new Map<string, QueueStatus>();
+      const failedIds = new Set<string>();
+      let redirectMatchId: string | null = null;
+
+      agentIds.forEach((id, i) => {
+        if (updates[i].status === "fulfilled") {
+          const value = updates[i].value;
+          statusMap.set(id, value);
+          // If backend returned a matchId, the agent was matched
+          if (value.matchId) {
+            redirectMatchId = value.matchId;
+          }
+        } else {
+          // Poll failed — agent likely no longer in queue (matched or removed)
+          failedIds.add(id);
+        }
+      });
+
+      // Redirect to the match if any agent was matched
+      if (redirectMatchId) {
+        router.push(`/matches/${redirectMatchId}`);
+        return;
+      }
+
+      setQueuedAgents((prev) =>
+        prev
+          .map((qa) => {
+            const newStatus = statusMap.get(qa.agentId);
+            return newStatus ? { ...qa, status: newStatus } : qa;
+          })
+          .filter((qa) => {
+            // Remove if poll failed (agent left the queue)
+            if (failedIds.has(qa.agentId)) return false;
+            const s = qa.status?.status;
+            return s !== "matched" && s !== "cancelled";
+          })
+      );
+    }, 2000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [queuedAgents.length]);
 
   const handleJoinQueue = async () => {
     setError("");
@@ -107,7 +152,7 @@ function MatchmakingContent() {
     }
 
     const stake = parseFloat(stakeAmount);
-    if (isNaN(stake) || stake <= 0) {
+    if (isNaN(stake) || stake < 0) {
       setError("Please enter a valid stake amount.");
       setJoining(false);
       return;
@@ -115,9 +160,11 @@ function MatchmakingContent() {
 
     try {
       await api.joinQueue(selectedAgentId, stake, gameType);
-      setQueuedAgentId(selectedAgentId);
-      setInQueue(true);
-      setQueueStatus({ status: "queued" });
+      setQueuedAgents((prev) => [
+        ...prev,
+        { agentId: selectedAgentId, status: { status: "queued" }, cancelling: false },
+      ]);
+      setSelectedAgentId("");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to join queue."
@@ -127,23 +174,31 @@ function MatchmakingContent() {
     }
   };
 
-  const handleCancel = async () => {
-    setCancelling(true);
+  const handleCancel = async (agentId: string) => {
+    setQueuedAgents((prev) =>
+      prev.map((qa) =>
+        qa.agentId === agentId ? { ...qa, cancelling: true } : qa
+      )
+    );
     try {
-      await api.cancelQueue(queuedAgentId);
-      setInQueue(false);
-      setQueuedAgentId("");
-      setQueueStatus(null);
+      await api.cancelQueue(agentId);
+      setQueuedAgents((prev) => prev.filter((qa) => qa.agentId !== agentId));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to cancel."
       );
-    } finally {
-      setCancelling(false);
+      setQueuedAgents((prev) =>
+        prev.map((qa) =>
+          qa.agentId === agentId ? { ...qa, cancelling: false } : qa
+        )
+      );
     }
   };
 
-  const idleAgents = agents.filter((a) => a.status === "idle");
+  const queuedIds = new Set(queuedAgents.map((qa) => qa.agentId));
+  const availableAgents = agents.filter(
+    (a) => a.status === "idle" && !queuedIds.has(a.id)
+  );
 
   if (loading) return <PageSpinner />;
 
@@ -186,24 +241,24 @@ function MatchmakingContent() {
           </div>
         </Card>
 
-        {/* Queue Status (when in queue) */}
-        {inQueue && (
-          <Card className="mb-6 glow-border">
+        {/* Queued Agents Status */}
+        {queuedAgents.map((qa) => (
+          <Card key={qa.agentId} className="mb-6 glow-border">
             <div className="text-center">
               <Spinner size="md" className="mb-4" />
               <CardTitle className="mb-2">In Queue</CardTitle>
               <p className="text-sm text-arena-muted mb-1">
                 Agent:{" "}
                 <span className="text-arena-text">
-                  {agents.find((a) => a.id === queuedAgentId)?.name || queuedAgentId}
+                  {agents.find((a) => a.id === qa.agentId)?.name || qa.agentId}
                 </span>
               </p>
-              {queueStatus && (
+              {qa.status && (
                 <div className="mb-4">
-                  <Badge status={queueStatus.status} />
-                  {queueStatus.position !== undefined && (
+                  <Badge status={qa.status.status} />
+                  {qa.status.position !== undefined && (
                     <span className="ml-2 text-sm text-arena-muted">
-                      Position: {queueStatus.position}
+                      Position: {qa.status.position}
                     </span>
                   )}
                 </div>
@@ -213,76 +268,80 @@ function MatchmakingContent() {
               </p>
               <Button
                 variant="danger"
-                onClick={handleCancel}
-                isLoading={cancelling}
+                onClick={() => handleCancel(qa.agentId)}
+                isLoading={qa.cancelling}
               >
                 Cancel Queue
               </Button>
             </div>
           </Card>
-        )}
+        ))}
 
-        {/* Join Form (when not in queue) */}
-        {!inQueue && (
-          <Card>
-            <CardTitle className="mb-4">Join Queue</CardTitle>
+        {/* Join Form — always visible */}
+        <Card>
+          <CardTitle className="mb-4">Join Queue</CardTitle>
 
-            {idleAgents.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-arena-muted mb-4">
-                  No idle agents available. Create an agent or wait for your
-                  current agents to finish their matches.
-                </p>
-                <a href="/agents/new">
-                  <Button variant="secondary">Create Agent</Button>
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <Select
-                  label="Select Agent"
-                  value={selectedAgentId}
-                  onChange={(e) => setSelectedAgentId(e.target.value)}
-                >
-                  <option value="">Choose an agent...</option>
-                  {idleAgents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name} (ELO: {Math.round(agent.elo)})
-                    </option>
-                  ))}
-                </Select>
+          {availableAgents.length === 0 && queuedAgents.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-arena-muted mb-4">
+                No idle agents available. Create an agent or wait for your
+                current agents to finish their matches.
+              </p>
+              <a href="/agents/new">
+                <Button variant="secondary">Create Agent</Button>
+              </a>
+            </div>
+          ) : availableAgents.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-arena-muted">
+                All your idle agents are already in queue.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <Select
+                label="Select Agent"
+                value={selectedAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+              >
+                <option value="">Choose an agent...</option>
+                {availableAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name} (ELO: {Math.round(agent.elo)})
+                  </option>
+                ))}
+              </Select>
 
-                <Input
-                  label="Stake Amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
-                  helperText="Amount to stake on this match"
-                />
+              <Input
+                label="Stake Amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                helperText="Amount to stake on this match"
+              />
 
-                <div>
-                  <label className="block text-sm font-medium text-arena-text mb-1.5">
-                    Game Type
-                  </label>
-                  <div className="bg-arena-bg border border-arena-border rounded-xl px-4 py-2.5 text-arena-text capitalize">
-                    {gameType}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-arena-text mb-1.5">
+                  Game Type
+                </label>
+                <div className="bg-arena-bg border border-arena-border rounded-xl px-4 py-2.5 text-arena-text capitalize">
+                  {gameType}
                 </div>
-
-                <Button
-                  onClick={handleJoinQueue}
-                  isLoading={joining}
-                  className="w-full"
-                  size="lg"
-                >
-                  Join Queue
-                </Button>
               </div>
-            )}
-          </Card>
-        )}
+
+              <Button
+                onClick={handleJoinQueue}
+                isLoading={joining}
+                className="w-full"
+                size="lg"
+              >
+                Join Queue
+              </Button>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

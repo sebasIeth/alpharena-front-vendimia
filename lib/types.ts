@@ -162,6 +162,11 @@ export interface QueueEntry {
 export interface QueueStatus {
   status: string;
   position?: number;
+  inQueue?: boolean;
+  agentStatus?: string;
+  matchId?: string;
+  matchStatus?: string;
+  gameType?: string;
 }
 
 export interface QueueSize {
