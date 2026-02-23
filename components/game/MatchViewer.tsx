@@ -430,9 +430,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   style={{ backgroundColor: SIDE_COLORS[thinkingSide] || "#8B5CF6" }}
                 />
                 <span className="text-xs text-arena-muted animate-pulse">
-                  {agentLookup.get(
-                    [...agentLookup.entries()].find(([, v]) => v.side === thinkingSide)?.[0] || ""
-                  )?.name || "Agent"}{" "}
+                  {agents.find((_, idx) => ["a", "b", "c", "d"][idx] === thinkingSide)?.agentName || "Agent"}{" "}
                   is thinking...
                 </span>
               </div>
