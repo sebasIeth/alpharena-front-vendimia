@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
 import type { Match, Move, BoardState } from "@/lib/types";
 import MarrakechBoard from "./MarrakechBoard";
 import Badge from "@/components/ui/Badge";
@@ -13,6 +14,7 @@ interface MatchViewerProps {
 }
 
 export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) {
+  const { t } = useLanguage();
   const [moves, setMoves] = useState<Move[]>([]);
   const [loadingMoves, setLoadingMoves] = useState(true);
   const [currentBoard, setCurrentBoard] = useState<BoardState | null | undefined>(
@@ -91,13 +93,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       <div className="lg:col-span-2">
         <div className="bg-arena-card border border-arena-border rounded-xl p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-arena-text">Board</h3>
+            <h3 className="text-lg font-semibold text-arena-text">{t.matchViewer.board}</h3>
             <div className="flex items-center gap-2">
               <Badge status={match.status} />
               {match.status === "active" && (
                 <span className="flex items-center gap-1 text-xs text-arena-success">
                   <span className="w-2 h-2 bg-arena-success rounded-full animate-pulse" />
-                  LIVE
+                  {t.common.live}
                 </span>
               )}
             </div>
@@ -107,25 +109,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           {/* Match Info Below Board */}
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div className="bg-arena-bg rounded-lg p-2 text-center">
-              <div className="text-arena-muted text-xs">Turn</div>
+              <div className="text-arena-muted text-xs">{t.common.turn}</div>
               <div className="text-arena-text font-medium">
                 {match.currentTurn ?? "-"}
               </div>
             </div>
             <div className="bg-arena-bg rounded-lg p-2 text-center">
-              <div className="text-arena-muted text-xs">Moves</div>
+              <div className="text-arena-muted text-xs">{t.common.moves}</div>
               <div className="text-arena-text font-medium">
                 {moves.length || match.moveCount || 0}
               </div>
             </div>
             <div className="bg-arena-bg rounded-lg p-2 text-center">
-              <div className="text-arena-muted text-xs">Stake</div>
+              <div className="text-arena-muted text-xs">{t.common.stake}</div>
               <div className="text-arena-primary font-medium">
                 {match.stakeAmount}
               </div>
             </div>
             <div className="bg-arena-bg rounded-lg p-2 text-center">
-              <div className="text-arena-muted text-xs">Pot</div>
+              <div className="text-arena-muted text-xs">{t.common.pot}</div>
               <div className="text-arena-primary font-medium">{match.pot}</div>
             </div>
           </div>
@@ -136,7 +138,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       <div className="space-y-4">
         {/* Players */}
         <div className="bg-arena-card border border-arena-border rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-arena-text mb-3">Players</h3>
+          <h3 className="text-sm font-semibold text-arena-text mb-3">{t.matchViewer.players}</h3>
           <div className="space-y-3">
             {match.agents.map((agent, idx) => (
               <div
@@ -162,7 +164,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       {agent.agentName}
                     </div>
                     <div className="text-xs text-arena-muted">
-                      by {agent.username}
+                      {t.common.by} {agent.username}
                     </div>
                   </div>
                 </div>
@@ -192,7 +194,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           {/* Result */}
           {match.status === "completed" && match.winnerId && (
             <div className="mt-3 p-3 bg-arena-primary/10 border border-arena-primary/30 rounded-lg">
-              <div className="text-xs text-arena-muted mb-1">Winner</div>
+              <div className="text-xs text-arena-muted mb-1">{t.common.winner}</div>
               <div className="text-sm font-semibold text-arena-primary">
                 {match.agents.find((a) => a.agentId === match.winnerId)
                   ?.agentName || "Unknown"}
@@ -209,16 +211,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         {/* Move History */}
         <div className="bg-arena-card border border-arena-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-arena-text mb-3">
-            Move History
+            {t.matchViewer.moveHistory}
           </h3>
           <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
             {loadingMoves ? (
               <div className="text-center text-sm text-arena-muted py-4">
-                Loading moves...
+                {t.matchViewer.loadingMoves}
               </div>
             ) : moves.length === 0 ? (
               <div className="text-center text-sm text-arena-muted py-4">
-                No moves yet
+                {t.matchViewer.noMoves}
               </div>
             ) : (
               moves.map((move, idx) => (
@@ -244,23 +246,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
         {/* Match Details */}
         <div className="bg-arena-card border border-arena-border rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-arena-text mb-3">Details</h3>
+          <h3 className="text-sm font-semibold text-arena-text mb-3">{t.matchViewer.details}</h3>
           <dl className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <dt className="text-arena-muted">Match ID</dt>
+              <dt className="text-arena-muted">{t.matchViewer.matchId}</dt>
               <dd className="text-arena-text font-mono">{match.id.slice(0, 12)}...</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-arena-muted">Game Type</dt>
+              <dt className="text-arena-muted">{t.common.gameType}</dt>
               <dd className="text-arena-text capitalize">{match.gameType}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-arena-muted">Created</dt>
+              <dt className="text-arena-muted">{t.common.created}</dt>
               <dd className="text-arena-text">{formatDate(match.createdAt)}</dd>
             </div>
             {match.completedAt && (
               <div className="flex justify-between">
-                <dt className="text-arena-muted">Completed</dt>
+                <dt className="text-arena-muted">{t.common.completed}</dt>
                 <dd className="text-arena-text">{formatDate(match.completedAt)}</dd>
               </div>
             )}

@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 import { classNames } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout, initialize } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { lang, setLang, t } = useLanguage();
 
   useEffect(() => {
     initialize();
@@ -25,15 +27,15 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/matches", label: "Matches" },
-    { href: "/leaderboard", label: "Leaderboard" },
+    { href: "/", label: t.nav.home },
+    { href: "/matches", label: t.nav.matches },
+    { href: "/leaderboard", label: t.nav.leaderboard },
   ];
 
   const authLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/agents", label: "My Agents" },
-    { href: "/matchmaking", label: "Matchmaking" },
+    { href: "/dashboard", label: t.nav.dashboard },
+    { href: "/agents", label: t.nav.myAgents },
+    { href: "/matchmaking", label: t.nav.matchmaking },
   ];
 
   const isActive = (href: string) => {
@@ -95,8 +97,32 @@ export default function Navbar() {
               ))}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Auth Buttons + Lang Toggle */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Language Toggle */}
+            <div className="inline-flex items-center bg-arena-card border border-arena-border rounded-lg p-0.5 text-xs">
+              <button
+                onClick={() => setLang("en")}
+                className={`px-2 py-1 rounded-md font-medium transition-all ${
+                  lang === "en"
+                    ? "bg-arena-primary/15 text-arena-primary"
+                    : "text-arena-muted hover:text-arena-text"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLang("es")}
+                className={`px-2 py-1 rounded-md font-medium transition-all ${
+                  lang === "es"
+                    ? "bg-arena-primary/15 text-arena-primary"
+                    : "text-arena-muted hover:text-arena-text"
+                }`}
+              >
+                ES
+              </button>
+            </div>
+
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-arena-muted font-medium">
@@ -106,7 +132,7 @@ export default function Navbar() {
                   onClick={logout}
                   className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card/50 transition-all"
                 >
-                  Logout
+                  {t.nav.logout}
                 </button>
               </div>
             ) : (
@@ -115,13 +141,13 @@ export default function Navbar() {
                   href="/login"
                   className="px-3 py-1.5 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card/50 transition-all"
                 >
-                  Login
+                  {t.nav.login}
                 </Link>
                 <Link
                   href="/register"
                   className="px-4 py-1.5 text-sm bg-arena-primary hover:bg-arena-primary-dark text-arena-bg font-semibold rounded-xl transition-all shadow-arena-glow hover:shadow-arena-glow-strong"
                 >
-                  Sign Up
+                  {t.nav.signUp}
                 </Link>
               </>
             )}
@@ -193,11 +219,38 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+
+            {/* Mobile language toggle */}
+            <div className="px-3 py-2">
+              <div className="inline-flex items-center bg-arena-card border border-arena-border rounded-lg p-0.5 text-xs">
+                <button
+                  onClick={() => setLang("en")}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    lang === "en"
+                      ? "bg-arena-primary/15 text-arena-primary"
+                      : "text-arena-muted hover:text-arena-text"
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang("es")}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    lang === "es"
+                      ? "bg-arena-primary/15 text-arena-primary"
+                      : "text-arena-muted hover:text-arena-text"
+                  }`}
+                >
+                  ES
+                </button>
+              </div>
+            </div>
+
             <div className="pt-2 border-t border-arena-border/50">
               {isAuthenticated ? (
                 <>
                   <div className="px-3 py-2 text-sm text-arena-muted">
-                    Signed in as {user?.username}
+                    {t.nav.signedInAs} {user?.username}
                   </div>
                   <button
                     onClick={() => {
@@ -206,7 +259,7 @@ export default function Navbar() {
                     }}
                     className="block w-full text-left px-3 py-2 text-sm text-arena-danger hover:bg-arena-card rounded-xl"
                   >
-                    Logout
+                    {t.nav.logout}
                   </button>
                 </>
               ) : (
@@ -216,14 +269,14 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 text-center px-3 py-2 text-sm text-arena-muted hover:text-arena-text rounded-xl hover:bg-arena-card"
                   >
-                    Login
+                    {t.nav.login}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 text-center px-3 py-2 text-sm bg-arena-primary text-arena-bg font-semibold rounded-xl"
                   >
-                    Sign Up
+                    {t.nav.signUp}
                   </Link>
                 </div>
               )}

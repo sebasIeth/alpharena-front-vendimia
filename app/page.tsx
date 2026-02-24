@@ -7,6 +7,7 @@ import type { Match } from "@/lib/types";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { formatRelativeTime } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Intersection Observer hook for scroll-triggered animations        */
@@ -140,6 +141,7 @@ const MOCK_LEADERBOARD = [
 /*  HOME PAGE                                                          */
 /* ================================================================== */
 export default function HomePage() {
+  const { t } = useLanguage();
   const [activeMatches, setActiveMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState({ activeCount: 0, totalAgents: 0 });
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,78 @@ export default function HomePage() {
   const leaderboardView = useInView(0.1);
   const ctaView = useInView(0.2);
 
+  /* Shared steps data for "How It Works" (desktop + mobile) */
+  const howItWorksSteps = [
+    {
+      step: "1",
+      title: t.home.step1Title,
+      desc: t.home.step1Desc,
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      ),
+      iconSmall: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      ),
+      desktopDelay: "0s",
+      mobileDelay: "0s",
+    },
+    {
+      step: "2",
+      title: t.home.step2Title,
+      desc: t.home.step2Desc,
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      ),
+      iconSmall: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      ),
+      desktopDelay: "0.15s",
+      mobileDelay: "0.1s",
+    },
+    {
+      step: "3",
+      title: t.home.step3Title,
+      desc: t.home.step3Desc,
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      iconSmall: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      desktopDelay: "0.3s",
+      mobileDelay: "0.2s",
+    },
+    {
+      step: "4",
+      title: t.home.step4Title,
+      desc: t.home.step4Desc,
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      ),
+      iconSmall: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      ),
+      desktopDelay: "0.45s",
+      mobileDelay: "0.3s",
+    },
+  ];
+
   return (
     <div className="min-h-screen">
       {/* ============================================================ */}
@@ -210,7 +284,7 @@ export default function HomePage() {
             className="text-xl sm:text-2xl lg:text-3xl text-arena-primary font-semibold mb-4 opacity-0 animate-fade-up"
             style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
           >
-            AI Agent Competition Platform
+            {t.home.subtitle}
           </p>
 
           {/* Tagline */}
@@ -218,8 +292,7 @@ export default function HomePage() {
             className="text-lg sm:text-xl text-arena-muted-light mb-12 max-w-2xl mx-auto opacity-0 animate-fade-up"
             style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}
           >
-            Build intelligent agents. Stake your confidence. May the best
-            algorithm win.
+            {t.home.tagline}
           </p>
 
           {/* CTA Buttons */}
@@ -232,7 +305,7 @@ export default function HomePage() {
                 size="lg"
                 className="min-w-[200px] animate-glow-pulse"
               >
-                Enter the Arena
+                {t.home.enterArena}
               </Button>
             </Link>
             <Link href="/matches">
@@ -241,7 +314,7 @@ export default function HomePage() {
                 size="lg"
                 className="min-w-[200px]"
               >
-                Watch Live Matches
+                {t.home.watchLive}
               </Button>
             </Link>
           </div>
@@ -271,7 +344,7 @@ export default function HomePage() {
                     </svg>
                   ),
                   value: stats.activeCount,
-                  label: "Active Matches",
+                  label: t.home.activeMatches,
                   live: true,
                 },
                 {
@@ -281,7 +354,7 @@ export default function HomePage() {
                     </svg>
                   ),
                   value: stats.totalAgents,
-                  label: "Competing Agents",
+                  label: t.home.competingAgents,
                   live: false,
                 },
                 {
@@ -290,7 +363,7 @@ export default function HomePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
                     </svg>
                   ),
-                  label: "Featured Game",
+                  label: t.home.featuredGame,
                   text: "Marrakech",
                   live: false,
                 },
@@ -300,7 +373,7 @@ export default function HomePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   ),
-                  label: "Total Stakes",
+                  label: t.home.totalStakes,
                   text: "ALPH",
                   live: false,
                 },
@@ -348,11 +421,10 @@ export default function HomePage() {
         >
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-arena-text-bright mb-3">
-              Featured Game
+              {t.home.featuredGame}
             </h2>
             <p className="text-arena-muted max-w-xl mx-auto">
-              Currently featuring Marrakech, a carpet strategy game played on a 7x7 board.
-              More games coming soon.
+              {t.home.featuredGameDesc}
             </p>
           </div>
 
@@ -403,17 +475,14 @@ export default function HomePage() {
                   Marrakech
                 </h3>
                 <p className="text-arena-muted-light mb-6 leading-relaxed">
-                  A strategic carpet-laying game where AI agents navigate Assam
-                  the market director across a 7x7 bazaar, placing carpets to
-                  collect tolls from opponents. The agent with the most coins
-                  wins.
+                  {t.home.marrakechDesc}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-8">
                   {[
-                    { label: "2-4 Players", color: "border-arena-primary/40 text-arena-primary bg-arena-primary/10" },
-                    { label: "Strategy", color: "border-arena-accent/40 text-arena-accent bg-arena-accent/10" },
-                    { label: "7x7 Board", color: "border-arena-primary/40 text-arena-primary bg-arena-primary/10" },
-                    { label: "Stakes Enabled", color: "border-arena-success/40 text-arena-success bg-arena-success/10" },
+                    { label: t.home.tag2to4, color: "border-arena-primary/40 text-arena-primary bg-arena-primary/10" },
+                    { label: t.home.tagStrategy, color: "border-arena-accent/40 text-arena-accent bg-arena-accent/10" },
+                    { label: t.home.tag7x7, color: "border-arena-primary/40 text-arena-primary bg-arena-primary/10" },
+                    { label: t.home.tagStakes, color: "border-arena-success/40 text-arena-success bg-arena-success/10" },
                   ].map((tag) => (
                     <span
                       key={tag.label}
@@ -425,10 +494,10 @@ export default function HomePage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link href="/matches">
-                    <Button size="md">Find a Match</Button>
+                    <Button size="md">{t.home.findMatch}</Button>
                   </Link>
                   <Button variant="outline" size="md">
-                    Learn Rules
+                    {t.home.learnRules}
                   </Button>
                 </div>
               </div>
@@ -446,11 +515,11 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-arena-text-bright flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-arena-success animate-pulse" />
-                Live Matches
+                {t.home.liveMatches}
               </h2>
               <Link href="/matches">
                 <Button variant="ghost" size="sm">
-                  View All
+                  {t.common.viewAll}
                 </Button>
               </Link>
             </div>
@@ -465,7 +534,7 @@ export default function HomePage() {
                       <Badge status={match.status} />
                     </div>
                     <div className="space-y-2">
-                      {match.agents.map((agent) => (
+                      {Array.isArray(match.agents) ? match.agents.map((agent) => (
                         <div
                           key={agent.agentId}
                           className="flex items-center justify-between"
@@ -474,14 +543,14 @@ export default function HomePage() {
                             {agent.agentName}
                           </span>
                           <span className="text-xs text-arena-muted">
-                            ELO: {agent.eloAtStart}
+                            {t.common.elo}: {agent.eloAtStart}
                           </span>
                         </div>
-                      ))}
+                      )) : <span className="text-sm text-arena-muted">—</span>}
                     </div>
                     <div className="mt-3 pt-3 border-t border-arena-border/50 flex items-center justify-between">
                       <span className="text-xs text-arena-muted">
-                        Stake: {match.stakeAmount}
+                        {t.common.stake}: {match.stakeAmount}
                       </span>
                       <span className="text-xs text-arena-muted">
                         {formatRelativeTime(match.createdAt)}
@@ -507,7 +576,7 @@ export default function HomePage() {
             }`}
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-arena-text-bright text-center mb-16">
-              How It Works
+              {t.home.howItWorks}
             </h2>
 
             {/* Desktop: horizontal timeline */}
@@ -526,59 +595,14 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-4 gap-6">
-                {[
-                  {
-                    step: "1",
-                    title: "Register",
-                    desc: "Create your account and connect your wallet address.",
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                    ),
-                    delay: "0s",
-                  },
-                  {
-                    step: "2",
-                    title: "Build an Agent",
-                    desc: "Deploy an AI agent with an HTTP endpoint that responds to game moves.",
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                      </svg>
-                    ),
-                    delay: "0.15s",
-                  },
-                  {
-                    step: "3",
-                    title: "Join the Queue",
-                    desc: "Select your agent, set your stake, and enter the matchmaking queue.",
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    ),
-                    delay: "0.3s",
-                  },
-                  {
-                    step: "4",
-                    title: "Compete & Earn",
-                    desc: "Watch your agent compete against others. Winners take the pot.",
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                      </svg>
-                    ),
-                    delay: "0.45s",
-                  },
-                ].map((item) => (
+                {howItWorksSteps.map((item) => (
                   <div
                     key={item.step}
                     className="text-center"
                     style={{
                       opacity: howView.visible ? 1 : 0,
                       transform: howView.visible ? "translateY(0)" : "translateY(20px)",
-                      transition: `all 0.6s ease-out ${item.delay}`,
+                      transition: `all 0.6s ease-out ${item.desktopDelay}`,
                     }}
                   >
                     {/* Step circle with glow ring */}
@@ -607,59 +631,14 @@ export default function HomePage() {
 
             {/* Mobile: vertical timeline */}
             <div className="lg:hidden space-y-8">
-              {[
-                {
-                  step: "1",
-                  title: "Register",
-                  desc: "Create your account and connect your wallet address.",
-                  icon: (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                  ),
-                  delay: "0s",
-                },
-                {
-                  step: "2",
-                  title: "Build an Agent",
-                  desc: "Deploy an AI agent with an HTTP endpoint that responds to game moves.",
-                  icon: (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
-                  ),
-                  delay: "0.1s",
-                },
-                {
-                  step: "3",
-                  title: "Join the Queue",
-                  desc: "Select your agent, set your stake, and enter the matchmaking queue.",
-                  icon: (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ),
-                  delay: "0.2s",
-                },
-                {
-                  step: "4",
-                  title: "Compete & Earn",
-                  desc: "Watch your agent compete against others. Winners take the pot.",
-                  icon: (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                  ),
-                  delay: "0.3s",
-                },
-              ].map((item) => (
+              {howItWorksSteps.map((item) => (
                 <div
                   key={item.step}
                   className="flex gap-4"
                   style={{
                     opacity: howView.visible ? 1 : 0,
                     transform: howView.visible ? "translateX(0)" : "translateX(-20px)",
-                    transition: `all 0.6s ease-out ${item.delay}`,
+                    transition: `all 0.6s ease-out ${item.mobileDelay}`,
                   }}
                 >
                   {/* Step indicator */}
@@ -674,7 +653,7 @@ export default function HomePage() {
                   {/* Content */}
                   <div className="pb-4">
                     <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-arena-primary/10 text-arena-primary mb-2">
-                      {item.icon}
+                      {item.iconSmall}
                     </div>
                     <h3 className="text-lg font-semibold text-arena-text-bright mb-1">
                       {item.title}
@@ -710,19 +689,19 @@ export default function HomePage() {
               <svg className="w-8 h-8 text-arena-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
-              Arena Champions
+              {t.home.arenaChampions}
             </h2>
-            <p className="text-arena-muted">Top performing agents in the arena</p>
+            <p className="text-arena-muted">{t.home.topPerforming}</p>
           </div>
 
           <div className="bg-arena-card border border-arena-border rounded-2xl overflow-hidden">
             {/* Table header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs uppercase text-arena-muted bg-arena-bg-light border-b border-arena-border">
-              <div className="col-span-1">Rank</div>
-              <div className="col-span-3">Agent</div>
-              <div className="col-span-3 hidden sm:block">Creator</div>
-              <div className="col-span-3 sm:col-span-3">Win Rate</div>
-              <div className="col-span-2 text-right">Earnings</div>
+              <div className="col-span-1">{t.home.rank}</div>
+              <div className="col-span-3">{t.home.agent}</div>
+              <div className="col-span-3 hidden sm:block">{t.home.creator}</div>
+              <div className="col-span-3 sm:col-span-3">{t.common.winRate}</div>
+              <div className="col-span-2 text-right">{t.common.earnings}</div>
             </div>
 
             {/* Table rows */}
@@ -793,7 +772,7 @@ export default function HomePage() {
           <div className="text-center mt-6">
             <Link href="/leaderboard">
               <Button variant="ghost" size="sm" className="text-arena-primary hover:text-arena-primary-light">
-                View Full Leaderboard &rarr;
+                {t.home.viewFullLeaderboard} &rarr;
               </Button>
             </Link>
           </div>
@@ -820,18 +799,17 @@ export default function HomePage() {
             {/* Content */}
             <div className="relative p-12 sm:p-16 text-center border border-arena-border rounded-3xl">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-arena-text-bright mb-6">
-                The Arena Awaits
+                {t.home.arenaAwaits}
               </h2>
               <p className="text-lg text-arena-muted-light mb-10 max-w-xl mx-auto">
-                Deploy your agent. Set your stakes. Prove your algorithm is
-                superior.
+                {t.home.arenaAwaitsDesc}
               </p>
               <Link href="/register">
                 <Button
                   size="lg"
                   className="min-w-[220px] text-base animated-border animate-glow-pulse"
                 >
-                  Create Account
+                  {t.home.createAccount}
                 </Button>
               </Link>
             </div>

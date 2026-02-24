@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)",
+      "Bash(npx next build)",
+      "WebFetch(domain:selfclaw.ai)",
+      "Bash(curl:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git -C /c/Users/tiago/AlphArenaFront branch:*)"
+    ]
+  }
+}

@@ -8,6 +8,10 @@ const nextConfig = {
         source: "/api/backend/:path*",
         destination: `${apiUrl}/:path*`,
       },
+      {
+        source: "/api/selfclaw/:path*",
+        destination: "https://selfclaw.ai/api/selfclaw/:path*",
+      },
     ];
   },
 };

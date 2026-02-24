@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -13,12 +14,19 @@ import type { Match } from "@/lib/types";
 type Tab = "all" | "active" | "completed";
 
 export default function MatchesPage() {
+  const { t } = useLanguage();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const tabLabels: Record<Tab, string> = {
+    all: t.matchesList.all,
+    active: t.matchesList.active,
+    completed: t.matchesList.completed,
+  };
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -33,11 +41,11 @@ export default function MatchesPage() {
       setMatches(data.matches || []);
       setTotalPages(data.pages || 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load matches.");
+      setError(err instanceof Error ? err.message : t.matchesList.loadFailed);
     } finally {
       setLoading(false);
     }
-  }, [tab, page]);
+  }, [tab, page, t.matchesList.loadFailed]);
 
   useEffect(() => {
     fetchMatches();
@@ -51,25 +59,25 @@ export default function MatchesPage() {
   return (
     <div className="page-container">
       <div className="mb-8">
-        <h1 className="page-title">Matches</h1>
+        <h1 className="page-title">{t.matchesList.title}</h1>
         <p className="text-arena-muted">
-          Browse and watch AI agent matches.
+          {t.matchesList.subtitle}
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-6 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border shadow-arena-sm">
-        {(["all", "active", "completed"] as Tab[]).map((t) => (
+        {(["all", "active", "completed"] as Tab[]).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => handleTabChange(t)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all capitalize ${
-              tab === t
+            key={tabKey}
+            onClick={() => handleTabChange(tabKey)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              tab === tabKey
                 ? "bg-arena-primary text-white shadow-arena-sm"
                 : "text-arena-muted hover:text-arena-text"
             }`}
           >
-            {t}
+            {tabLabels[tabKey]}
           </button>
         ))}
       </div>
@@ -85,13 +93,13 @@ export default function MatchesPage() {
       ) : matches.length === 0 ? (
         <Card>
           <div className="text-center py-12 text-arena-muted">
-            <p className="text-lg mb-2">No matches found</p>
+            <p className="text-lg mb-2">{t.matchesList.noMatchesFound}</p>
             <p className="text-sm">
               {tab === "active"
-                ? "No active matches at the moment."
+                ? t.matchesList.noActive
                 : tab === "completed"
-                ? "No completed matches yet."
-                : "No matches have been played yet."}
+                ? t.matchesList.noCompleted
+                : t.matchesList.noMatches}
             </p>
           </div>
         </Card>
@@ -111,7 +119,7 @@ export default function MatchesPage() {
                       {match.status === "active" && (
                         <span className="flex items-center gap-1 text-[10px] text-arena-success">
                           <span className="w-1.5 h-1.5 bg-arena-success rounded-full animate-pulse" />
-                          LIVE
+                          {t.common.live}
                         </span>
                       )}
                     </div>
@@ -170,7 +178,7 @@ export default function MatchesPage() {
                   {match.status === "completed" && match.winnerId && (
                     <div className="bg-arena-success/10 rounded-xl px-2 py-1 mb-3">
                       <span className="text-xs text-arena-success font-medium">
-                        Winner:{" "}
+                        {t.common.winner}:{" "}
                         {match.agents.find(
                           (a) => a.agentId === match.winnerId
                         )?.agentName || "Unknown"}
@@ -181,7 +189,7 @@ export default function MatchesPage() {
                   {/* Footer */}
                   <div className="pt-3 border-t border-arena-border/50 flex items-center justify-between">
                     <span className="text-xs text-arena-muted">
-                      Stake: {match.stakeAmount} | Pot: {match.pot}
+                      {t.common.stake}: {match.stakeAmount} | {t.common.pot}: {match.pot}
                     </span>
                     <span className="text-xs text-arena-muted">
                       {formatRelativeTime(match.createdAt)}
@@ -201,7 +209,7 @@ export default function MatchesPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
-                Previous
+                {t.common.previous}
               </Button>
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(totalPages, 7) }).map(
@@ -238,7 +246,7 @@ export default function MatchesPage() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
               >
-                Next
+                {t.common.next}
               </Button>
             </div>
           )}

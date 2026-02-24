@@ -158,6 +158,24 @@ class ApiClient {
     return this.post<{ reply: string }>(`/agents/${agentId}/chat`, { message });
   }
 
+  // ========== SelfClaw ==========
+  async verifySelfClaw(publicKey: string): Promise<{ verified: boolean; agentName?: string; humanId?: string }> {
+    const url = `/api/selfclaw/v1/agent?publicKey=${encodeURIComponent(publicKey)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`SelfClaw verification failed with status ${response.status}`);
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("SelfClaw returned an unexpected response. Try restarting the dev server.");
+    }
+    const data = await response.json();
+    if (typeof data.verified !== "boolean") {
+      throw new Error("Invalid response from SelfClaw API");
+    }
+    return data;
+  }
+
   // ========== Matchmaking ==========
   async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
     return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {
