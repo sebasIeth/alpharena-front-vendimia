@@ -125,3 +125,39 @@ export function getDirectionArrow(direction: string): string {
 export function classNames(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
+
+/**
+ * Backend sends match.agents as object {a: {...}, b: {...}, _id: "..."} not as array.
+ * Also uses "name" instead of "agentName" and may lack "username".
+ * This normalizes it to the MatchAgent[] array format the frontend expects.
+ */
+export function normalizeMatchAgents(agents: any): {
+  agentId: string;
+  agentName: string;
+  userId: string;
+  username: string;
+  eloAtStart: number;
+  eloChange?: number;
+  finalScore?: number;
+}[] {
+  if (Array.isArray(agents)) return agents;
+  if (agents && typeof agents === "object") {
+    const result: any[] = [];
+    for (const key of ["a", "b", "c", "d"]) {
+      const val = agents[key];
+      if (val && typeof val === "object") {
+        result.push({
+          agentId: val.agentId || val.id || "",
+          agentName: val.agentName || val.name || "Agent",
+          userId: val.userId || "",
+          username: val.username || val.ownerUsername || "",
+          eloAtStart: val.eloAtStart ?? val.elo ?? 0,
+          eloChange: val.eloChange,
+          finalScore: val.finalScore,
+        });
+      }
+    }
+    return result;
+  }
+  return [];
+}

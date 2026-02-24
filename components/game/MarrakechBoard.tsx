@@ -1,11 +1,15 @@
 "use client";
 
 import React from "react";
-import type { BoardState, CarpetCell } from "@/lib/types";
+import type { BoardState, AssamPosition } from "@/lib/types";
 import { getPlayerColor, getPlayerColorName, getDirectionArrow } from "@/lib/utils";
 
 interface MarrakechBoardProps {
   boardState: BoardState | null | undefined;
+  /** Override assam position (for when board is a raw 2D array without assam data) */
+  assamOverride?: AssamPosition | null;
+  /** Number of players in this match (controls legend colors) */
+  playerCount?: number;
   size?: number;
 }
 
@@ -33,14 +37,17 @@ function EmptyBoard() {
   );
 }
 
-export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps) {
-  if (!boardState || !boardState.grid) {
+export default function MarrakechBoard({ boardState, assamOverride, playerCount = 4, size }: MarrakechBoardProps) {
+  // Support boardState as { grid, assam, players } or just a raw 2D array
+  const bs = boardState as any;
+  const grid = bs?.grid || (Array.isArray(bs) ? bs : null);
+  const assam = assamOverride || bs?.assam || null;
+  const players = bs?.players || null;
+  const effectivePlayerCount = Math.min(Math.max(playerCount, 2), 4);
+
+  if (!grid || !Array.isArray(grid) || grid.length === 0) {
     return <EmptyBoard />;
   }
-
-  const grid = boardState.grid;
-  const assam = boardState.assam;
-  const players = boardState.players;
 
   const cellSize = size ? Math.floor(size / GRID_SIZE) : undefined;
 
@@ -53,10 +60,25 @@ export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps
       >
         {Array.from({ length: GRID_SIZE }).map((_, row) =>
           Array.from({ length: GRID_SIZE }).map((_, col) => {
-            const cell: CarpetCell | undefined = grid[row]?.[col];
+            const rawCell = grid[row]?.[col];
+            // Support multiple cell formats: { playerId }, { owner }, number, or null
+            // Backend numeric format: 0 = empty, 1+ = player (1-based), -1 = neutralized
+            let playerId = -2; // -2 = empty/unknown
+            if (rawCell != null) {
+              if (typeof rawCell === "number") {
+                if (rawCell === 0) {
+                  playerId = -2; // empty cell
+                } else if (rawCell > 0) {
+                  playerId = rawCell - 1; // convert 1-based backend to 0-based frontend
+                } else {
+                  playerId = rawCell; // -1 = neutralized
+                }
+              } else if (typeof rawCell === "object") {
+                playerId = (rawCell as any).playerId ?? (rawCell as any).owner ?? -2;
+              }
+            }
             const isAssam =
               assam && assam.row === row && assam.col === col;
-            const playerId = cell?.playerId ?? -2;
             const hasCarpet = playerId >= -1 && playerId !== -2;
             const bgColor =
               hasCarpet && playerId !== -2
@@ -115,9 +137,9 @@ export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps
         )}
       </div>
 
-      {/* Legend */}
+      {/* Legend — only show colors for actual number of players */}
       <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
-        {[0, 1, 2, 3].map((pid) => (
+        {Array.from({ length: effectivePlayerCount }).map((_, pid) => (
           <div key={pid} className="flex items-center gap-1.5">
             <div
               className="w-3 h-3 rounded-sm"
@@ -137,12 +159,16 @@ export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps
       </div>
 
       {/* Player States */}
-      {players && players.length > 0 && (
+      {players && Array.isArray(players) && players.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
           {players.map((player) => (
             <div
               key={player.id}
-              className="bg-arena-bg rounded-lg p-2 text-center border border-arena-border/50"
+              className={`bg-arena-bg rounded-lg p-2 text-center border ${
+                player.eliminated
+                  ? "border-red-500/40 opacity-60"
+                  : "border-arena-border/50"
+              }`}
             >
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <div
@@ -150,11 +176,16 @@ export default function MarrakechBoard({ boardState, size }: MarrakechBoardProps
                   style={{ backgroundColor: getPlayerColor(player.id) }}
                 />
                 <span className="text-xs font-medium text-arena-text">
-                  {getPlayerColorName(player.id)}
+                  {player.name || getPlayerColorName(player.id)}
                 </span>
+                {player.eliminated && (
+                  <span className="text-[9px] font-bold text-red-400 uppercase">Out</span>
+                )}
               </div>
               <div className="text-[10px] text-arena-muted">
-                <span className="text-arena-primary font-medium">{player.coins}</span> coins
+                <span className="text-arena-primary font-medium">
+                  {player.dirhams ?? player.coins}
+                </span> dirhams
                 {" | "}
                 <span className="text-arena-primary font-medium">{player.carpetsRemaining}</span> carpets
               </div>

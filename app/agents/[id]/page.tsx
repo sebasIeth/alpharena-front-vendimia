@@ -11,7 +11,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatElo, formatWinRate, formatDate, formatRelativeTime } from "@/lib/utils";
+import { formatElo, formatWinRate, formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
 interface ChatMessage {
@@ -471,7 +471,7 @@ function AgentDetailContent() {
         ) : (
           <div className="space-y-3">
             {recentMatches.map((match) => {
-              const agentsArr = Array.isArray(match.agents) ? match.agents : [];
+              const agentsArr = normalizeMatchAgents(match.agents);
               const agentEntry = agentsArr.find(
                 (a) => a.agentId === agentId
               );

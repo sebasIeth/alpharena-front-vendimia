@@ -1,3 +1,4 @@
+import type { Socket } from "socket.io-client";
 import type {
   AuthResponse,
   LoginPayload,
@@ -23,7 +24,7 @@ import type {
 const API_URL = typeof window !== "undefined"
   ? "/api/backend"
   : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000");
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000";
+const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3001";
 
 class ApiClient {
   private baseUrl: string;
@@ -220,12 +221,28 @@ class ApiClient {
     return this.get<AgentStatsResponse>(`/leaderboard/agents/${id}/stats`, false);
   }
 
-  // ========== WebSocket ==========
-  connectMatchWS(matchId: string): WebSocket | null {
-    const token = this.getToken();
+  // ========== Socket.IO ==========
+  connectMatchSocket(matchId: string): Socket | null {
     if (typeof window === "undefined") return null;
-    const url = `${WS_URL}/ws/matches/${matchId}${token ? `?token=${token}` : ""}`;
-    return new WebSocket(url);
+    const token = this.getToken();
+    // Dynamic import to avoid SSR issues with socket.io-client
+    const { io } = require("socket.io-client");
+    const socket: Socket = io(`${SOCKET_URL}/ws`, {
+      query: { token: token || "", matchId },
+      transports: ["websocket", "polling"],
+    });
+    return socket;
+  }
+
+  connectSocket(): Socket | null {
+    if (typeof window === "undefined") return null;
+    const token = this.getToken();
+    const { io } = require("socket.io-client");
+    const socket: Socket = io(`${SOCKET_URL}/ws`, {
+      query: { token: token || "" },
+      transports: ["websocket", "polling"],
+    });
+    return socket;
   }
 }
 

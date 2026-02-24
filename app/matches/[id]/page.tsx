@@ -9,6 +9,7 @@ import { PageSpinner } from "@/components/ui/Spinner";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import type { Match } from "@/lib/types";
+import { normalizeMatchAgents } from "@/lib/utils";
 
 export default function MatchDetailPage() {
   const params = useParams();
@@ -94,7 +95,7 @@ export default function MatchDetailPage() {
               Match Result
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(Array.isArray(match.agents) ? match.agents : []).map((agent, idx) => {
+              {normalizeMatchAgents(match.agents).map((agent, idx) => {
                 const isWinner = match.winnerId === agent.agentId;
                 return (
                   <div

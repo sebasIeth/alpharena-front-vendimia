@@ -10,7 +10,7 @@ import Card, { CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatRelativeTime, formatWinRate } from "@/lib/utils";
+import { formatRelativeTime, formatWinRate, normalizeMatchAgents } from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
 function DashboardContent() {
@@ -205,7 +205,7 @@ function DashboardContent() {
                         {match.gameType}
                       </span>
                       <div className="text-sm text-arena-text">
-                        {(Array.isArray(match.agents) ? match.agents : [])
+                        {normalizeMatchAgents(match.agents)
                           .map((a) => a.agentName)
                           .join(" vs ") || "Unknown"}
                       </div>

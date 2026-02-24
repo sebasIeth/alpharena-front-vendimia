@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import AuthGuard from "@/components/AuthGuard";
@@ -12,11 +12,18 @@ import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
 import Spinner from "@/components/ui/Spinner";
 import type { Agent, QueueStatus } from "@/lib/types";
+import type { Socket } from "socket.io-client";
 
 interface QueuedAgent {
   agentId: string;
   status: QueueStatus | null;
   cancelling: boolean;
+}
+
+interface CountdownAgent {
+  agentId: string;
+  name?: string;
+  eloAtStart?: number;
 }
 
 function MatchmakingContent() {
@@ -34,11 +41,19 @@ function MatchmakingContent() {
   const [gameType] = useState("marrakech");
   const [joining, setJoining] = useState(false);
 
-  // Queue state — supports multiple agents
+  // Queue state
   const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
 
+  // Backend countdown state (broadcast via WebSocket)
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(30);
+  const [countdownAgents, setCountdownAgents] = useState<CountdownAgent[]>([]);
+  const COUNTDOWN_TOTAL = 30;
+
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const queuedAgentIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch agents
   useEffect(() => {
@@ -70,11 +85,62 @@ function MatchmakingContent() {
     return () => clearInterval(interval);
   }, [gameType]);
 
-  // Keep a ref to queued agents so the poll interval always reads the latest
+  // WebSocket: listen for countdown ticks and match creation
+  useEffect(() => {
+    const socket = api.connectSocket();
+    if (!socket) return;
+    socketRef.current = socket;
+
+    socket.onAny((eventName: string, raw: any) => {
+      if (eventName !== "message") return;
+      const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const type = msg?.type;
+      const data = msg?.data;
+      if (!type || !data) return;
+
+      if (type === "matchmaking:countdown") {
+        const remainingMs = data.remainingMs ?? data.remaining ?? 0;
+        const agentsList: CountdownAgent[] = Array.isArray(data.agents)
+          ? data.agents
+          : [];
+        const seconds = Math.ceil(remainingMs / 1000);
+
+        if (seconds > 0) {
+          setCountdownActive(true);
+          setCountdownSeconds(seconds);
+          setCountdownAgents(agentsList);
+        } else {
+          setCountdownActive(false);
+          setCountdownSeconds(0);
+        }
+      }
+
+      if (type === "matchmaking:matched") {
+        const matchId = data.matchId;
+        const matchedAgentIds: string[] = Array.isArray(data.agents) ? data.agents : [];
+
+        if (!matchId) return;
+
+        // Check if any of MY queued agents are in this match
+        const myIds = queuedAgentIdsRef.current;
+        const myAgentMatched = matchedAgentIds.some((id) => myIds.has(id));
+
+        if (myAgentMatched) {
+          router.push(`/matches/${matchId}`);
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [router]);
+
+  // Poll queue status for queued agents (updates badge, position, etc.)
   const queuedAgentsRef = useRef<QueuedAgent[]>([]);
   queuedAgentsRef.current = queuedAgents;
 
-  // Poll queue status for all queued agents
   useEffect(() => {
     if (queuedAgents.length === 0) {
       if (pollRef.current) {
@@ -93,30 +159,21 @@ function MatchmakingContent() {
         agentIds.map((id) => api.getQueueStatus(id))
       );
 
-      // Build maps: agentId -> new status, agentId -> failed
       const statusMap = new Map<string, QueueStatus>();
       const failedIds = new Set<string>();
-      let redirectMatchId: string | null = null;
 
       agentIds.forEach((id, i) => {
         if (updates[i].status === "fulfilled") {
           const value = updates[i].value;
           statusMap.set(id, value);
-          // If backend returned a matchId, the agent was matched
+          // Redirect if queue status returns a matchId too
           if (value.matchId) {
-            redirectMatchId = value.matchId;
+            router.push(`/matches/${value.matchId}`);
           }
         } else {
-          // Poll failed — agent likely no longer in queue (matched or removed)
           failedIds.add(id);
         }
       });
-
-      // Redirect to the match if any agent was matched
-      if (redirectMatchId) {
-        router.push(`/matches/${redirectMatchId}`);
-        return;
-      }
 
       setQueuedAgents((prev) =>
         prev
@@ -125,7 +182,6 @@ function MatchmakingContent() {
             return newStatus ? { ...qa, status: newStatus } : qa;
           })
           .filter((qa) => {
-            // Remove if poll failed (agent left the queue)
             if (failedIds.has(qa.agentId)) return false;
             const s = qa.status?.status;
             return s !== "matched" && s !== "cancelled";
@@ -139,7 +195,7 @@ function MatchmakingContent() {
         pollRef.current = null;
       }
     };
-  }, [queuedAgents.length]);
+  }, [queuedAgents.length, router]);
 
   const handleJoinQueue = async () => {
     setError("");
@@ -160,6 +216,7 @@ function MatchmakingContent() {
 
     try {
       await api.joinQueue(selectedAgentId, stake, gameType);
+      queuedAgentIdsRef.current.add(selectedAgentId);
       setQueuedAgents((prev) => [
         ...prev,
         { agentId: selectedAgentId, status: { status: "queued" }, cancelling: false },
@@ -182,6 +239,7 @@ function MatchmakingContent() {
     );
     try {
       await api.cancelQueue(agentId);
+      queuedAgentIdsRef.current.delete(agentId);
       setQueuedAgents((prev) => prev.filter((qa) => qa.agentId !== agentId));
     } catch (err) {
       setError(
@@ -241,6 +299,73 @@ function MatchmakingContent() {
           </div>
         </Card>
 
+        {/* Backend Countdown */}
+        {countdownActive && (
+          <Card className="mb-6 glow-border">
+            <div className="text-center">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="text-arena-border"
+                  />
+                  <circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - countdownSeconds / COUNTDOWN_TOTAL)}`}
+                    strokeLinecap="round"
+                    className="text-arena-primary transition-all duration-1000 ease-linear"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-arena-primary">{countdownSeconds}</span>
+                </div>
+              </div>
+
+              <CardTitle className="mb-2">Match Starting Soon</CardTitle>
+              <p className="text-sm text-arena-muted mb-1">
+                Waiting{" "}
+                <span className="text-arena-primary font-medium">{countdownSeconds}s</span>{" "}
+                for more agents to join...
+              </p>
+              <p className="text-xs text-arena-muted mb-4">
+                The match will start automatically when the countdown ends.
+              </p>
+
+              {countdownAgents.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-arena-muted uppercase tracking-wider">
+                    Agents Ready ({countdownAgents.length})
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {countdownAgents.map((ca) => (
+                      <div
+                        key={ca.agentId}
+                        className="bg-arena-bg border border-arena-border rounded-lg px-3 py-1.5 text-sm"
+                      >
+                        <span className="text-arena-text font-medium">
+                          {ca.name || ca.agentId.slice(0, 8)}
+                        </span>
+                        {ca.eloAtStart !== undefined && (
+                          <span className="text-arena-muted ml-1.5 text-xs">
+                            ({ca.eloAtStart})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* Queued Agents Status */}
         {queuedAgents.map((qa) => (
           <Card key={qa.agentId} className="mb-6 glow-border">
@@ -255,7 +380,7 @@ function MatchmakingContent() {
               </p>
               {qa.status && (
                 <div className="mb-4">
-                  <Badge status={qa.status.status} />
+                  <Badge status={qa.status.status || qa.status.agentStatus || "queued"} />
                   {qa.status.position !== undefined && (
                     <span className="ml-2 text-sm text-arena-muted">
                       Position: {qa.status.position}
@@ -264,7 +389,9 @@ function MatchmakingContent() {
                 </div>
               )}
               <p className="text-xs text-arena-muted mb-4">
-                Waiting for an opponent... Polling every 2 seconds.
+                {countdownActive
+                  ? "Countdown active — match will start soon!"
+                  : "Waiting for an opponent... Polling every 2 seconds."}
               </p>
               <Button
                 variant="danger"
@@ -277,7 +404,7 @@ function MatchmakingContent() {
           </Card>
         ))}
 
-        {/* Join Form — always visible */}
+        {/* Join Form */}
         <Card>
           <CardTitle className="mb-4">Join Queue</CardTitle>
 

@@ -147,7 +147,23 @@ export interface PlayerState {
   id: number;
   coins: number;
   carpetsRemaining: number;
+  dirhams?: number;
+  name?: string;
+  eliminated?: boolean;
 }
+
+export interface DiceResult {
+  value: number;
+  faces: number[];
+}
+
+export interface TributeEvent {
+  fromPlayerId: number;
+  toPlayerId: number;
+  amount: number;
+}
+
+export type GamePhase = "roll" | "tribute" | "place";
 
 // ========== Matchmaking ==========
 export interface QueueEntry {

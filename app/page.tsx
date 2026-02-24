@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { Match } from "@/lib/types";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  Intersection Observer hook for scroll-triggered animations        */
@@ -468,7 +468,7 @@ export default function HomePage() {
                       <Badge status={match.status} />
                     </div>
                     <div className="space-y-2">
-                      {(Array.isArray(match.agents) ? match.agents : []).map((agent) => (
+                      {normalizeMatchAgents(match.agents).map((agent) => (
                         <div
                           key={agent.agentId}
                           className="flex items-center justify-between"
