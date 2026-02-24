@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
 import { PageSpinner } from "@/components/ui/Spinner";
 import Card from "@/components/ui/Card";
@@ -12,6 +13,7 @@ import type { Match } from "@/lib/types";
 import { normalizeMatchAgents } from "@/lib/utils";
 
 export default function MatchDetailPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const matchId = params.id as string;
 
@@ -32,14 +34,14 @@ export default function MatchDetailPage() {
         setMatch({ ...m, id: m.id || (m as any)._id });
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load match."
+          err instanceof Error ? err.message : t.matchDetail.loadFailed
         );
       } finally {
         setLoading(false);
       }
     }
     fetchMatch();
-  }, [matchId]);
+  }, [matchId, t.matchDetail.loadFailed]);
 
   const handleMatchUpdate = useCallback((updatedMatch: Match) => {
     setMatch(updatedMatch);
@@ -53,10 +55,10 @@ export default function MatchDetailPage() {
         <Card>
           <div className="text-center py-8">
             <p className="text-arena-accent mb-4">
-              {error || "Match not found."}
+              {error || t.matchDetail.matchNotFound}
             </p>
             <Link href="/matches">
-              <Button variant="secondary">Back to Matches</Button>
+              <Button variant="secondary">{t.matchDetail.backToMatches}</Button>
             </Link>
           </div>
         </Card>
@@ -71,13 +73,13 @@ export default function MatchDetailPage() {
         href="/matches"
         className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 inline-block"
       >
-        &larr; Back to Matches
+        {t.matchDetail.backToMatches}
       </Link>
 
       {/* Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-arena-text">
-          <span className="capitalize">{match.gameType}</span> Match
+          <span className="capitalize">{match.gameType}</span> {t.matchDetail.match}
         </h1>
         <p className="text-sm text-arena-muted font-mono mt-1">
           {match.id}
@@ -92,7 +94,7 @@ export default function MatchDetailPage() {
         <div className="mt-6">
           <Card className="glow-border">
             <h3 className="text-lg font-semibold text-arena-text mb-4">
-              Match Result
+              {t.matchDetail.matchResult}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {normalizeMatchAgents(match.agents).map((agent, idx) => {
@@ -127,16 +129,16 @@ export default function MatchDetailPage() {
                       </div>
                       {isWinner && (
                         <span className="text-xs bg-arena-success/20 text-arena-success px-2 py-0.5 rounded font-medium">
-                          WINNER
+                          {t.common.winner.toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div className="text-sm text-arena-muted">
-                      by {agent.username}
+                      {t.common.by} {agent.username}
                     </div>
                     <div className="mt-2 flex items-center gap-4 text-sm">
                       <span className="text-arena-muted">
-                        ELO: {agent.eloAtStart}
+                        {t.common.elo}: {agent.eloAtStart}
                       </span>
                       {agent.eloChange !== undefined &&
                         agent.eloChange !== null && (
@@ -155,7 +157,7 @@ export default function MatchDetailPage() {
                         )}
                       {agent.finalScore !== undefined && (
                         <span className="text-arena-primary">
-                          Score: {agent.finalScore}
+                          {t.common.score}: {agent.finalScore}
                         </span>
                       )}
                     </div>
@@ -165,7 +167,7 @@ export default function MatchDetailPage() {
             </div>
             {match.result && (
               <div className="mt-4 p-3 bg-arena-bg rounded-lg">
-                <span className="text-xs text-arena-muted">Result: </span>
+                <span className="text-xs text-arena-muted">{t.common.result}: </span>
                 <span className="text-sm text-arena-text">
                   {typeof match.result === "string"
                     ? match.result

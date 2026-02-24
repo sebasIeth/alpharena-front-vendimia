@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import type { Agent } from "@/lib/types";
 
 function AgentsContent() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,7 +27,7 @@ function AgentsContent() {
         const data = await api.getAgents();
         setAgents(data.agents || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load agents.");
+        setError(err instanceof Error ? err.message : t.agents.loadFailed);
       } finally {
         setLoading(false);
       }
@@ -39,13 +41,13 @@ function AgentsContent() {
     <div className="page-container">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="page-title">My Agents</h1>
+          <h1 className="page-title">{t.agents.title}</h1>
           <p className="text-arena-muted">
-            Manage your AI agents and view their performance.
+            {t.agents.subtitle}
           </p>
         </div>
         <Link href="/agents/new">
-          <Button>Create Agent</Button>
+          <Button>{t.agents.createAgent}</Button>
         </Link>
       </div>
 
@@ -60,14 +62,13 @@ function AgentsContent() {
           <div className="text-center py-12">
             <div className="text-4xl text-arena-muted mb-4">&#129302;</div>
             <h3 className="text-lg font-medium text-arena-text mb-2">
-              No Agents Yet
+              {t.agents.noAgentsTitle}
             </h3>
             <p className="text-arena-muted mb-6 max-w-md mx-auto">
-              Create your first AI agent to start competing in the arena.
-              You&apos;ll need an HTTP endpoint that can respond to game moves.
+              {t.agents.noAgentsDesc}
             </p>
             <Link href="/agents/new">
-              <Button>Create Your First Agent</Button>
+              <Button>{t.agents.createFirst}</Button>
             </Link>
           </div>
         </Card>
@@ -94,19 +95,19 @@ function AgentsContent() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <div className="text-xs text-arena-muted">ELO</div>
+                    <div className="text-xs text-arena-muted">{t.common.elo}</div>
                     <div className="font-medium text-arena-primary">
                       {formatElo(agent.elo)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-arena-muted">Win Rate</div>
+                    <div className="text-xs text-arena-muted">{t.common.winRate}</div>
                     <div className="font-medium text-arena-text">
                       {formatWinRate(agent.stats?.winRate || 0)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-arena-muted">W/L/D</div>
+                    <div className="text-xs text-arena-muted">{t.agents.wld}</div>
                     <div className="font-medium text-arena-text">
                       {agent.stats?.wins || 0}/{agent.stats?.losses || 0}/
                       {agent.stats?.draws || 0}
@@ -122,13 +123,13 @@ function AgentsContent() {
             <Table>
               <TableHeader>
                 <tr>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>ELO</TableHead>
-                  <TableHead>Win Rate</TableHead>
-                  <TableHead>W/L/D</TableHead>
-                  <TableHead>Matches</TableHead>
-                  <TableHead>Earnings</TableHead>
+                  <TableHead>{t.common.name}</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
+                  <TableHead>{t.common.elo}</TableHead>
+                  <TableHead>{t.common.winRate}</TableHead>
+                  <TableHead>{t.agents.wld}</TableHead>
+                  <TableHead>{t.common.matches}</TableHead>
+                  <TableHead>{t.common.earnings}</TableHead>
                 </tr>
               </TableHeader>
               <tbody>

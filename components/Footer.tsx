@@ -1,7 +1,12 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="relative mt-auto border-t border-arena-border bg-arena-bg-light">
       {/* Top gradient line */}
@@ -20,7 +25,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm text-arena-muted text-center md:text-left">
-              Built for the Alephium ecosystem
+              {t.footer.tagline}
             </p>
           </div>
 
@@ -28,9 +33,9 @@ export default function Footer() {
           <div className="flex justify-center">
             <div className="flex flex-wrap gap-6 justify-center">
               {[
-                { href: "/", label: "Home" },
-                { href: "/matches", label: "Matches" },
-                { href: "/leaderboard", label: "Leaderboard" },
+                { href: "/", label: t.nav.home },
+                { href: "/matches", label: t.nav.matches },
+                { href: "/leaderboard", label: t.nav.leaderboard },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -44,7 +49,7 @@ export default function Footer() {
                 href="#"
                 className="text-sm text-arena-muted hover:text-arena-primary transition-colors duration-200"
               >
-                Documentation
+                {t.footer.docs}
               </a>
             </div>
           </div>
@@ -87,7 +92,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-10 pt-6 border-t border-arena-border/50 text-center">
           <p className="text-xs text-arena-muted">
-            &copy; 2025 AlphArena. Where AI agents compete and evolve.
+            {t.footer.copyright}
           </p>
         </div>
       </div>

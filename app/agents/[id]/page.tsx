@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import Card, { CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -23,6 +24,7 @@ interface ChatMessage {
 function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const agentId = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -74,7 +76,7 @@ function AgentDetailContent() {
             marrakech: a.gameTypes.includes("marrakech"),
           });
         } else {
-          setError("Agent not found.");
+          setError(t.agentDetail.agentNotFound);
         }
 
         if (statsRes.status === "fulfilled") {
@@ -84,7 +86,7 @@ function AgentDetailContent() {
           })));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load agent.");
+        setError(err instanceof Error ? err.message : t.agentDetail.loadFailed);
       } finally {
         setLoading(false);
       }
@@ -117,7 +119,7 @@ function AgentDetailContent() {
       setEditing(false);
     } catch (err) {
       setEditError(
-        err instanceof Error ? err.message : "Failed to update agent."
+        err instanceof Error ? err.message : t.agentDetail.updateFailed
       );
     } finally {
       setEditLoading(false);
@@ -130,7 +132,7 @@ function AgentDetailContent() {
       await api.deleteAgent(agentId);
       router.push("/agents");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete agent.");
+      setError(err instanceof Error ? err.message : t.agentDetail.deleteFailed);
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
@@ -182,7 +184,7 @@ function AgentDetailContent() {
           <div className="text-center py-8">
             <p className="text-arena-accent mb-4">{error}</p>
             <Link href="/agents">
-              <Button variant="secondary">Back to Agents</Button>
+              <Button variant="secondary">{t.agentDetail.backToAgents}</Button>
             </Link>
           </div>
         </Card>
@@ -204,7 +206,7 @@ function AgentDetailContent() {
         href="/agents"
         className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 inline-block"
       >
-        &larr; Back to Agents
+        {t.agentDetail.backToAgents}
       </Link>
 
       {error && (
@@ -247,18 +249,18 @@ function AgentDetailContent() {
             size="sm"
             onClick={() => setEditing(!editing)}
           >
-            {editing ? "Cancel Edit" : "Edit"}
+            {editing ? t.common.cancelEdit : t.common.edit}
           </Button>
           <Button
             variant="danger"
             size="sm"
             onClick={() => setShowDeleteModal(true)}
           >
-            Delete
+            {t.common.delete}
           </Button>
           {agent.status === "idle" && (
             <Link href={`/matchmaking?agentId=${agent.id}`}>
-              <Button size="sm">Join Queue</Button>
+              <Button size="sm">{t.agentDetail.joinQueue}</Button>
             </Link>
           )}
         </div>
@@ -268,14 +270,14 @@ function AgentDetailContent() {
       {editing && (
         <Card className="mb-8">
           <form onSubmit={handleEdit} className="space-y-4">
-            <CardTitle>Edit Agent</CardTitle>
+            <CardTitle>{t.agentDetail.editAgent}</CardTitle>
             {editError && (
               <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">
                 {editError}
               </div>
             )}
             <Input
-              label="Name"
+              label={t.common.name}
               value={editForm.name}
               onChange={(e) =>
                 setEditForm({ ...editForm, name: e.target.value })
@@ -284,37 +286,37 @@ function AgentDetailContent() {
             {agent.type === "openclaw" ? (
               <>
                 <Input
-                  label="OpenClaw URL"
+                  label={t.agentDetail.openclawUrlLabel}
                   placeholder="http://your-vps.com:64936"
                   value={editForm.openclawUrl}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawUrl: e.target.value })
                   }
-                  helperText="HTTP URL of your OpenClaw instance."
+                  helperText={t.agentDetail.openclawUrlHelper}
                 />
                 <Input
-                  label="Gateway Token (leave empty to keep current)"
+                  label={t.agentDetail.gatewayTokenLabel}
                   type="password"
                   placeholder="Token from ~/.openclaw/openclaw.json"
                   value={editForm.openclawToken}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawToken: e.target.value })
                   }
-                  helperText="The token from your OpenClaw config."
+                  helperText={t.agentDetail.gatewayTokenHelper}
                 />
                 <Input
-                  label="Agent ID"
+                  label={t.agentDetail.agentIdLabel}
                   placeholder="main"
                   value={editForm.openclawAgentId}
                   onChange={(e) =>
                     setEditForm({ ...editForm, openclawAgentId: e.target.value })
                   }
-                  helperText='The OpenClaw agent ID to route commands to. Defaults to "main".'
+                  helperText={t.createAgent.agentIdHelper}
                 />
               </>
             ) : (
               <Input
-                label="Endpoint URL"
+                label={t.createAgent.endpointUrl}
                 value={editForm.endpointUrl}
                 onChange={(e) =>
                   setEditForm({ ...editForm, endpointUrl: e.target.value })
@@ -330,18 +332,18 @@ function AgentDetailContent() {
                 }
                 className="w-4 h-4 accent-arena-primary"
               />
-              <span className="text-sm text-arena-text">Marrakech</span>
+              <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>
-                Save Changes
+                {t.common.save}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setEditing(false)}
               >
-                Cancel
+                {t.common.cancel}
               </Button>
             </div>
           </form>
@@ -351,37 +353,37 @@ function AgentDetailContent() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <Card>
-          <div className="text-xs text-arena-muted mb-1">ELO Rating</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.eloRating}</div>
           <div className="text-xl font-bold text-arena-primary">
             {formatElo(agent.elo)}
           </div>
         </Card>
         <Card>
-          <div className="text-xs text-arena-muted mb-1">Win Rate</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.winRate}</div>
           <div className="text-xl font-bold text-arena-text">
             {formatWinRate(agent.stats?.winRate || 0)}
           </div>
         </Card>
         <Card>
-          <div className="text-xs text-arena-muted mb-1">Wins</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.wins}</div>
           <div className="text-xl font-bold text-arena-success">
             {agent.stats?.wins || 0}
           </div>
         </Card>
         <Card>
-          <div className="text-xs text-arena-muted mb-1">Losses</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.losses}</div>
           <div className="text-xl font-bold text-arena-accent">
             {agent.stats?.losses || 0}
           </div>
         </Card>
         <Card>
-          <div className="text-xs text-arena-muted mb-1">Draws</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.draws}</div>
           <div className="text-xl font-bold text-arena-muted">
             {agent.stats?.draws || 0}
           </div>
         </Card>
         <Card>
-          <div className="text-xs text-arena-muted mb-1">Earnings</div>
+          <div className="text-xs text-arena-muted mb-1">{t.common.earnings}</div>
           <div className="text-xl font-bold text-arena-primary">
             {(agent.stats?.totalEarnings || 0).toFixed(2)}
           </div>
@@ -395,9 +397,9 @@ function AgentDetailContent() {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => setChatOpen(!chatOpen)}
           >
-            <CardTitle>Chat with Agent</CardTitle>
+            <CardTitle>{t.agentDetail.chatWithAgent}</CardTitle>
             <span className="text-arena-muted text-sm">
-              {chatOpen ? "Hide" : "Show"}
+              {chatOpen ? t.agentDetail.hide : t.agentDetail.show}
             </span>
           </div>
 
@@ -407,7 +409,7 @@ function AgentDetailContent() {
               <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border p-3 mb-3 space-y-2">
                 {chatMessages.length === 0 && (
                   <p className="text-sm text-arena-muted text-center mt-8">
-                    Send a message to test your agent.
+                    {t.agentDetail.chatEmpty}
                   </p>
                 )}
                 {chatMessages.map((msg, i) => (
@@ -429,7 +431,7 @@ function AgentDetailContent() {
                 {chatSending && (
                   <div className="flex justify-start">
                     <div className="bg-arena-card border border-arena-border px-3 py-2 rounded-xl text-sm text-arena-muted">
-                      <span className="animate-pulse">Thinking...</span>
+                      <span className="animate-pulse">{t.agentDetail.chatThinking}</span>
                     </div>
                   </div>
                 )}
@@ -442,7 +444,7 @@ function AgentDetailContent() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder={t.agentDetail.chatPlaceholder}
                   disabled={chatSending}
                   className="flex-1 px-4 py-2.5 bg-arena-bg-card border border-arena-border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
                 />
@@ -451,7 +453,7 @@ function AgentDetailContent() {
                   size="md"
                   disabled={chatSending || !chatInput.trim()}
                 >
-                  Send
+                  {t.common.send}
                 </Button>
               </form>
             </div>
@@ -461,11 +463,11 @@ function AgentDetailContent() {
 
       {/* Recent Matches */}
       <div>
-        <CardTitle className="mb-4">Recent Matches</CardTitle>
+        <CardTitle className="mb-4">{t.agentDetail.recentMatches}</CardTitle>
         {recentMatches.length === 0 ? (
           <Card>
             <div className="text-center py-8 text-arena-muted">
-              No matches found for this agent.
+              {t.agentDetail.noMatches}
             </div>
           </Card>
         ) : (
@@ -490,7 +492,7 @@ function AgentDetailContent() {
                                 : "bg-arena-danger/20 text-arena-danger"
                             }`}
                           >
-                            {isWinner ? "WON" : "LOST"}
+                            {isWinner ? t.common.won : t.common.lost}
                           </span>
                         )}
                         <span className="text-sm text-arena-text">
@@ -512,10 +514,10 @@ function AgentDetailContent() {
                               }
                             >
                               {agentEntry.eloChange > 0 ? "+" : ""}
-                              {agentEntry.eloChange} ELO
+                              {agentEntry.eloChange} {t.common.elo}
                             </span>
                           )}
-                        <span>Stake: {match.stakeAmount}</span>
+                        <span>{t.common.stake}: {match.stakeAmount}</span>
                         <span>{formatRelativeTime(match.createdAt)}</span>
                       </div>
                     </div>
@@ -531,26 +533,26 @@ function AgentDetailContent() {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Agent"
+        title={t.agentDetail.deleteTitle}
       >
         <div className="space-y-4">
           <p className="text-sm text-arena-muted">
-            Are you sure you want to delete <strong className="text-arena-text">{agent.name}</strong>?
-            This action cannot be undone.
+            {t.agentDetail.deleteConfirm} <strong className="text-arena-text">{agent.name}</strong>?
+            {" "}{t.agentDetail.deleteWarning}
           </p>
           <div className="flex gap-3 justify-end">
             <Button
               variant="secondary"
               onClick={() => setShowDeleteModal(false)}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={deleteLoading}
             >
-              Delete Agent
+              {t.agentDetail.deleteAgent}
             </Button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { useLanguage } from "@/lib/i18n";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
@@ -12,6 +13,7 @@ import Card from "@/components/ui/Card";
 export default function RegisterPage() {
   const router = useRouter();
   const { login, isAuthenticated, initialize } = useAuthStore();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -38,25 +40,25 @@ export default function RegisterPage() {
     setLoading(true);
 
     if (!formData.username.trim() || !formData.password || !formData.walletAddress.trim()) {
-      setError("Please fill in all required fields.");
+      setError(t.register.fillRequired);
       setLoading(false);
       return;
     }
 
     if (formData.username.trim().length < 3) {
-      setError("Username must be at least 3 characters.");
+      setError(t.register.usernameMin);
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t.register.passwordMin);
       setLoading(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t.register.passwordMismatch);
       setLoading(false);
       return;
     }
@@ -82,7 +84,7 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Registration failed. Please try again."
+        err instanceof Error ? err.message : t.register.registerFailed
       );
     } finally {
       setLoading(false);
@@ -94,10 +96,10 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-arena-text mb-2">
-            Join AlphArena
+            {t.register.title}
           </h1>
           <p className="text-arena-muted">
-            Create your account and start competing
+            {t.register.subtitle}
           </p>
         </div>
 
@@ -110,9 +112,9 @@ export default function RegisterPage() {
             )}
 
             <Input
-              label="Username"
+              label={t.register.username}
               type="text"
-              placeholder="Choose a username"
+              placeholder={t.register.usernamePlaceholder}
               value={formData.username}
               onChange={(e) =>
                 setFormData({ ...formData, username: e.target.value })
@@ -122,7 +124,7 @@ export default function RegisterPage() {
             />
 
             <Input
-              label="Email (optional)"
+              label={t.register.emailOptional}
               type="email"
               placeholder="your@email.com"
               value={formData.email}
@@ -133,21 +135,21 @@ export default function RegisterPage() {
             />
 
             <Input
-              label="Wallet Address"
+              label={t.register.walletAddress}
               type="text"
-              placeholder="Your Alephium wallet address"
+              placeholder={t.register.walletPlaceholder}
               value={formData.walletAddress}
               onChange={(e) =>
                 setFormData({ ...formData, walletAddress: e.target.value })
               }
               required
-              helperText="Your Alephium wallet address for receiving earnings"
+              helperText={t.register.walletHelper}
             />
 
             <Input
-              label="Password"
+              label={t.register.password}
               type="password"
-              placeholder="Create a password (min. 6 chars)"
+              placeholder={t.register.passwordPlaceholder}
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
@@ -157,9 +159,9 @@ export default function RegisterPage() {
             />
 
             <Input
-              label="Confirm Password"
+              label={t.register.confirmPassword}
               type="password"
-              placeholder="Confirm your password"
+              placeholder={t.register.confirmPlaceholder}
               value={formData.confirmPassword}
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
@@ -174,18 +176,18 @@ export default function RegisterPage() {
               className="w-full"
               size="lg"
             >
-              Create Account
+              {t.register.createAccount}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-arena-muted">
-              Already have an account?{" "}
+              {t.register.hasAccount}{" "}
               <Link
                 href="/login"
                 className="text-arena-primary hover:text-arena-primary-light transition-colors font-medium"
               >
-                Sign in
+                {t.register.signIn}
               </Link>
             </p>
           </div>

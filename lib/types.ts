@@ -46,6 +46,7 @@ export interface Agent {
   openclawUrl?: string;
   openclawToken?: string;
   openclawAgentId?: string;
+  selfclawPublicKey?: string;
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
@@ -61,6 +62,7 @@ export interface CreateAgentPayload {
   openclawUrl?: string;
   openclawToken?: string;
   openclawAgentId?: string;
+  selfclawPublicKey?: string;
   gameTypes: string[];
 }
 
@@ -70,6 +72,7 @@ export interface UpdateAgentPayload {
   openclawUrl?: string;
   openclawToken?: string;
   openclawAgentId?: string;
+  selfclawPublicKey?: string;
   gameTypes?: string[];
 }
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import Card, { CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -16,6 +17,7 @@ import type { Agent, Match } from "@/lib/types";
 function DashboardContent() {
   const { user } = useAuthStore();
   const router = useRouter();
+  const { t } = useLanguage();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,29 +62,29 @@ function DashboardContent() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="page-title">
-          Welcome back, <span className="gradient-text">{user?.username}</span>
+          {t.dashboard.welcomeBack} <span className="gradient-text">{user?.username}</span>
         </h1>
         <p className="page-subtitle">
-          Here&apos;s an overview of your agents and recent activity.
+          {t.dashboard.overview}
         </p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
-          <div className="text-sm text-arena-muted mb-1">Your Agents</div>
+          <div className="text-sm text-arena-muted mb-1">{t.dashboard.yourAgents}</div>
           <div className="text-2xl font-bold text-arena-text">{agents.length}</div>
         </Card>
         <Card>
-          <div className="text-sm text-arena-muted mb-1">Active Matches</div>
+          <div className="text-sm text-arena-muted mb-1">{t.dashboard.activeMatches}</div>
           <div className="text-2xl font-bold text-arena-success">{activeAgents}</div>
         </Card>
         <Card>
-          <div className="text-sm text-arena-muted mb-1">In Queue</div>
+          <div className="text-sm text-arena-muted mb-1">{t.dashboard.inQueue}</div>
           <div className="text-2xl font-bold text-amber-500">{queuedAgents}</div>
         </Card>
         <Card>
-          <div className="text-sm text-arena-muted mb-1">Total Earnings</div>
+          <div className="text-sm text-arena-muted mb-1">{t.dashboard.totalEarnings}</div>
           <div className="text-2xl font-bold text-arena-primary">
             {totalEarnings.toFixed(2)}
           </div>
@@ -94,18 +96,18 @@ function DashboardContent() {
         <Link href="/agents/new">
           <Card hover className="text-center">
             <div className="text-arena-primary text-2xl mb-2">+</div>
-            <div className="text-sm font-medium text-arena-text">Create Agent</div>
+            <div className="text-sm font-medium text-arena-text">{t.dashboard.createAgent}</div>
             <div className="text-xs text-arena-muted mt-1">
-              Deploy a new AI agent
+              {t.dashboard.deployNew}
             </div>
           </Card>
         </Link>
         <Link href="/matchmaking">
           <Card hover className="text-center">
             <div className="text-arena-primary text-2xl mb-2">&#9876;</div>
-            <div className="text-sm font-medium text-arena-text">Join Queue</div>
+            <div className="text-sm font-medium text-arena-text">{t.dashboard.joinQueue}</div>
             <div className="text-xs text-arena-muted mt-1">
-              Enter matchmaking
+              {t.dashboard.enterMatchmaking}
             </div>
           </Card>
         </Link>
@@ -113,10 +115,10 @@ function DashboardContent() {
           <Card hover className="text-center">
             <div className="text-arena-primary text-2xl mb-2">&#9733;</div>
             <div className="text-sm font-medium text-arena-text">
-              Leaderboard
+              {t.dashboard.leaderboard}
             </div>
             <div className="text-xs text-arena-muted mt-1">
-              View rankings
+              {t.dashboard.viewRankings}
             </div>
           </Card>
         </Link>
@@ -126,10 +128,10 @@ function DashboardContent() {
       {agents.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <CardTitle>Your Agents</CardTitle>
+            <CardTitle>{t.dashboard.yourAgents}</CardTitle>
             <Link href="/agents">
               <Button variant="ghost" size="sm">
-                View All
+                {t.common.viewAll}
               </Button>
             </Link>
           </div>
@@ -146,19 +148,19 @@ function DashboardContent() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <div className="text-xs text-arena-muted">ELO</div>
+                    <div className="text-xs text-arena-muted">{t.common.elo}</div>
                     <div className="text-sm font-medium text-arena-primary">
                       {Math.round(agent.elo)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-arena-muted">Win Rate</div>
+                    <div className="text-xs text-arena-muted">{t.common.winRate}</div>
                     <div className="text-sm font-medium text-arena-text">
                       {formatWinRate(agent.stats?.winRate || 0)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-arena-muted">Matches</div>
+                    <div className="text-xs text-arena-muted">{t.common.matches}</div>
                     <div className="text-sm font-medium text-arena-text">
                       {(agent.stats?.wins || 0) +
                         (agent.stats?.losses || 0) +
@@ -175,20 +177,20 @@ function DashboardContent() {
       {/* Recent Matches */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <CardTitle>Recent Matches</CardTitle>
+          <CardTitle>{t.dashboard.recentMatches}</CardTitle>
           <Link href="/matches">
             <Button variant="ghost" size="sm">
-              View All
+              {t.common.viewAll}
             </Button>
           </Link>
         </div>
         {recentMatches.length === 0 ? (
           <Card>
             <div className="text-center py-8 text-arena-muted">
-              <p className="mb-2">No matches yet.</p>
+              <p className="mb-2">{t.dashboard.noMatchesYet}</p>
               <Link href="/matchmaking">
                 <Button variant="secondary" size="sm">
-                  Start Your First Match
+                  {t.dashboard.startFirst}
                 </Button>
               </Link>
             </div>
@@ -211,7 +213,7 @@ function DashboardContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-arena-muted">
-                      <span>Stake: {match.stakeAmount}</span>
+                      <span>{t.common.stake}: {match.stakeAmount}</span>
                       <span>{formatRelativeTime(match.createdAt)}</span>
                     </div>
                   </div>

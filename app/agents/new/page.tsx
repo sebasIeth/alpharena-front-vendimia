@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/lib/store";
+import { useLanguage } from "@/lib/i18n";
 import type { AgentType } from "@/lib/types";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
@@ -12,6 +14,8 @@ import Card from "@/components/ui/Card";
 
 function CreateAgentContent() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const { user } = useAuthStore();
   const [agentType, setAgentType] = useState<AgentType>("openclaw");
   const [formData, setFormData] = useState({
     name: "",
@@ -19,13 +23,20 @@ function CreateAgentContent() {
     openclawUrl: "",
     openclawToken: "",
     openclawAgentId: "",
+    selfclawPublicKey: "",
     marrakech: true,
   });
+  const [showGuide, setShowGuide] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [healthCheck, setHealthCheck] = useState<{
     status: "idle" | "checking" | "success" | "error";
     latencyMs?: number;
+    error?: string;
+  }>({ status: "idle" });
+  const [selfclawCheck, setSelfclawCheck] = useState<{
+    status: "idle" | "checking" | "success" | "error";
+    agentName?: string;
     error?: string;
   }>({ status: "idle" });
 
@@ -42,12 +53,12 @@ function CreateAgentContent() {
     if (!formData.openclawUrl.trim() || !formData.openclawToken.trim()) {
       setHealthCheck({
         status: "error",
-        error: "OpenClaw URL and gateway token are required to test connection.",
+        error: t.createAgent.testUrlTokenRequired,
       });
       return;
     }
     if (!validateUrl(formData.openclawUrl.trim())) {
-      setHealthCheck({ status: "error", error: "Invalid URL format." });
+      setHealthCheck({ status: "error", error: t.createAgent.invalidUrlFormat });
       return;
     }
 
@@ -65,13 +76,36 @@ function CreateAgentContent() {
         setHealthCheck({
           status: "error",
           latencyMs: result.latencyMs,
-          error: result.error || "Connection failed",
+          error: result.error || t.createAgent.connectionFailed,
         });
       }
     } catch (err) {
       setHealthCheck({
         status: "error",
-        error: err instanceof Error ? err.message : "Connection failed",
+        error: err instanceof Error ? err.message : t.createAgent.connectionFailed,
+      });
+    }
+  };
+
+  const handleSelfClawVerify = async () => {
+    if (!formData.selfclawPublicKey.trim()) {
+      setSelfclawCheck({ status: "error", error: t.createAgent.selfclawError });
+      return;
+    }
+
+    setSelfclawCheck({ status: "checking" });
+
+    try {
+      const result = await api.verifySelfClaw(formData.selfclawPublicKey.trim());
+      if (result.verified) {
+        setSelfclawCheck({ status: "success", agentName: result.agentName });
+      } else {
+        setSelfclawCheck({ status: "error", error: t.createAgent.selfclawNotVerified });
+      }
+    } catch (err) {
+      setSelfclawCheck({
+        status: "error",
+        error: err instanceof Error ? err.message : t.createAgent.selfclawError,
       });
     }
   };
@@ -82,21 +116,19 @@ function CreateAgentContent() {
     setLoading(true);
 
     if (!formData.name.trim()) {
-      setError("Agent name is required.");
+      setError(t.createAgent.agentNameRequired);
       setLoading(false);
       return;
     }
 
     if (agentType === "http") {
       if (!formData.endpointUrl.trim()) {
-        setError("Endpoint URL is required.");
+        setError(t.createAgent.endpointUrlRequired);
         setLoading(false);
         return;
       }
       if (!validateUrl(formData.endpointUrl.trim())) {
-        setError(
-          "Please enter a valid URL (e.g., https://myagent.example.com/api)."
-        );
+        setError(t.createAgent.endpointUrlInvalid);
         setLoading(false);
         return;
       }
@@ -104,19 +136,17 @@ function CreateAgentContent() {
 
     if (agentType === "openclaw") {
       if (!formData.openclawUrl.trim()) {
-        setError("OpenClaw URL is required.");
+        setError(t.createAgent.openclawUrlRequired);
         setLoading(false);
         return;
       }
       if (!validateUrl(formData.openclawUrl.trim())) {
-        setError(
-          "Please enter a valid OpenClaw URL (e.g., http://my-vps.com:64936)."
-        );
+        setError(t.createAgent.openclawUrlInvalid);
         setLoading(false);
         return;
       }
       if (!formData.openclawToken.trim()) {
-        setError("Gateway token is required.");
+        setError(t.createAgent.gatewayTokenRequired);
         setLoading(false);
         return;
       }
@@ -126,7 +156,7 @@ function CreateAgentContent() {
     if (formData.marrakech) gameTypes.push("marrakech");
 
     if (gameTypes.length === 0) {
-      setError("Please select at least one game type.");
+      setError(t.createAgent.selectGameType);
       setLoading(false);
       return;
     }
@@ -148,11 +178,20 @@ function CreateAgentContent() {
         }
       }
 
+      // SelfClaw verification is required
+      if (selfclawCheck.status !== "success") {
+        setError(t.createAgent.selfclawRequired);
+        setLoading(false);
+        return;
+      }
+      // TODO: send selfclawPublicKey once backend supports it
+      // payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
+
       const data = await api.createAgent(payload as any);
       router.push(`/agents/${data.agent.id}`);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create agent."
+        err instanceof Error ? err.message : t.createAgent.createFailed
       );
     } finally {
       setLoading(false);
@@ -167,12 +206,112 @@ function CreateAgentContent() {
             href="/agents"
             className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-4 inline-block"
           >
-            &larr; Back to Agents
+            {t.createAgent.backToAgents}
           </Link>
-          <h1 className="page-title">Create Agent</h1>
+          <h1 className="page-title">{t.createAgent.title}</h1>
           <p className="text-arena-muted">
-            Register a new AI agent to compete in the arena.
+            {t.createAgent.subtitle}
           </p>
+        </div>
+
+        {/* Setup Guide */}
+        <div className="mb-6 border border-arena-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="w-full flex items-center justify-between px-5 py-4 bg-arena-bg-card hover:bg-arena-bg transition-colors"
+          >
+            <span className="text-sm font-semibold text-arena-text">
+              {t.createAgent.guideTitle}
+            </span>
+            <span className="text-xs text-arena-primary">
+              {showGuide ? t.createAgent.guideHide : t.createAgent.guideShow}
+            </span>
+          </button>
+
+          {showGuide && (
+            <div className="px-5 pb-5 space-y-6 bg-arena-bg-card">
+              {/* Step 1: SelfClaw */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-primary/20 text-arena-primary text-xs font-bold flex items-center justify-center">
+                    1
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideSelfclawTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideSelfclawDesc}
+                </p>
+                <ol className="text-xs text-arena-muted ml-10 space-y-1.5 list-decimal list-inside">
+                  <li>{t.createAgent.guideSelfclawStep1}</li>
+                  <li>{t.createAgent.guideSelfclawStep2}</li>
+                  <li>{t.createAgent.guideSelfclawStep3}</li>
+                  <li>{t.createAgent.guideSelfclawStep4}</li>
+                  <li>{t.createAgent.guideSelfclawStep5}</li>
+                </ol>
+                <div className="ml-10 bg-arena-primary/5 border border-arena-primary/20 rounded-lg px-3 py-2">
+                  <p className="text-xs text-arena-primary">
+                    {t.createAgent.guideSelfclawNote}
+                  </p>
+                </div>
+                <div className="ml-10">
+                  <a
+                    href="https://selfclaw.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-arena-primary hover:text-arena-primary-light transition-colors"
+                  >
+                    {t.createAgent.guideSelfclawLink} &rarr;
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 2: OpenClaw */}
+              <div className="space-y-3 border-t border-arena-border/50 pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-primary/20 text-arena-primary text-xs font-bold flex items-center justify-center">
+                    2
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideOpenclawTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideOpenclawDesc}
+                </p>
+                <ol className="text-xs text-arena-muted ml-10 space-y-1.5 list-decimal list-inside">
+                  <li>{t.createAgent.guideOpenclawStep1}</li>
+                  <li>
+                    {t.createAgent.guideOpenclawStep2}
+                  </li>
+                  <li>
+                    {t.createAgent.guideOpenclawStep3}{" "}
+                    <code className="text-arena-primary bg-arena-bg px-1 rounded">
+                      ~/.openclaw/openclaw.json
+                    </code>
+                  </li>
+                  <li>{t.createAgent.guideOpenclawStep4}</li>
+                </ol>
+              </div>
+
+              {/* Step 3: Ready */}
+              <div className="space-y-3 border-t border-arena-border/50 pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-success/20 text-arena-success text-xs font-bold flex items-center justify-center">
+                    3
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideReadyTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideReadyDesc}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <Card>
@@ -184,21 +323,36 @@ function CreateAgentContent() {
             )}
 
             <Input
-              label="Agent Name"
+              label={t.createAgent.agentName}
               type="text"
-              placeholder="e.g., MarrakechMaster v1"
+              placeholder={t.createAgent.agentNamePlaceholder}
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
               required
-              helperText="A unique name for your agent."
+              helperText={t.createAgent.agentNameHelper}
             />
+
+            {/* Wallet Address Section */}
+            <div>
+              <label className="block text-sm font-medium text-arena-text mb-1.5">
+                {t.createAgent.walletAddress}
+              </label>
+              <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
+                <div className="text-sm font-mono text-arena-text truncate">
+                  {user?.walletAddress || t.createAgent.noWalletSet}
+                </div>
+                <div className="text-xs text-arena-muted mt-1.5">
+                  {t.createAgent.walletHelper}
+                </div>
+              </div>
+            </div>
 
             {/* Agent Type Selector */}
             <div>
               <label className="block text-sm font-medium text-arena-text mb-3">
-                Agent Type
+                {t.createAgent.agentType}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -211,10 +365,10 @@ function CreateAgentContent() {
                   }`}
                 >
                   <div className="text-sm font-semibold text-arena-text">
-                    OpenClaw
+                    {t.createAgent.openclaw}
                   </div>
                   <div className="text-xs text-arena-muted mt-1">
-                    Connect your OpenClaw AI instance
+                    {t.createAgent.openclawDesc}
                   </div>
                 </button>
                 <button
@@ -227,10 +381,10 @@ function CreateAgentContent() {
                   }`}
                 >
                   <div className="text-sm font-semibold text-arena-text">
-                    Custom HTTP
+                    {t.createAgent.customHttp}
                   </div>
                   <div className="text-xs text-arena-muted mt-1">
-                    Your own HTTP endpoint that receives game state
+                    {t.createAgent.customHttpDesc}
                   </div>
                 </button>
               </div>
@@ -240,7 +394,7 @@ function CreateAgentContent() {
             {agentType === "openclaw" && (
               <div className="space-y-4">
                 <Input
-                  label="OpenClaw URL"
+                  label={t.createAgent.openclawUrl}
                   type="text"
                   placeholder="http://your-vps.com:64936"
                   value={formData.openclawUrl}
@@ -252,7 +406,7 @@ function CreateAgentContent() {
                 />
 
                 <Input
-                  label="Gateway Token"
+                  label={t.createAgent.gatewayToken}
                   type="password"
                   placeholder="Your OPENCLAW_TOKEN"
                   value={formData.openclawToken}
@@ -267,7 +421,7 @@ function CreateAgentContent() {
                 />
 
                 <Input
-                  label="Agent ID (optional)"
+                  label={t.createAgent.agentIdOptional}
                   type="text"
                   placeholder="main"
                   value={formData.openclawAgentId}
@@ -277,7 +431,7 @@ function CreateAgentContent() {
                       openclawAgentId: e.target.value,
                     })
                   }
-                  helperText='The OpenClaw agent ID to route commands to. Defaults to "main".'
+                  helperText={t.createAgent.agentIdHelper}
                 />
 
                 {/* Test Connection Button */}
@@ -289,63 +443,61 @@ function CreateAgentContent() {
                     className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50"
                   >
                     {healthCheck.status === "checking"
-                      ? "Testing connection..."
-                      : "Test Connection"}
+                      ? t.createAgent.testingConnection
+                      : t.createAgent.testConnection}
                   </button>
 
                   {healthCheck.status === "success" && (
                     <div className="mt-2 bg-arena-success/10 border border-arena-success/30 text-arena-success rounded-xl px-4 py-2.5 text-sm">
-                      Connected ({healthCheck.latencyMs}ms latency)
+                      {t.createAgent.connected} ({healthCheck.latencyMs}ms {t.createAgent.latency})
                     </div>
                   )}
 
                   {healthCheck.status === "error" && (
                     <div className="mt-2 bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-2.5 text-sm">
-                      Connection failed: {healthCheck.error}
+                      {t.createAgent.connectionFailed}: {healthCheck.error}
                     </div>
                   )}
                 </div>
 
                 <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
-                    OpenClaw Setup
+                    {t.createAgent.openclawSetup}
                   </h4>
                   <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
                     <li>
-                      Provide your OpenClaw HTTP URL (e.g.{" "}
+                      {t.createAgent.openclawStep1}{" "}
                       <code className="text-arena-primary">
                         http://your-vps.com:64936
                       </code>
                       )
                     </li>
                     <li>
-                      Paste the{" "}
+                      {t.createAgent.openclawStep2}{" "}
                       <code className="text-arena-primary">
                         token
                       </code>{" "}
-                      from your OpenClaw config (
+                      {t.createAgent.openclawStep2b} (
                       <code className="text-arena-primary">
                         ~/.openclaw/openclaw.json
                       </code>
                       )
                     </li>
                     <li>
-                      We authenticate via session cookie (POST /login) and
-                      communicate through{" "}
+                      {t.createAgent.openclawStep3}{" "}
                       <code className="text-arena-primary">
                         /hooks/wake
                       </code>{" "}
-                      and{" "}
+                      {t.createAgent.openclawStep3b}{" "}
                       <code className="text-arena-primary">
                         /hooks/agent
                       </code>
                     </li>
                     <li>
-                      Make sure your OpenClaw instance is reachable from the
-                      internet
+                      {t.createAgent.openclawStep4}
                     </li>
                     <li>
-                      Use a fast model for best results (30s move timeout)
+                      {t.createAgent.openclawStep5}
                     </li>
                   </ul>
                 </div>
@@ -356,36 +508,83 @@ function CreateAgentContent() {
             {agentType === "http" && (
               <div className="space-y-4">
                 <Input
-                  label="Endpoint URL"
+                  label={t.createAgent.endpointUrl}
                   type="url"
-                  placeholder="https://myagent.example.com/api"
+                  placeholder={t.createAgent.endpointUrlPlaceholder}
                   value={formData.endpointUrl}
                   onChange={(e) =>
                     setFormData({ ...formData, endpointUrl: e.target.value })
                   }
                   required
-                  helperText="The HTTP endpoint where your agent receives game state and returns moves."
+                  helperText={t.createAgent.endpointHelper}
                 />
 
                 <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
                   <h4 className="text-sm font-medium text-arena-text mb-2">
-                    Agent Endpoint Requirements
+                    {t.createAgent.endpointRequirements}
                   </h4>
                   <ul className="text-xs text-arena-muted space-y-1.5 list-disc list-inside">
-                    <li>Must accept POST requests with JSON body</li>
-                    <li>Should respond with a valid move within 30 seconds</li>
-                    <li>Must be publicly accessible</li>
-                    <li>
-                      Should handle game state payload and return move data
-                    </li>
+                    <li>{t.createAgent.endpointReq1}</li>
+                    <li>{t.createAgent.endpointReq2}</li>
+                    <li>{t.createAgent.endpointReq3}</li>
+                    <li>{t.createAgent.endpointReq4}</li>
                   </ul>
                 </div>
               </div>
             )}
 
+            {/* SelfClaw Verification */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-arena-text">
+                {t.createAgent.selfclawVerification}
+                <span className="text-arena-danger ml-1">*</span>
+              </label>
+
+              <Input
+                label={t.createAgent.selfclawPublicKey}
+                type="text"
+                placeholder={t.createAgent.selfclawPublicKeyPlaceholder}
+                value={formData.selfclawPublicKey}
+                onChange={(e) =>
+                  setFormData({ ...formData, selfclawPublicKey: e.target.value })
+                }
+                helperText={t.createAgent.selfclawPublicKeyHelper}
+              />
+
+              <button
+                type="button"
+                onClick={handleSelfClawVerify}
+                disabled={selfclawCheck.status === "checking" || !formData.selfclawPublicKey.trim()}
+                className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {selfclawCheck.status === "checking"
+                  ? t.createAgent.selfclawVerifying
+                  : t.createAgent.selfclawVerify}
+              </button>
+
+              {selfclawCheck.status === "success" && (
+                <div className="bg-arena-success/10 border border-arena-success/30 text-arena-success rounded-xl px-4 py-2.5 text-sm">
+                  {t.createAgent.selfclawVerified}
+                  {selfclawCheck.agentName && ` — ${selfclawCheck.agentName}`}
+                </div>
+              )}
+
+              {selfclawCheck.status === "error" && (
+                <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-2.5 text-sm">
+                  {selfclawCheck.error}
+                </div>
+              )}
+
+              {selfclawCheck.status === "idle" && (
+                <p className="text-xs text-arena-muted">
+                  {t.createAgent.selfclawRequired}
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-arena-text mb-3">
-                Game Types
+                {t.createAgent.gameTypes}
               </label>
               <div className="space-y-2">
                 <label className="flex items-center gap-3 cursor-pointer bg-arena-bg border border-arena-border rounded-xl p-3 hover:border-arena-primary/30 transition-colors">
@@ -402,10 +601,10 @@ function CreateAgentContent() {
                   />
                   <div>
                     <div className="text-sm font-medium text-arena-text">
-                      Marrakech
+                      {t.createAgent.marrakech}
                     </div>
                     <div className="text-xs text-arena-muted">
-                      Carpet strategy game - 7x7 board
+                      {t.createAgent.marrakechDesc}
                     </div>
                   </div>
                 </label>
@@ -416,14 +615,15 @@ function CreateAgentContent() {
               <Button
                 type="submit"
                 isLoading={loading}
+                disabled={loading || selfclawCheck.status !== "success"}
                 className="flex-1"
                 size="lg"
               >
-                Create Agent
+                {t.createAgent.title}
               </Button>
               <Link href="/agents">
                 <Button type="button" variant="secondary" size="lg">
-                  Cancel
+                  {t.common.cancel}
                 </Button>
               </Link>
             </div>
