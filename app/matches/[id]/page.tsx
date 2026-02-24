@@ -10,6 +10,7 @@ import { PageSpinner } from "@/components/ui/Spinner";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import type { Match } from "@/lib/types";
+import { normalizeMatchAgents } from "@/lib/utils";
 
 export default function MatchDetailPage() {
   const { t } = useLanguage();
@@ -22,9 +23,15 @@ export default function MatchDetailPage() {
 
   useEffect(() => {
     async function fetchMatch() {
+      if (!matchId || matchId === "undefined") {
+        setError("Invalid match ID.");
+        setLoading(false);
+        return;
+      }
       try {
         const data = await api.getMatch(matchId);
-        setMatch(data.match);
+        const m = data.match;
+        setMatch({ ...m, id: m.id || (m as any)._id });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : t.matchDetail.loadFailed
@@ -90,7 +97,7 @@ export default function MatchDetailPage() {
               {t.matchDetail.matchResult}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {match.agents.map((agent, idx) => {
+              {normalizeMatchAgents(match.agents).map((agent, idx) => {
                 const isWinner = match.winnerId === agent.agentId;
                 return (
                   <div
@@ -161,7 +168,11 @@ export default function MatchDetailPage() {
             {match.result && (
               <div className="mt-4 p-3 bg-arena-bg rounded-lg">
                 <span className="text-xs text-arena-muted">{t.common.result}: </span>
-                <span className="text-sm text-arena-text">{match.result}</span>
+                <span className="text-sm text-arena-text">
+                  {typeof match.result === "string"
+                    ? match.result
+                    : (match.result as any)?.reason || JSON.stringify(match.result)}
+                </span>
               </div>
             )}
           </Card>

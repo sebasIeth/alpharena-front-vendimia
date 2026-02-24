@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { Match } from "@/lib/types";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
@@ -155,7 +155,10 @@ export default function HomePage() {
         ]);
 
         if (activeData.status === "fulfilled") {
-          const matches = activeData.value.matches || [];
+          const matches = (activeData.value.matches || []).map((m) => ({
+            ...m,
+            id: m.id || (m as any)._id,
+          }));
           setActiveMatches(matches.slice(0, 5));
           setStats((prev) => ({ ...prev, activeCount: matches.length }));
         }
@@ -534,7 +537,7 @@ export default function HomePage() {
                       <Badge status={match.status} />
                     </div>
                     <div className="space-y-2">
-                      {Array.isArray(match.agents) ? match.agents.map((agent) => (
+                      {normalizeMatchAgents(match.agents).map((agent) => (
                         <div
                           key={agent.agentId}
                           className="flex items-center justify-between"
@@ -546,7 +549,7 @@ export default function HomePage() {
                             {t.common.elo}: {agent.eloAtStart}
                           </span>
                         </div>
-                      )) : <span className="text-sm text-arena-muted">—</span>}
+                      ))}
                     </div>
                     <div className="mt-3 pt-3 border-t border-arena-border/50 flex items-center justify-between">
                       <span className="text-xs text-arena-muted">

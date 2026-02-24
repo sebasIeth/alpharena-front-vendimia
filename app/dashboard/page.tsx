@@ -11,7 +11,7 @@ import Card, { CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatRelativeTime, formatWinRate } from "@/lib/utils";
+import { formatRelativeTime, formatWinRate, normalizeMatchAgents } from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
 function DashboardContent() {
@@ -34,7 +34,10 @@ function DashboardContent() {
           setAgents(agentsRes.value.agents || []);
         }
         if (matchesRes.status === "fulfilled") {
-          setRecentMatches(matchesRes.value.matches || []);
+          setRecentMatches((matchesRes.value.matches || []).map((m) => ({
+            ...m,
+            id: m.id || (m as any)._id,
+          })));
         }
       } catch {
         // silently handle
@@ -204,9 +207,9 @@ function DashboardContent() {
                         {match.gameType}
                       </span>
                       <div className="text-sm text-arena-text">
-                        {Array.isArray(match.agents)
-                          ? match.agents.map((a) => a.agentName).join(" vs ")
-                          : "—"}
+                        {normalizeMatchAgents(match.agents)
+                          .map((a) => a.agentName)
+                          .join(" vs ") || "Unknown"}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-arena-muted">

@@ -9,7 +9,8 @@
       "Bash(gh api:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "Bash(git -C /c/Users/tiago/AlphArenaFront branch:*)"
+      "Bash(git -C /c/Users/tiago/AlphArenaFront branch:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

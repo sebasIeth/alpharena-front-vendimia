@@ -150,7 +150,23 @@ export interface PlayerState {
   id: number;
   coins: number;
   carpetsRemaining: number;
+  dirhams?: number;
+  name?: string;
+  eliminated?: boolean;
 }
+
+export interface DiceResult {
+  value: number;
+  faces: number[];
+}
+
+export interface TributeEvent {
+  fromPlayerId: number;
+  toPlayerId: number;
+  amount: number;
+}
+
+export type GamePhase = "roll" | "tribute" | "place";
 
 // ========== Matchmaking ==========
 export interface QueueEntry {
@@ -165,6 +181,11 @@ export interface QueueEntry {
 export interface QueueStatus {
   status: string;
   position?: number;
+  inQueue?: boolean;
+  agentStatus?: string;
+  matchId?: string;
+  matchStatus?: string;
+  gameType?: string;
 }
 
 export interface QueueSize {

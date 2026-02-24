@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
@@ -13,10 +13,24 @@ import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
 import Spinner from "@/components/ui/Spinner";
 import type { Agent, QueueStatus } from "@/lib/types";
+import type { Socket } from "socket.io-client";
+
+interface QueuedAgent {
+  agentId: string;
+  status: QueueStatus | null;
+  cancelling: boolean;
+}
+
+interface CountdownAgent {
+  agentId: string;
+  name?: string;
+  eloAtStart?: number;
+}
 
 function MatchmakingContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedAgentId = searchParams.get("agentId") || "";
 
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -25,18 +39,23 @@ function MatchmakingContent() {
 
   // Form state
   const [selectedAgentId, setSelectedAgentId] = useState(preselectedAgentId);
-  const [stakeAmount, setStakeAmount] = useState("1.0");
+  const [stakeAmount, setStakeAmount] = useState("0");
   const [gameType] = useState("marrakech");
   const [joining, setJoining] = useState(false);
 
   // Queue state
-  const [inQueue, setInQueue] = useState(false);
-  const [queuedAgentId, setQueuedAgentId] = useState("");
-  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+  const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
-  const [cancelling, setCancelling] = useState(false);
+
+  // Backend countdown state (broadcast via WebSocket)
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(30);
+  const [countdownAgents, setCountdownAgents] = useState<CountdownAgent[]>([]);
+  const COUNTDOWN_TOTAL = 30;
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const queuedAgentIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch agents
   useEffect(() => {
@@ -68,35 +87,117 @@ function MatchmakingContent() {
     return () => clearInterval(interval);
   }, [gameType]);
 
-  // Poll queue status
-  const pollQueueStatus = useCallback(async () => {
-    if (!queuedAgentId) return;
-    try {
-      const status = await api.getQueueStatus(queuedAgentId);
-      setQueueStatus(status);
-      if (status.status === "matched" || status.status === "cancelled") {
-        setInQueue(false);
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
+  // WebSocket: listen for countdown ticks and match creation
+  useEffect(() => {
+    const socket = api.connectSocket();
+    if (!socket) return;
+    socketRef.current = socket;
+
+    socket.onAny((eventName: string, raw: any) => {
+      if (eventName !== "message") return;
+      const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const type = msg?.type;
+      const data = msg?.data;
+      if (!type || !data) return;
+
+      if (type === "matchmaking:countdown") {
+        const remainingMs = data.remainingMs ?? data.remaining ?? 0;
+        const agentsList: CountdownAgent[] = Array.isArray(data.agents)
+          ? data.agents
+          : [];
+        const seconds = Math.ceil(remainingMs / 1000);
+
+        if (seconds > 0) {
+          setCountdownActive(true);
+          setCountdownSeconds(seconds);
+          setCountdownAgents(agentsList);
+        } else {
+          setCountdownActive(false);
+          setCountdownSeconds(0);
         }
       }
-    } catch {
-      // silently handle
-    }
-  }, [queuedAgentId]);
+
+      if (type === "matchmaking:matched") {
+        const matchId = data.matchId;
+        const matchedAgentIds: string[] = Array.isArray(data.agents) ? data.agents : [];
+
+        if (!matchId) return;
+
+        // Check if any of MY queued agents are in this match
+        const myIds = queuedAgentIdsRef.current;
+        const myAgentMatched = matchedAgentIds.some((id) => myIds.has(id));
+
+        if (myAgentMatched) {
+          router.push(`/matches/${matchId}`);
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [router]);
+
+  // Poll queue status for queued agents (updates badge, position, etc.)
+  const queuedAgentsRef = useRef<QueuedAgent[]>([]);
+  queuedAgentsRef.current = queuedAgents;
 
   useEffect(() => {
-    if (inQueue && queuedAgentId) {
-      pollRef.current = setInterval(pollQueueStatus, 2000);
-      return () => {
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      };
+    if (queuedAgents.length === 0) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
     }
-  }, [inQueue, queuedAgentId, pollQueueStatus]);
+
+    pollRef.current = setInterval(async () => {
+      const current = queuedAgentsRef.current;
+      if (current.length === 0) return;
+
+      const agentIds = current.map((qa) => qa.agentId);
+      const updates = await Promise.allSettled(
+        agentIds.map((id) => api.getQueueStatus(id))
+      );
+
+      const statusMap = new Map<string, QueueStatus>();
+      const failedIds = new Set<string>();
+
+      agentIds.forEach((id, i) => {
+        if (updates[i].status === "fulfilled") {
+          const value = updates[i].value;
+          statusMap.set(id, value);
+          // Redirect if queue status returns a matchId too
+          if (value.matchId) {
+            router.push(`/matches/${value.matchId}`);
+          }
+        } else {
+          failedIds.add(id);
+        }
+      });
+
+      setQueuedAgents((prev) =>
+        prev
+          .map((qa) => {
+            const newStatus = statusMap.get(qa.agentId);
+            return newStatus ? { ...qa, status: newStatus } : qa;
+          })
+          .filter((qa) => {
+            if (failedIds.has(qa.agentId)) return false;
+            const s = qa.status?.status;
+            return s !== "matched" && s !== "cancelled";
+          })
+      );
+    }, 2000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [queuedAgents.length, router]);
 
   const handleJoinQueue = async () => {
     setError("");
@@ -109,7 +210,7 @@ function MatchmakingContent() {
     }
 
     const stake = parseFloat(stakeAmount);
-    if (isNaN(stake) || stake <= 0) {
+    if (isNaN(stake) || stake < 0) {
       setError(t.matchmaking.invalidStake);
       setJoining(false);
       return;
@@ -117,9 +218,12 @@ function MatchmakingContent() {
 
     try {
       await api.joinQueue(selectedAgentId, stake, gameType);
-      setQueuedAgentId(selectedAgentId);
-      setInQueue(true);
-      setQueueStatus({ status: "queued" });
+      queuedAgentIdsRef.current.add(selectedAgentId);
+      setQueuedAgents((prev) => [
+        ...prev,
+        { agentId: selectedAgentId, status: { status: "queued" }, cancelling: false },
+      ]);
+      setSelectedAgentId("");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t.matchmaking.joinFailed
@@ -129,23 +233,32 @@ function MatchmakingContent() {
     }
   };
 
-  const handleCancel = async () => {
-    setCancelling(true);
+  const handleCancel = async (agentId: string) => {
+    setQueuedAgents((prev) =>
+      prev.map((qa) =>
+        qa.agentId === agentId ? { ...qa, cancelling: true } : qa
+      )
+    );
     try {
-      await api.cancelQueue(queuedAgentId);
-      setInQueue(false);
-      setQueuedAgentId("");
-      setQueueStatus(null);
+      await api.cancelQueue(agentId);
+      queuedAgentIdsRef.current.delete(agentId);
+      setQueuedAgents((prev) => prev.filter((qa) => qa.agentId !== agentId));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t.matchmaking.cancelFailed
       );
-    } finally {
-      setCancelling(false);
+      setQueuedAgents((prev) =>
+        prev.map((qa) =>
+          qa.agentId === agentId ? { ...qa, cancelling: false } : qa
+        )
+      );
     }
   };
 
-  const idleAgents = agents.filter((a) => a.status === "idle");
+  const queuedIds = new Set(queuedAgents.map((qa) => qa.agentId));
+  const availableAgents = agents.filter(
+    (a) => a.status === "idle" && !queuedIds.has(a.id)
+  );
 
   if (loading) return <PageSpinner />;
 
@@ -188,24 +301,91 @@ function MatchmakingContent() {
           </div>
         </Card>
 
-        {/* Queue Status (when in queue) */}
-        {inQueue && (
+        {/* Backend Countdown */}
+        {countdownActive && (
           <Card className="mb-6 glow-border">
+            <div className="text-center">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="text-arena-border"
+                  />
+                  <circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - countdownSeconds / COUNTDOWN_TOTAL)}`}
+                    strokeLinecap="round"
+                    className="text-arena-primary transition-all duration-1000 ease-linear"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-arena-primary">{countdownSeconds}</span>
+                </div>
+              </div>
+
+              <CardTitle className="mb-2">Match Starting Soon</CardTitle>
+              <p className="text-sm text-arena-muted mb-1">
+                Waiting{" "}
+                <span className="text-arena-primary font-medium">{countdownSeconds}s</span>{" "}
+                for more agents to join...
+              </p>
+              <p className="text-xs text-arena-muted mb-4">
+                The match will start automatically when the countdown ends.
+              </p>
+
+              {countdownAgents.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-arena-muted uppercase tracking-wider">
+                    Agents Ready ({countdownAgents.length})
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {countdownAgents.map((ca) => (
+                      <div
+                        key={ca.agentId}
+                        className="bg-arena-bg border border-arena-border rounded-lg px-3 py-1.5 text-sm"
+                      >
+                        <span className="text-arena-text font-medium">
+                          {ca.name || ca.agentId.slice(0, 8)}
+                        </span>
+                        {ca.eloAtStart !== undefined && (
+                          <span className="text-arena-muted ml-1.5 text-xs">
+                            ({ca.eloAtStart})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Queued Agents Status */}
+        {queuedAgents.map((qa) => (
+          <Card key={qa.agentId} className="mb-6 glow-border">
             <div className="text-center">
               <Spinner size="md" className="mb-4" />
               <CardTitle className="mb-2">{t.matchmaking.inQueue}</CardTitle>
               <p className="text-sm text-arena-muted mb-1">
                 {t.matchmaking.agentLabel}{" "}
                 <span className="text-arena-text">
-                  {agents.find((a) => a.id === queuedAgentId)?.name || queuedAgentId}
+                  {agents.find((a) => a.id === qa.agentId)?.name || qa.agentId}
                 </span>
               </p>
-              {queueStatus && (
+              {qa.status && (
                 <div className="mb-4">
-                  <Badge status={queueStatus.status} />
-                  {queueStatus.position !== undefined && (
+                  <Badge status={qa.status.status || qa.status.agentStatus || "queued"} />
+                  {qa.status.position !== undefined && (
                     <span className="ml-2 text-sm text-arena-muted">
-                      {t.common.position}: {queueStatus.position}
+                      {t.common.position}: {qa.status.position}
                     </span>
                   )}
                 </div>
@@ -215,75 +395,79 @@ function MatchmakingContent() {
               </p>
               <Button
                 variant="danger"
-                onClick={handleCancel}
-                isLoading={cancelling}
+                onClick={() => handleCancel(qa.agentId)}
+                isLoading={qa.cancelling}
               >
                 {t.matchmaking.cancelQueue}
               </Button>
             </div>
           </Card>
-        )}
+        ))}
 
-        {/* Join Form (when not in queue) */}
-        {!inQueue && (
-          <Card>
-            <CardTitle className="mb-4">{t.matchmaking.joinQueue}</CardTitle>
+        {/* Join Form */}
+        <Card>
+          <CardTitle className="mb-4">{t.matchmaking.joinQueue}</CardTitle>
 
-            {idleAgents.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-arena-muted mb-4">
-                  {t.matchmaking.noIdleAgents}
-                </p>
-                <a href="/agents/new">
-                  <Button variant="secondary">{t.matchmaking.createAgent}</Button>
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <Select
-                  label={t.matchmaking.selectAgent}
-                  value={selectedAgentId}
-                  onChange={(e) => setSelectedAgentId(e.target.value)}
-                >
-                  <option value="">{t.matchmaking.chooseAgent}</option>
-                  {idleAgents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name} ({t.common.elo}: {Math.round(agent.elo)})
-                    </option>
-                  ))}
-                </Select>
+          {availableAgents.length === 0 && queuedAgents.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-arena-muted mb-4">
+                {t.matchmaking.noIdleAgents}
+              </p>
+              <a href="/agents/new">
+                <Button variant="secondary">{t.matchmaking.createAgent}</Button>
+              </a>
+            </div>
+          ) : availableAgents.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-arena-muted">
+                {t.matchmaking.noIdleAgents}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <Select
+                label={t.matchmaking.selectAgent}
+                value={selectedAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+              >
+                <option value="">{t.matchmaking.chooseAgent}</option>
+                {availableAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name} ({t.common.elo}: {Math.round(agent.elo)})
+                  </option>
+                ))}
+              </Select>
 
-                <Input
-                  label={t.matchmaking.stakeAmount}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
-                  helperText={t.matchmaking.stakeHelper}
-                />
+              <Input
+                label={t.matchmaking.stakeAmount}
+                type="number"
+                min="0"
+                step="0.01"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                helperText={t.matchmaking.stakeHelper}
+              />
 
-                <div>
-                  <label className="block text-sm font-medium text-arena-text mb-1.5">
-                    {t.common.gameType}
-                  </label>
-                  <div className="bg-arena-bg border border-arena-border rounded-xl px-4 py-2.5 text-arena-text capitalize">
-                    {gameType}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-arena-text mb-1.5">
+                  {t.common.gameType}
+                </label>
+                <div className="bg-arena-bg border border-arena-border rounded-xl px-4 py-2.5 text-arena-text capitalize">
+                  {gameType}
                 </div>
-
-                <Button
-                  onClick={handleJoinQueue}
-                  isLoading={joining}
-                  className="w-full"
-                  size="lg"
-                >
-                  {t.matchmaking.joinQueue}
-                </Button>
               </div>
-            )}
-          </Card>
-        )}
+
+              <Button
+                onClick={handleJoinQueue}
+                isLoading={joining}
+                className="w-full"
+                size="lg"
+              >
+                {t.matchmaking.joinQueue}
+              </Button>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

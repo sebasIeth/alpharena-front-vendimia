@@ -8,7 +8,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 import type { Match } from "@/lib/types";
 
 type Tab = "all" | "active" | "completed";
@@ -38,7 +38,10 @@ export default function MatchesPage() {
         page,
         limit: 12,
       });
-      setMatches(data.matches || []);
+      setMatches((data.matches || []).map((m) => ({
+        ...m,
+        id: m.id || (m as any)._id,
+      })));
       setTotalPages(data.pages || 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.matchesList.loadFailed);
@@ -127,7 +130,7 @@ export default function MatchesPage() {
 
                   {/* Agents */}
                   <div className="space-y-2 mb-3">
-                    {match.agents.map((agent, idx) => (
+                    {normalizeMatchAgents(match.agents).map((agent, idx) => (
                       <div
                         key={agent.agentId}
                         className="flex items-center justify-between"
@@ -179,7 +182,7 @@ export default function MatchesPage() {
                     <div className="bg-arena-success/10 rounded-xl px-2 py-1 mb-3">
                       <span className="text-xs text-arena-success font-medium">
                         {t.common.winner}:{" "}
-                        {match.agents.find(
+                        {normalizeMatchAgents(match.agents).find(
                           (a) => a.agentId === match.winnerId
                         )?.agentName || "Unknown"}
                       </span>
@@ -189,7 +192,7 @@ export default function MatchesPage() {
                   {/* Footer */}
                   <div className="pt-3 border-t border-arena-border/50 flex items-center justify-between">
                     <span className="text-xs text-arena-muted">
-                      {t.common.stake}: {match.stakeAmount} | {t.common.pot}: {match.pot}
+                      {t.common.stake}: {match.stakeAmount} | {t.common.pot}: {match.pot ?? (match as any).potAmount ?? 0}
                     </span>
                     <span className="text-xs text-arena-muted">
                       {formatRelativeTime(match.createdAt)}
