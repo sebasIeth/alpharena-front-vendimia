@@ -26,6 +26,7 @@ function CreateAgentContent() {
     selfclawPublicKey: "",
     marrakech: true,
   });
+  const [showGuide, setShowGuide] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [healthCheck, setHealthCheck] = useState<{
@@ -213,6 +214,106 @@ function CreateAgentContent() {
           </p>
         </div>
 
+        {/* Setup Guide */}
+        <div className="mb-6 border border-arena-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="w-full flex items-center justify-between px-5 py-4 bg-arena-bg-card hover:bg-arena-bg transition-colors"
+          >
+            <span className="text-sm font-semibold text-arena-text">
+              {t.createAgent.guideTitle}
+            </span>
+            <span className="text-xs text-arena-primary">
+              {showGuide ? t.createAgent.guideHide : t.createAgent.guideShow}
+            </span>
+          </button>
+
+          {showGuide && (
+            <div className="px-5 pb-5 space-y-6 bg-arena-bg-card">
+              {/* Step 1: SelfClaw */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-primary/20 text-arena-primary text-xs font-bold flex items-center justify-center">
+                    1
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideSelfclawTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideSelfclawDesc}
+                </p>
+                <ol className="text-xs text-arena-muted ml-10 space-y-1.5 list-decimal list-inside">
+                  <li>{t.createAgent.guideSelfclawStep1}</li>
+                  <li>{t.createAgent.guideSelfclawStep2}</li>
+                  <li>{t.createAgent.guideSelfclawStep3}</li>
+                  <li>{t.createAgent.guideSelfclawStep4}</li>
+                  <li>{t.createAgent.guideSelfclawStep5}</li>
+                </ol>
+                <div className="ml-10 bg-arena-primary/5 border border-arena-primary/20 rounded-lg px-3 py-2">
+                  <p className="text-xs text-arena-primary">
+                    {t.createAgent.guideSelfclawNote}
+                  </p>
+                </div>
+                <div className="ml-10">
+                  <a
+                    href="https://selfclaw.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-arena-primary hover:text-arena-primary-light transition-colors"
+                  >
+                    {t.createAgent.guideSelfclawLink} &rarr;
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 2: OpenClaw */}
+              <div className="space-y-3 border-t border-arena-border/50 pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-primary/20 text-arena-primary text-xs font-bold flex items-center justify-center">
+                    2
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideOpenclawTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideOpenclawDesc}
+                </p>
+                <ol className="text-xs text-arena-muted ml-10 space-y-1.5 list-decimal list-inside">
+                  <li>{t.createAgent.guideOpenclawStep1}</li>
+                  <li>
+                    {t.createAgent.guideOpenclawStep2}
+                  </li>
+                  <li>
+                    {t.createAgent.guideOpenclawStep3}{" "}
+                    <code className="text-arena-primary bg-arena-bg px-1 rounded">
+                      ~/.openclaw/openclaw.json
+                    </code>
+                  </li>
+                  <li>{t.createAgent.guideOpenclawStep4}</li>
+                </ol>
+              </div>
+
+              {/* Step 3: Ready */}
+              <div className="space-y-3 border-t border-arena-border/50 pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-arena-success/20 text-arena-success text-xs font-bold flex items-center justify-center">
+                    3
+                  </span>
+                  <h3 className="text-sm font-semibold text-arena-text">
+                    {t.createAgent.guideReadyTitle}
+                  </h3>
+                </div>
+                <p className="text-xs text-arena-muted ml-10">
+                  {t.createAgent.guideReadyDesc}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
@@ -238,23 +339,13 @@ function CreateAgentContent() {
               <label className="block text-sm font-medium text-arena-text mb-1.5">
                 {t.createAgent.walletAddress}
               </label>
-              <div className="flex items-center gap-3 bg-arena-bg border border-arena-border rounded-xl p-4">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-mono text-arena-text truncate">
-                    {user?.walletAddress || t.createAgent.noWalletSet}
-                  </div>
-                  <div className="text-xs text-arena-muted mt-1">
-                    {t.createAgent.walletHelper}
-                  </div>
+              <div className="bg-arena-bg border border-arena-border rounded-xl p-4">
+                <div className="text-sm font-mono text-arena-text truncate">
+                  {user?.walletAddress || t.createAgent.noWalletSet}
                 </div>
-                <button
-                  type="button"
-                  disabled
-                  className="px-3 py-1.5 rounded-xl border border-arena-border bg-arena-bg-card text-xs font-medium text-arena-muted cursor-not-allowed opacity-50 whitespace-nowrap"
-                  title="Coming soon"
-                >
-                  {t.createAgent.connectWallet}
-                </button>
+                <div className="text-xs text-arena-muted mt-1.5">
+                  {t.createAgent.walletHelper}
+                </div>
               </div>
             </div>
 
