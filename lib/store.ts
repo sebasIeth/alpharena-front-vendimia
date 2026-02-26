@@ -11,7 +11,7 @@ interface AuthState {
   login: (token: string, user: User) => void;
   logout: () => void;
   setUser: (user: User) => void;
-  initialize: () => void;
+  initialize: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user });
   },
 
-  initialize: () => {
+  initialize: async () => {
     if (typeof window === "undefined") {
       set({ isLoading: false });
       return;
@@ -52,12 +52,31 @@ export const useAuthStore = create<AuthState>((set) => ({
     const userStr = localStorage.getItem("arena_user");
     if (token && userStr) {
       try {
-        const user = JSON.parse(userStr) as User;
-        set({ user, token, isAuthenticated: true, isLoading: false });
+        // Validate the token against the backend
+        const response = await fetch("/api/backend/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const user = data.user as User;
+          localStorage.setItem("arena_user", JSON.stringify(user));
+          set({ user, token, isAuthenticated: true, isLoading: false });
+        } else {
+          // Token is invalid/expired — clear session
+          localStorage.removeItem("arena_token");
+          localStorage.removeItem("arena_user");
+          set({ isLoading: false });
+        }
       } catch {
-        localStorage.removeItem("arena_token");
-        localStorage.removeItem("arena_user");
-        set({ isLoading: false });
+        // Network error — use cached data as fallback
+        try {
+          const user = JSON.parse(userStr) as User;
+          set({ user, token, isAuthenticated: true, isLoading: false });
+        } catch {
+          localStorage.removeItem("arena_token");
+          localStorage.removeItem("arena_user");
+          set({ isLoading: false });
+        }
       }
     } else {
       set({ isLoading: false });

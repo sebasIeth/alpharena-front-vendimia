@@ -95,12 +95,12 @@ export default function MarrakechBoard({ boardState, assamOverride, playerCount 
                       ? `${bgColor}25`
                       : playerId === -1
                       ? "#94A3B825"
-                      : "#16161F",
+                      : "#EDE8E1",
                   borderColor:
                     hasCarpet && playerId >= 0
                       ? `${bgColor}60`
                       : isAssam
-                      ? "#00F0FF"
+                      ? "#5B4FCF"
                       : undefined,
                   borderWidth: isAssam ? "2px" : undefined,
                   width: cellSize ? cellSize : undefined,

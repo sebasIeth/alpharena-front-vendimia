@@ -184,8 +184,7 @@ function CreateAgentContent() {
         setLoading(false);
         return;
       }
-      // TODO: send selfclawPublicKey once backend supports it
-      // payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
+      payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
 
       const data = await api.createAgent(payload as any);
       router.push(`/agents/${data.agent.id}`);

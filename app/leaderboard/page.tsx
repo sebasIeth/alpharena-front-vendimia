@@ -67,11 +67,11 @@ const PODIUM_CONFIG = {
     order: "order-2",
     height: "h-full",
     ring: "ring-2 ring-amber-400/50",
-    glow: "shadow-[0_0_40px_rgba(255,184,0,0.2)]",
-    bg: "bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-arena-card",
-    border: "border-amber-500/40",
+    glow: "",
+    bg: "bg-amber-50",
+    border: "border-amber-400",
     badgeBg: "bg-amber-500 text-black",
-    accent: "text-amber-400",
+    accent: "text-amber-600",
     label: "1st",
     medalColor: "#F59E0B",
   },
@@ -80,10 +80,10 @@ const PODIUM_CONFIG = {
     height: "h-[78%]",
     ring: "",
     glow: "",
-    bg: "bg-gradient-to-b from-slate-400/10 to-arena-card",
-    border: "border-slate-400/30",
+    bg: "bg-slate-50",
+    border: "border-slate-400",
     badgeBg: "bg-slate-400 text-black",
-    accent: "text-slate-300",
+    accent: "text-slate-500",
     label: "2nd",
     medalColor: "#94A3B8",
   },
@@ -92,10 +92,10 @@ const PODIUM_CONFIG = {
     height: "h-[70%]",
     ring: "",
     glow: "",
-    bg: "bg-gradient-to-b from-orange-600/10 to-arena-card",
-    border: "border-orange-600/30",
+    bg: "bg-orange-50",
+    border: "border-orange-400",
     badgeBg: "bg-orange-600 text-white",
-    accent: "text-orange-400",
+    accent: "text-orange-600",
     label: "3rd",
     medalColor: "#C2703E",
   },
@@ -103,9 +103,9 @@ const PODIUM_CONFIG = {
 
 /* ── Rank color helpers ────────────────────────────────────── */
 const RANK_COLORS: Record<number, { badge: string; text: string; bg: string; glow: string; border: string }> = {
-  1: { badge: "bg-amber-500 text-black", text: "text-amber-400", bg: "bg-amber-500/10", glow: "shadow-[0_0_20px_rgba(255,184,0,0.12)]", border: "border-amber-500/30" },
-  2: { badge: "bg-slate-400 text-black", text: "text-slate-300", bg: "bg-slate-400/10", glow: "", border: "border-slate-400/30" },
-  3: { badge: "bg-orange-600 text-white", text: "text-orange-400", bg: "bg-orange-600/10", glow: "", border: "border-orange-600/30" },
+  1: { badge: "bg-amber-500 text-black", text: "text-amber-600", bg: "bg-amber-100", glow: "", border: "border-amber-400" },
+  2: { badge: "bg-slate-400 text-black", text: "text-slate-500", bg: "bg-slate-100", glow: "", border: "border-slate-400" },
+  3: { badge: "bg-orange-600 text-white", text: "text-orange-600", bg: "bg-orange-100", glow: "", border: "border-orange-400" },
 };
 const DEFAULT_RANK_COLOR = { badge: "bg-arena-primary/10 text-arena-primary", text: "text-arena-primary", bg: "bg-arena-primary/10", glow: "", border: "border-arena-border" };
 
@@ -189,7 +189,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
     <div className="space-y-5">
       {/* Header card */}
       <div className={`rounded-xl p-4 flex items-center gap-4 border ${rc.border} ${rc.glow}`}
-        style={{ background: "rgba(18, 18, 26, 0.8)" }}
+        style={{ background: "rgba(245, 240, 235, 0.9)" }}
       >
         <div className={`w-12 h-12 rounded-xl ${rc.badge} flex items-center justify-center shrink-0`}>
           <span className="font-extrabold text-lg">{rankLabel}</span>
@@ -238,7 +238,7 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
     <div className="space-y-5">
       {/* Header card */}
       <div className={`rounded-xl p-4 flex items-center gap-4 border ${rc.border} ${rc.glow}`}
-        style={{ background: "rgba(18, 18, 26, 0.8)" }}
+        style={{ background: "rgba(245, 240, 235, 0.9)" }}
       >
         <div className={`w-12 h-12 rounded-xl ${rc.badge} flex items-center justify-center shrink-0`}>
           <span className="font-extrabold text-lg">{rankLabel}</span>
@@ -311,7 +311,7 @@ function PodiumShell({
     <div className={`${c.order} flex items-end flex-1 min-w-0`}>
       <div
         onClick={onClick}
-        className={`${c.height} w-full ${c.bg} border ${c.border} ${c.ring} ${c.glow} rounded-2xl p-5 flex flex-col items-center justify-end text-center transition-all duration-300 cursor-pointer hover:-translate-y-1`}
+        className={`${c.height} w-full ${c.bg} border ${c.border} ${c.ring} ${c.glow} rounded-xl p-5 flex flex-col items-center justify-end text-center transition-all duration-200 cursor-pointer hover:shadow-arena`}
       >
         {/* Trophy + Rank badge */}
         <TrophyIcon color={c.medalColor} size={32} />
@@ -336,10 +336,10 @@ function WinRateBar({ rate }: { rate: number }) {
             width: `${pct}%`,
             background:
               pct >= 70
-                ? "linear-gradient(to right, #00F0FF, #10B981)"
+                ? "#059669"
                 : pct >= 55
-                ? "linear-gradient(to right, #00F0FF, #FFB800)"
-                : "linear-gradient(to right, #6B7280, #9CA3AF)",
+                ? "#5B4FCF"
+                : "#9CA3AF",
           }}
         />
       </div>
@@ -390,11 +390,8 @@ export default function LeaderboardPage() {
 
       {/* ── Header ──────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 arena-grid-bg opacity-50" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-arena-primary/5 rounded-full blur-[120px]" />
-
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6 text-center">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-arena-text-bright mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-arena-text-bright mb-2 font-display">
             {t.leaderboard.title}
           </h1>
           <p className="text-arena-muted-light max-w-md mx-auto">
@@ -402,12 +399,12 @@ export default function LeaderboardPage() {
           </p>
 
           {/* Tabs */}
-          <div className="flex items-center justify-center gap-1 mt-8 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border">
+          <div className="flex items-center justify-center gap-1 mt-8 bg-white rounded-xl p-1 inline-flex border border-arena-border">
             <button
               onClick={() => setTab("agents")}
               className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${
                 tab === "agents"
-                  ? "bg-arena-primary text-white shadow-arena-glow"
+                  ? "bg-arena-primary text-white shadow-arena-sm"
                   : "text-arena-muted hover:text-arena-text"
               }`}
             >
@@ -417,7 +414,7 @@ export default function LeaderboardPage() {
               onClick={() => setTab("users")}
               className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${
                 tab === "users"
-                  ? "bg-arena-primary text-white shadow-arena-glow"
+                  ? "bg-arena-primary text-white shadow-arena-sm"
                   : "text-arena-muted hover:text-arena-text"
               }`}
             >
