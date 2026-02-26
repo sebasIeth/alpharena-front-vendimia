@@ -50,6 +50,9 @@ export interface Agent {
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
+  autoPlay: boolean;
+  autoPlayStakeAmount: number;
+  autoPlayConsecutiveErrors: number;
   stats: AgentStats;
   createdAt: string;
   updatedAt: string;
@@ -74,6 +77,8 @@ export interface UpdateAgentPayload {
   openclawAgentId?: string;
   selfclawPublicKey?: string;
   gameTypes?: string[];
+  autoPlay?: boolean;
+  autoPlayStakeAmount?: number;
 }
 
 export interface HealthCheckResponse {
