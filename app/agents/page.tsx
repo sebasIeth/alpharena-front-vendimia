@@ -103,6 +103,11 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
                 OC
               </span>
             )}
+            {agent.autoPlay && (
+              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded">
+                AP
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Badge status={agent.status} />
