@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Card from "@/components/ui/Card";
+import AuthLayout from "@/components/auth/AuthLayout";
 import { useLanguage } from "@/lib/i18n";
 
 export default function LoginPage() {
@@ -54,21 +54,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-arena-text mb-2">{t.login.title}</h1>
-          <p className="text-arena-muted">{t.login.subtitle}</p>
-        </div>
+    <AuthLayout title={t.login.title} subtitle={t.login.subtitle}>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="auth-error">
+            {error}
+          </div>
+        )}
 
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">
-                {error}
-              </div>
-            )}
-
+        <div className="opacity-0 animate-fade-up auth-stagger-2">
+          <div className="auth-input-focus">
             <Input
               label={t.login.username}
               type="text"
@@ -80,7 +75,11 @@ export default function LoginPage() {
               required
               autoComplete="username"
             />
+          </div>
+        </div>
 
+        <div className="opacity-0 animate-fade-up auth-stagger-3">
+          <div className="auth-input-focus">
             <Input
               label={t.login.password}
               type="password"
@@ -92,30 +91,32 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
             />
-
-            <Button
-              type="submit"
-              isLoading={loading}
-              className="w-full"
-              size="lg"
-            >
-              {t.login.signIn}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-arena-muted">
-              {t.login.noAccount}{" "}
-              <Link
-                href="/register"
-                className="text-arena-primary hover:text-arena-primary-light transition-colors font-medium"
-              >
-                {t.login.createOne}
-              </Link>
-            </p>
           </div>
-        </Card>
+        </div>
+
+        <div className="opacity-0 animate-fade-up auth-stagger-4 pt-1">
+          <Button
+            type="submit"
+            isLoading={loading}
+            className="w-full"
+            size="lg"
+          >
+            {t.login.signIn}
+          </Button>
+        </div>
+      </form>
+
+      <div className="mt-6 text-center opacity-0 animate-fade-in auth-stagger-5">
+        <p className="text-sm text-arena-muted">
+          {t.login.noAccount}{" "}
+          <Link
+            href="/register"
+            className="text-arena-primary hover:text-arena-primary-light transition-colors font-medium"
+          >
+            {t.login.createOne}
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

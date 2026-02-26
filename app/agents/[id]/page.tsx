@@ -12,13 +12,112 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatElo, formatWinRate, formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
+import {
+  formatElo,
+  formatWinRate,
+  formatRelativeTime,
+  normalizeMatchAgents,
+} from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
 interface ChatMessage {
   role: "user" | "agent";
   text: string;
   timestamp: number;
+}
+
+/* ── Win Rate Ring (conic-gradient) ── */
+function WinRateRing({ rate, size = 88 }: { rate: number; size?: number }) {
+  const pct = Math.round(rate * 100);
+  const inner = size - 12;
+  return (
+    <div
+      className="stat-ring"
+      style={{
+        width: size,
+        height: size,
+        background: `conic-gradient(
+          #5B4FCF ${pct * 3.6}deg,
+          #E8E4DF ${pct * 3.6}deg
+        )`,
+      }}
+    >
+      <div
+        className="stat-ring-inner"
+        style={{ width: inner, height: inner }}
+      >
+        <span className="text-lg font-bold font-mono text-arena-text tabular-nums">
+          {pct}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── W/L/D Stacked Bar ── */
+function WLDStackedBar({
+  wins,
+  losses,
+  draws,
+}: {
+  wins: number;
+  losses: number;
+  draws: number;
+}) {
+  const total = wins + losses + draws;
+  if (total === 0) {
+    return (
+      <div className="space-y-2">
+        <div className="w-full h-2.5 rounded-full bg-arena-border-light/50" />
+        <div className="text-xs text-arena-muted text-center">No matches yet</div>
+      </div>
+    );
+  }
+  const wPct = (wins / total) * 100;
+  const lPct = (losses / total) * 100;
+  const dPct = (draws / total) * 100;
+
+  return (
+    <div className="space-y-3">
+      <div className="w-full h-3 rounded-full overflow-hidden flex bg-arena-border-light/30">
+        {wPct > 0 && (
+          <div
+            className="h-full bg-arena-success rounded-l-full transition-all duration-700"
+            style={{ width: `${wPct}%` }}
+          />
+        )}
+        {dPct > 0 && (
+          <div
+            className="h-full bg-arena-muted-light/60 transition-all duration-700"
+            style={{ width: `${dPct}%` }}
+          />
+        )}
+        {lPct > 0 && (
+          <div
+            className="h-full bg-arena-danger/60 rounded-r-full transition-all duration-700"
+            style={{ width: `${lPct}%` }}
+          />
+        )}
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-arena-success" />
+          <span className="text-arena-text font-medium">{wins}</span>
+          <span className="text-arena-muted">W</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-arena-muted-light/60" />
+          <span className="text-arena-text font-medium">{draws}</span>
+          <span className="text-arena-muted">D</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-arena-danger/60" />
+          <span className="text-arena-text font-medium">{losses}</span>
+          <span className="text-arena-muted">L</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AgentDetailContent() {
@@ -80,13 +179,17 @@ function AgentDetailContent() {
         }
 
         if (statsRes.status === "fulfilled") {
-          setRecentMatches((statsRes.value.recentMatches || []).map((m) => ({
-            ...m,
-            id: m.id || (m as any)._id,
-          })));
+          setRecentMatches(
+            (statsRes.value.recentMatches || []).map((m) => ({
+              ...m,
+              id: m.id || (m as any)._id,
+            }))
+          );
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : t.agentDetail.loadFailed);
+        setError(
+          err instanceof Error ? err.message : t.agentDetail.loadFailed
+        );
       } finally {
         setLoading(false);
       }
@@ -108,11 +211,15 @@ function AgentDetailContent() {
         gameTypes,
       };
       if (agent?.type === "openclaw") {
-        if (editForm.openclawUrl.trim()) updatePayload.openclawUrl = editForm.openclawUrl.trim();
-        if (editForm.openclawToken.trim()) updatePayload.openclawToken = editForm.openclawToken.trim();
-        if (editForm.openclawAgentId.trim()) updatePayload.openclawAgentId = editForm.openclawAgentId.trim();
+        if (editForm.openclawUrl.trim())
+          updatePayload.openclawUrl = editForm.openclawUrl.trim();
+        if (editForm.openclawToken.trim())
+          updatePayload.openclawToken = editForm.openclawToken.trim();
+        if (editForm.openclawAgentId.trim())
+          updatePayload.openclawAgentId = editForm.openclawAgentId.trim();
       } else {
-        if (editForm.endpointUrl.trim()) updatePayload.endpointUrl = editForm.endpointUrl.trim();
+        if (editForm.endpointUrl.trim())
+          updatePayload.endpointUrl = editForm.endpointUrl.trim();
       }
       const data = await api.updateAgent(agentId, updatePayload as any);
       setAgent(data.agent);
@@ -132,7 +239,9 @@ function AgentDetailContent() {
       await api.deleteAgent(agentId);
       router.push("/agents");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.agentDetail.deleteFailed);
+      setError(
+        err instanceof Error ? err.message : t.agentDetail.deleteFailed
+      );
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
@@ -184,7 +293,9 @@ function AgentDetailContent() {
           <div className="text-center py-8">
             <p className="text-arena-accent mb-4">{error}</p>
             <Link href="/agents">
-              <Button variant="secondary">{t.agentDetail.backToAgents}</Button>
+              <Button variant="secondary">
+                {t.agentDetail.backToAgents}
+              </Button>
             </Link>
           </div>
         </Card>
@@ -194,81 +305,91 @@ function AgentDetailContent() {
 
   if (!agent) return null;
 
-  const totalMatches =
-    (agent.stats?.wins || 0) +
-    (agent.stats?.losses || 0) +
-    (agent.stats?.draws || 0);
+  const wins = agent.stats?.wins || 0;
+  const losses = agent.stats?.losses || 0;
+  const draws = agent.stats?.draws || 0;
+  const totalMatches = wins + losses + draws;
 
   return (
     <div className="page-container">
       {/* Back Link */}
       <Link
         href="/agents"
-        className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 inline-block"
+        className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 inline-block opacity-0 animate-fade-in"
       >
         {t.agentDetail.backToAgents}
       </Link>
 
       {error && (
-        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6">
+        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6 animate-fade-down">
           {error}
         </div>
       )}
 
-      {/* Agent Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-arena-text">{agent.name}</h1>
-            <Badge status={agent.status} />
-          </div>
-          <p className="text-sm text-arena-muted font-mono">
-            {agent.type === "openclaw"
-              ? agent.openclawUrl
-              : agent.endpointUrl}
-          </p>
-          {agent.type === "openclaw" && (
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
-              OpenClaw
-            </span>
-          )}
-          <div className="flex items-center gap-2 mt-2">
-            {agent.gameTypes.map((gt) => (
-              <span
-                key={gt}
-                className="px-2 py-0.5 text-xs bg-arena-primary/10 text-arena-primary rounded capitalize"
-              >
-                {gt}
+      {/* ── Hero Header ── */}
+      <div className="bg-gradient-to-r from-arena-primary/[0.06] via-transparent to-arena-accent/[0.04] rounded-2xl border border-arena-border-light p-6 sm:p-8 mb-8 opacity-0 animate-fade-up">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-arena-text">
+                {agent.name}
+              </h1>
+              <Badge status={agent.status} />
+            </div>
+
+            <p className="text-sm text-arena-muted font-mono mb-3 break-all">
+              {agent.type === "openclaw"
+                ? agent.openclawUrl
+                : agent.endpointUrl}
+            </p>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {agent.type === "openclaw" && (
+                <span className="px-2 py-0.5 text-xs font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">
+                  OpenClaw
+                </span>
+              )}
+              {agent.gameTypes.map((gt) => (
+                <span
+                  key={gt}
+                  className="px-2 py-0.5 text-xs bg-arena-primary/8 text-arena-primary rounded capitalize font-mono"
+                >
+                  {gt}
+                </span>
+              ))}
+              <span className="text-xs text-arena-muted">
+                {formatRelativeTime(agent.createdAt)}
               </span>
-            ))}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditing(!editing)}
-          >
-            {editing ? t.common.cancelEdit : t.common.edit}
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setShowDeleteModal(true)}
-          >
-            {t.common.delete}
-          </Button>
-          {agent.status === "idle" && (
-            <Link href={`/matchmaking?agentId=${agent.id}`}>
-              <Button size="sm">{t.agentDetail.joinQueue}</Button>
-            </Link>
-          )}
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? t.common.cancelEdit : t.common.edit}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              {t.common.delete}
+            </Button>
+            {agent.status === "idle" && (
+              <Link href={`/matchmaking?agentId=${agent.id}`}>
+                <Button size="sm">{t.agentDetail.joinQueue}</Button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Edit Form */}
       {editing && (
-        <Card className="mb-8">
+        <Card className="mb-8 animate-fade-down">
           <form onSubmit={handleEdit} className="space-y-4">
             <CardTitle>{t.agentDetail.editAgent}</CardTitle>
             {editError && (
@@ -290,7 +411,10 @@ function AgentDetailContent() {
                   placeholder="http://your-vps.com:64936"
                   value={editForm.openclawUrl}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, openclawUrl: e.target.value })
+                    setEditForm({
+                      ...editForm,
+                      openclawUrl: e.target.value,
+                    })
                   }
                   helperText={t.agentDetail.openclawUrlHelper}
                 />
@@ -300,7 +424,10 @@ function AgentDetailContent() {
                   placeholder="Token from ~/.openclaw/openclaw.json"
                   value={editForm.openclawToken}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, openclawToken: e.target.value })
+                    setEditForm({
+                      ...editForm,
+                      openclawToken: e.target.value,
+                    })
                   }
                   helperText={t.agentDetail.gatewayTokenHelper}
                 />
@@ -309,7 +436,10 @@ function AgentDetailContent() {
                   placeholder="main"
                   value={editForm.openclawAgentId}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, openclawAgentId: e.target.value })
+                    setEditForm({
+                      ...editForm,
+                      openclawAgentId: e.target.value,
+                    })
                   }
                   helperText={t.createAgent.agentIdHelper}
                 />
@@ -319,7 +449,10 @@ function AgentDetailContent() {
                 label={t.createAgent.endpointUrl}
                 value={editForm.endpointUrl}
                 onChange={(e) =>
-                  setEditForm({ ...editForm, endpointUrl: e.target.value })
+                  setEditForm({
+                    ...editForm,
+                    endpointUrl: e.target.value,
+                  })
                 }
               />
             )}
@@ -332,7 +465,9 @@ function AgentDetailContent() {
                 }
                 className="w-4 h-4 accent-arena-primary"
               />
-              <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
+              <span className="text-sm text-arena-text">
+                {t.createAgent.marrakech}
+              </span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>
@@ -350,51 +485,70 @@ function AgentDetailContent() {
         </Card>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.eloRating}</div>
-          <div className="text-xl font-bold text-arena-primary">
+      {/* ── Stats Section ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {/* ELO Card */}
+        <div
+          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
+            {t.common.eloRating}
+          </div>
+          <div className="text-4xl font-bold font-mono text-arena-primary tabular-nums animate-glow-pulse inline-block">
             {formatElo(agent.elo)}
           </div>
-        </Card>
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.winRate}</div>
-          <div className="text-xl font-bold text-arena-text">
-            {formatWinRate(agent.stats?.winRate || 0)}
+        </div>
+
+        {/* Win Rate Ring Card */}
+        <div
+          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.15s" }}
+        >
+          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
+            {t.common.winRate}
           </div>
-        </Card>
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.wins}</div>
-          <div className="text-xl font-bold text-arena-success">
-            {agent.stats?.wins || 0}
+          <div className="flex items-center justify-center">
+            <WinRateRing rate={agent.stats?.winRate || 0} />
           </div>
-        </Card>
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.losses}</div>
-          <div className="text-xl font-bold text-arena-accent">
-            {agent.stats?.losses || 0}
+        </div>
+
+        {/* W/L/D Card */}
+        <div
+          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.2s" }}
+        >
+          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
+            {t.common.matches} ({totalMatches})
           </div>
-        </Card>
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.draws}</div>
-          <div className="text-xl font-bold text-arena-muted">
-            {agent.stats?.draws || 0}
+          <WLDStackedBar wins={wins} losses={losses} draws={draws} />
+        </div>
+
+        {/* Earnings Card */}
+        <div
+          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.25s" }}
+        >
+          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
+            {t.common.earnings}
           </div>
-        </Card>
-        <Card>
-          <div className="text-xs text-arena-muted mb-1">{t.common.earnings}</div>
-          <div className="text-xl font-bold text-arena-primary">
+          <div className="text-4xl font-bold font-mono tabular-nums text-arena-text">
             {(agent.stats?.totalEarnings || 0).toFixed(2)}
           </div>
-        </Card>
+          <div className="text-xs text-arena-muted mt-1 font-mono tracking-wider">
+            ALPH
+          </div>
+        </div>
       </div>
 
-      {/* Mini Chat - only for OpenClaw agents */}
+      {/* ── Mini Chat (OpenClaw only) ── */}
       {agent.type === "openclaw" && (
-        <Card className="mb-8">
+        <div
+          className="bg-white border border-arena-border-light rounded-xl shadow-arena-sm mb-8 overflow-hidden opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.3s" }}
+        >
           <div
-            className="flex items-center justify-between cursor-pointer"
+            className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-arena-card-hover transition-colors"
             onClick={() => setChatOpen(!chatOpen)}
           >
             <CardTitle>{t.agentDetail.chatWithAgent}</CardTitle>
@@ -404,9 +558,9 @@ function AgentDetailContent() {
           </div>
 
           {chatOpen && (
-            <div className="mt-4">
+            <div className="px-6 pb-5 border-t border-arena-border-light/60">
               {/* Messages */}
-              <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border p-3 mb-3 space-y-2">
+              <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border-light p-3 my-4 space-y-2">
                 {chatMessages.length === 0 && (
                   <p className="text-sm text-arena-muted text-center mt-8">
                     {t.agentDetail.chatEmpty}
@@ -420,8 +574,8 @@ function AgentDetailContent() {
                     <div
                       className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
                         msg.role === "user"
-                          ? "bg-arena-primary text-arena-bg"
-                          : "bg-arena-card border border-arena-border text-arena-text"
+                          ? "bg-arena-primary text-white"
+                          : "bg-white border border-arena-border-light text-arena-text"
                       }`}
                     >
                       {msg.text}
@@ -430,8 +584,10 @@ function AgentDetailContent() {
                 ))}
                 {chatSending && (
                   <div className="flex justify-start">
-                    <div className="bg-arena-card border border-arena-border px-3 py-2 rounded-xl text-sm text-arena-muted">
-                      <span className="animate-pulse">{t.agentDetail.chatThinking}</span>
+                    <div className="bg-white border border-arena-border-light px-3 py-2 rounded-xl text-sm text-arena-muted">
+                      <span className="animate-pulse">
+                        {t.agentDetail.chatThinking}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -446,7 +602,7 @@ function AgentDetailContent() {
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={t.agentDetail.chatPlaceholder}
                   disabled={chatSending}
-                  className="flex-1 px-4 py-2.5 bg-arena-bg-card border border-arena-border rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
+                  className="flex-1 px-4 py-2.5 bg-white border border-arena-border-light rounded-lg text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
                 />
                 <Button
                   type="submit"
@@ -458,11 +614,14 @@ function AgentDetailContent() {
               </form>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
-      {/* Recent Matches */}
-      <div>
+      {/* ── Recent Matches ── */}
+      <div
+        className="opacity-0 animate-fade-up"
+        style={{ animationDelay: "0.35s" }}
+      >
         <CardTitle className="mb-4">{t.agentDetail.recentMatches}</CardTitle>
         {recentMatches.length === 0 ? (
           <Card>
@@ -472,7 +631,7 @@ function AgentDetailContent() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {recentMatches.map((match) => {
+            {recentMatches.map((match, i) => {
               const agentsArr = normalizeMatchAgents(match.agents);
               const agentEntry = agentsArr.find(
                 (a) => a.agentId === agentId
@@ -480,22 +639,25 @@ function AgentDetailContent() {
               const isWinner = match.winnerId === agentId;
               return (
                 <Link key={match.id} href={`/matches/${match.id}`}>
-                  <Card hover className="mb-3">
+                  <div
+                    className="agent-card mb-3 opacity-0 animate-fade-up"
+                    style={{ animationDelay: `${0.4 + i * 0.06}s` }}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <Badge status={match.status} />
                         {match.status === "completed" && (
                           <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded ${
+                            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                               isWinner
-                                ? "bg-arena-success/20 text-arena-success"
-                                : "bg-arena-danger/20 text-arena-danger"
+                                ? "bg-arena-success/15 text-arena-success"
+                                : "bg-arena-danger/15 text-arena-danger"
                             }`}
                           >
                             {isWinner ? t.common.won : t.common.lost}
                           </span>
                         )}
-                        <span className="text-sm text-arena-text">
+                        <span className="text-sm text-arena-text font-medium">
                           {agentsArr
                             .map((a) => a.agentName)
                             .join(" vs ") || "Unknown"}
@@ -505,23 +667,25 @@ function AgentDetailContent() {
                         {agentEntry?.eloChange !== undefined &&
                           agentEntry.eloChange !== null && (
                             <span
-                              className={
+                              className={`font-mono font-medium ${
                                 agentEntry.eloChange > 0
                                   ? "text-arena-success"
                                   : agentEntry.eloChange < 0
-                                  ? "text-arena-accent"
+                                  ? "text-arena-danger"
                                   : "text-arena-muted"
-                              }
+                              }`}
                             >
                               {agentEntry.eloChange > 0 ? "+" : ""}
                               {agentEntry.eloChange} {t.common.elo}
                             </span>
                           )}
-                        <span>{t.common.stake}: {match.stakeAmount}</span>
+                        <span className="font-mono">
+                          {t.common.stake}: {match.stakeAmount}
+                        </span>
                         <span>{formatRelativeTime(match.createdAt)}</span>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </Link>
               );
             })}
@@ -537,8 +701,9 @@ function AgentDetailContent() {
       >
         <div className="space-y-4">
           <p className="text-sm text-arena-muted">
-            {t.agentDetail.deleteConfirm} <strong className="text-arena-text">{agent.name}</strong>?
-            {" "}{t.agentDetail.deleteWarning}
+            {t.agentDetail.deleteConfirm}{" "}
+            <strong className="text-arena-text">{agent.name}</strong>?{" "}
+            {t.agentDetail.deleteWarning}
           </p>
           <div className="flex gap-3 justify-end">
             <Button

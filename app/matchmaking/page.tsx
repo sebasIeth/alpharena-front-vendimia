@@ -433,7 +433,7 @@ function MatchmakingContent() {
                 <option value="">{t.matchmaking.chooseAgent}</option>
                 {availableAgents.map((agent) => (
                   <option key={agent.id} value={agent.id}>
-                    {agent.name} ({t.common.elo}: {Math.round(agent.elo)})
+                    {agent.name} ({t.common.elo}: {Math.round(agent.elo || 0)})
                   </option>
                 ))}
               </Select>

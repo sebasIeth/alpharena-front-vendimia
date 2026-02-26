@@ -12,8 +12,8 @@ export default function Card({ children, className, hover = false, onClick }: Ca
   return (
     <div
       className={classNames(
-        "bg-arena-card border border-arena-border rounded-2xl p-6 shadow-arena-sm",
-        hover && "hover:shadow-arena-glow hover:border-arena-primary/30 transition-all duration-300 cursor-pointer",
+        "bg-white border border-arena-border rounded-xl p-6 shadow-arena-sm",
+        hover && "hover:shadow-arena hover:border-arena-primary/50 transition-all duration-200 cursor-pointer",
         onClick && "cursor-pointer",
         className
       )}
@@ -46,7 +46,7 @@ export function CardTitle({
   className?: string;
 }) {
   return (
-    <h3 className={classNames("text-lg font-semibold text-arena-text", className)}>
+    <h3 className={classNames("text-lg font-semibold text-arena-text font-display", className)}>
       {children}
     </h3>
   );

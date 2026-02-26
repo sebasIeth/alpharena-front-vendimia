@@ -9,18 +9,15 @@ export default function Footer() {
 
   return (
     <footer className="relative mt-auto border-t border-arena-border bg-arena-bg-light">
-      {/* Top gradient line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-arena-primary/40 to-transparent" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           {/* Left: Logo + tagline */}
           <div className="flex flex-col items-center md:items-start">
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 bg-arena-primary/10 border border-arena-primary/30 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-arena-primary/10 border border-arena-border rounded-lg flex items-center justify-center">
                 <span className="text-arena-primary font-bold text-xs">AA</span>
               </div>
-              <span className="text-arena-text-bright font-bold">
+              <span className="text-arena-text-bright font-bold font-display">
                 Alph<span className="text-arena-primary">Arena</span>
               </span>
             </div>
@@ -59,7 +56,7 @@ export default function Footer() {
             {/* GitHub */}
             <a
               href="#"
-              className="w-9 h-9 rounded-lg bg-arena-card border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary/30 hover:bg-arena-primary/10 transition-all duration-200"
+              className="w-9 h-9 rounded-lg bg-arena-bg border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary hover:bg-arena-primary/10 transition-all duration-200"
               aria-label="GitHub"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -69,7 +66,7 @@ export default function Footer() {
             {/* Discord */}
             <a
               href="#"
-              className="w-9 h-9 rounded-lg bg-arena-card border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary/30 hover:bg-arena-primary/10 transition-all duration-200"
+              className="w-9 h-9 rounded-lg bg-arena-bg border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary hover:bg-arena-primary/10 transition-all duration-200"
               aria-label="Discord"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -79,7 +76,7 @@ export default function Footer() {
             {/* X / Twitter */}
             <a
               href="#"
-              className="w-9 h-9 rounded-lg bg-arena-card border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary/30 hover:bg-arena-primary/10 transition-all duration-200"
+              className="w-9 h-9 rounded-lg bg-arena-bg border border-arena-border flex items-center justify-center text-arena-muted hover:text-arena-text-bright hover:border-arena-primary hover:bg-arena-primary/10 transition-all duration-200"
               aria-label="Twitter"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -90,7 +87,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-arena-border/50 text-center">
+        <div className="mt-10 pt-6 border-t border-arena-border-light text-center">
           <p className="text-xs text-arena-muted">
             {t.footer.copyright}
           </p>

@@ -12,15 +12,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<string, string> = {
   primary:
-    "bg-arena-primary hover:bg-arena-primary-dark text-arena-bg font-semibold shadow-arena-glow hover:shadow-arena-glow-strong",
+    "bg-arena-primary hover:bg-arena-primary-dark text-white font-semibold shadow-arena-sm",
   secondary:
-    "bg-arena-card hover:bg-arena-card-hover text-arena-text border border-arena-border hover:border-arena-primary/30",
+    "bg-white hover:bg-arena-card-hover text-arena-text border border-arena-border",
   danger:
-    "bg-arena-danger hover:bg-rose-600 text-white font-semibold shadow-arena-sm",
+    "bg-arena-danger hover:bg-red-700 text-white font-semibold shadow-arena-sm",
   ghost:
-    "bg-transparent hover:bg-arena-card text-arena-muted hover:text-arena-text",
+    "bg-transparent hover:bg-arena-card-hover text-arena-muted hover:text-arena-text",
   outline:
-    "bg-transparent border border-arena-primary/50 text-arena-primary hover:bg-arena-primary/10 hover:border-arena-primary",
+    "bg-transparent border-2 border-arena-primary text-arena-primary hover:bg-arena-primary hover:text-white",
 };
 
 const sizeStyles: Record<string, string> = {
@@ -41,7 +41,7 @@ export default function Button({
   return (
     <button
       className={classNames(
-        "inline-flex items-center justify-center rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:ring-offset-2 focus:ring-offset-arena-bg disabled:opacity-50 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-arena-primary/40 focus:ring-offset-2 focus:ring-offset-arena-bg disabled:opacity-50 disabled:cursor-not-allowed",
         variantStyles[variant],
         sizeStyles[size],
         className

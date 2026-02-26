@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   html {
@@ -11,6 +11,16 @@
 
   body {
     @apply bg-arena-bg text-arena-text antialiased font-sans;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: grid-drift 20s linear infinite;
+  }
+
+  @keyframes grid-drift {
+    0%   { background-position: 0 0, 0 0; }
+    100% { background-position: 40px 40px, 40px 40px; }
   }
 
   ::-webkit-scrollbar {
@@ -23,7 +33,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-arena-border rounded-full hover:bg-arena-muted/50;
+    @apply bg-arena-border-light rounded-full;
   }
 
   ::selection {
@@ -32,12 +42,75 @@
 }
 
 @layer components {
+  /* ---- Auth page effects ---- */
+  .auth-card {
+    @apply bg-white/95 backdrop-blur-sm border border-arena-border-light rounded-2xl p-8 shadow-arena-lg relative overflow-hidden;
+  }
+
+  .auth-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 1rem;
+    padding: 1.5px;
+    background: linear-gradient(
+      135deg,
+      rgba(91, 79, 207, 0.4),
+      transparent 40%,
+      transparent 60%,
+      rgba(232, 165, 0, 0.3)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: shimmer 4s linear infinite;
+    background-size: 200% 200%;
+  }
+
+  .auth-input-focus {
+    @apply relative;
+  }
+
+  .auth-input-focus::after {
+    content: "";
+    @apply absolute left-0 bottom-0 h-0.5 w-0 bg-arena-primary rounded-full;
+    transition: width 0.3s ease;
+  }
+
+  .auth-input-focus:focus-within::after {
+    @apply w-full;
+  }
+
+  .auth-error {
+    @apply bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm;
+    animation: slideDown 0.3s ease-out forwards;
+  }
+
+  .auth-floating-shape {
+    @apply absolute rounded-full pointer-events-none;
+  }
+
+  /* Auth panel gradient */
+  .auth-panel-bg {
+    background: linear-gradient(135deg, #4A3FB5 0%, #5B4FCF 40%, #7B6FE0 100%);
+  }
+
+  /* Stagger animation delays for form fields */
+  .auth-stagger-1 { animation-delay: 0.1s; }
+  .auth-stagger-2 { animation-delay: 0.2s; }
+  .auth-stagger-3 { animation-delay: 0.3s; }
+  .auth-stagger-4 { animation-delay: 0.4s; }
+  .auth-stagger-5 { animation-delay: 0.5s; }
+  .auth-stagger-6 { animation-delay: 0.6s; }
+  .auth-stagger-7 { animation-delay: 0.7s; }
+
   .page-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
   }
 
   .page-title {
-    @apply text-2xl sm:text-3xl font-bold text-arena-text mb-2;
+    @apply text-2xl sm:text-3xl font-bold text-arena-text font-display mb-2;
   }
 
   .page-subtitle {
@@ -45,56 +118,46 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-arena-primary to-arena-primary-light bg-clip-text text-transparent;
+    @apply text-arena-primary;
   }
 
   .gradient-text-amber {
-    @apply bg-gradient-to-r from-arena-accent to-arena-accent-light bg-clip-text text-transparent;
+    @apply text-arena-accent;
   }
 
   .glow-border {
-    @apply border border-arena-primary/30 shadow-arena-glow;
+    @apply border-2 border-arena-primary;
   }
 
   .glass {
-    @apply bg-arena-bg-card/60 backdrop-blur-xl border border-arena-border/50;
+    @apply bg-white border border-arena-border;
   }
 
   .glass-strong {
-    @apply bg-arena-bg-card/80 backdrop-blur-2xl border border-arena-border/60;
+    @apply bg-white border border-arena-border;
   }
 
-  /* Animated grid background */
-  .arena-grid-bg {
-    background-image:
-      linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
+  /* ---- Agent card effects ---- */
+  .agent-card {
+    @apply bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Circuit pattern */
-  .circuit-pattern {
-    background-image:
-      radial-gradient(circle at 25px 25px, rgba(0, 240, 255, 0.04) 2px, transparent 0),
-      linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
-    background-size: 50px 50px;
+  .agent-card:hover {
+    @apply shadow-arena-lg border-arena-primary/40;
+    transform: translateY(-2px);
   }
 
-  /* Noise/grain overlay */
-  .grain-overlay::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 256px 256px;
+  /* Win rate ring (conic-gradient) */
+  .stat-ring {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stat-ring-inner {
+    @apply bg-white rounded-full flex items-center justify-center;
   }
 
   /* Scroll-triggered animation classes */
@@ -120,58 +183,6 @@
   }
   .animate-on-scroll-delay-4 {
     transition-delay: 0.4s;
-  }
-
-  /* Glowing button */
-  .btn-glow {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-glow::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: linear-gradient(45deg, #00F0FF, #00C4D0, #00F0FF);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .btn-glow:hover::before {
-    opacity: 1;
-    animation: borderGlow 2s ease-in-out infinite;
-  }
-
-  @keyframes borderGlow {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
-  }
-
-  /* Animated gradient border */
-  .animated-border {
-    position: relative;
-    background: linear-gradient(var(--arena-bg-card, #16161F), var(--arena-bg-card, #16161F)) padding-box,
-                linear-gradient(135deg, #00F0FF, #FFB800, #00F0FF) border-box;
-    border: 1px solid transparent;
-  }
-
-  /* Spotlight effect */
-  .spotlight {
-    position: relative;
-  }
-
-  .spotlight::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(0, 240, 255, 0.06) 0%, transparent 70%);
-    pointer-events: none;
   }
 }
 

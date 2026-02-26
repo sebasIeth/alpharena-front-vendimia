@@ -68,14 +68,15 @@ class ApiClient {
 
     const response = await fetch(url, options);
 
-    if (response.status === 401) {
-      throw new Error("Your session has expired. Please log in again.");
-    }
-
     if (!response.ok) {
       const error = await response.json().catch(() => ({
         message: `Request failed with status ${response.status}`,
       }));
+
+      if (response.status === 401 && includeAuth) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
       throw new Error(error.message || `Request failed with status ${response.status}`);
     }
 

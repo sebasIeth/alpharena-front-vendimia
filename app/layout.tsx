@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen flex flex-col grain-overlay">
+      <body className="min-h-screen flex flex-col">
         <LanguageProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
