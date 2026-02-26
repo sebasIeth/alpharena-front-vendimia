@@ -26,100 +26,129 @@ interface ChatMessage {
   timestamp: number;
 }
 
-/* ── Win Rate Ring (conic-gradient) ── */
-function WinRateRing({ rate, size = 88 }: { rate: number; size?: number }) {
-  const pct = Math.round(rate * 100);
-  const inner = size - 12;
+/* ═══════════════════════════════════════════════════════
+   SVG ICONS
+   ═══════════════════════════════════════════════════════ */
+function IconChevronLeft({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <div
-      className="stat-ring"
-      style={{
-        width: size,
-        height: size,
-        background: `conic-gradient(
-          #5B4FCF ${pct * 3.6}deg,
-          #E8E4DF ${pct * 3.6}deg
-        )`,
-      }}
-    >
-      <div
-        className="stat-ring-inner"
-        style={{ width: inner, height: inner }}
-      >
-        <span className="text-lg font-bold font-mono text-arena-text tabular-nums">
-          {pct}%
-        </span>
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+function IconEdit({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+  );
+}
+function IconTrash({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+  );
+}
+function IconBolt({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  );
+}
+function IconChat({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  );
+}
+function IconChevronDown({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+function IconSend({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+    </svg>
+  );
+}
+function IconCoin({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+function IconTrophy({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0116.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a18.991 18.991 0 01-4.27.492 18.99 18.99 0 01-4.27-.493" />
+    </svg>
+  );
+}
+function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUB-COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Avatar ── */
+function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
+  return (
+    <div className={`${size} rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
+      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
+    </div>
+  );
+}
+
+/* ── Win Rate Ring ── */
+function WinRateRing({ rate, size = 120 }: { rate: number; size?: number }) {
+  const pct = Math.round(rate * 100);
+  const inner = size - 14;
+  const color = pct >= 60 ? "#059669" : pct >= 40 ? "#5B4FCF" : "#DC2626";
+  return (
+    <div className="stat-ring shrink-0" style={{ width: size, height: size, background: `conic-gradient(${color} ${pct * 3.6}deg, #E8E4DF ${pct * 3.6}deg)` }}>
+      <div className="stat-ring-inner" style={{ width: inner, height: inner }}>
+        <div className="text-center">
+          <span className="text-3xl font-extrabold font-mono text-arena-text-bright tabular-nums">{pct}</span>
+          <span className="text-xs text-arena-muted ml-0.5">%</span>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── W/L/D Stacked Bar ── */
-function WLDStackedBar({
-  wins,
-  losses,
-  draws,
-}: {
-  wins: number;
-  losses: number;
-  draws: number;
-}) {
+/* ── W/L/D Bar ── */
+function WLDBar({ wins, losses, draws, height = "h-2.5" }: { wins: number; losses: number; draws: number; height?: string }) {
   const total = wins + losses + draws;
-  if (total === 0) {
-    return (
-      <div className="space-y-2">
-        <div className="w-full h-2.5 rounded-full bg-arena-border-light/50" />
-        <div className="text-xs text-arena-muted text-center">No matches yet</div>
-      </div>
-    );
-  }
+  if (total === 0) return <div className={`w-full ${height} rounded-full bg-arena-border-light/50`} />;
   const wPct = (wins / total) * 100;
   const lPct = (losses / total) * 100;
   const dPct = (draws / total) * 100;
-
   return (
-    <div className="space-y-3">
-      <div className="w-full h-3 rounded-full overflow-hidden flex bg-arena-border-light/30">
-        {wPct > 0 && (
-          <div
-            className="h-full bg-arena-success rounded-l-full transition-all duration-700"
-            style={{ width: `${wPct}%` }}
-          />
-        )}
-        {dPct > 0 && (
-          <div
-            className="h-full bg-arena-muted-light/60 transition-all duration-700"
-            style={{ width: `${dPct}%` }}
-          />
-        )}
-        {lPct > 0 && (
-          <div
-            className="h-full bg-arena-danger/60 rounded-r-full transition-all duration-700"
-            style={{ width: `${lPct}%` }}
-          />
-        )}
-      </div>
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-arena-success" />
-          <span className="text-arena-text font-medium">{wins}</span>
-          <span className="text-arena-muted">W</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-arena-muted-light/60" />
-          <span className="text-arena-text font-medium">{draws}</span>
-          <span className="text-arena-muted">D</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-arena-danger/60" />
-          <span className="text-arena-text font-medium">{losses}</span>
-          <span className="text-arena-muted">L</span>
-        </div>
-      </div>
+    <div className={`w-full ${height} rounded-full overflow-hidden flex bg-arena-border-light/30`}>
+      {wPct > 0 && <div className="h-full bg-arena-success transition-all duration-700" style={{ width: `${wPct}%` }} />}
+      {dPct > 0 && <div className="h-full bg-arena-muted-light/60 transition-all duration-700" style={{ width: `${dPct}%` }} />}
+      {lPct > 0 && <div className="h-full bg-arena-danger/60 transition-all duration-700" style={{ width: `${lPct}%` }} />}
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════
+   MAIN
+   ═══════════════════════════════════════════════════════ */
 function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -131,7 +160,6 @@ function AgentDetailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Edit state
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -144,14 +172,12 @@ function AgentDetailContent() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
-  // Chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
 
-  // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -162,7 +188,6 @@ function AgentDetailContent() {
           api.getAgent(agentId),
           api.getAgentStats(agentId),
         ]);
-
         if (agentRes.status === "fulfilled") {
           const a = agentRes.value.agent;
           setAgent(a);
@@ -177,7 +202,6 @@ function AgentDetailContent() {
         } else {
           setError(t.agentDetail.agentNotFound);
         }
-
         if (statsRes.status === "fulfilled") {
           setRecentMatches(
             (statsRes.value.recentMatches || []).map((m) => ({
@@ -187,9 +211,7 @@ function AgentDetailContent() {
           );
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : t.agentDetail.loadFailed
-        );
+        setError(err instanceof Error ? err.message : t.agentDetail.loadFailed);
       } finally {
         setLoading(false);
       }
@@ -201,33 +223,22 @@ function AgentDetailContent() {
     e.preventDefault();
     setEditError("");
     setEditLoading(true);
-
     const gameTypes: string[] = [];
     if (editForm.marrakech) gameTypes.push("marrakech");
-
     try {
-      const updatePayload: Record<string, unknown> = {
-        name: editForm.name.trim(),
-        gameTypes,
-      };
+      const updatePayload: Record<string, unknown> = { name: editForm.name.trim(), gameTypes };
       if (agent?.type === "openclaw") {
-        if (editForm.openclawUrl.trim())
-          updatePayload.openclawUrl = editForm.openclawUrl.trim();
-        if (editForm.openclawToken.trim())
-          updatePayload.openclawToken = editForm.openclawToken.trim();
-        if (editForm.openclawAgentId.trim())
-          updatePayload.openclawAgentId = editForm.openclawAgentId.trim();
+        if (editForm.openclawUrl.trim()) updatePayload.openclawUrl = editForm.openclawUrl.trim();
+        if (editForm.openclawToken.trim()) updatePayload.openclawToken = editForm.openclawToken.trim();
+        if (editForm.openclawAgentId.trim()) updatePayload.openclawAgentId = editForm.openclawAgentId.trim();
       } else {
-        if (editForm.endpointUrl.trim())
-          updatePayload.endpointUrl = editForm.endpointUrl.trim();
+        if (editForm.endpointUrl.trim()) updatePayload.endpointUrl = editForm.endpointUrl.trim();
       }
       const data = await api.updateAgent(agentId, updatePayload as any);
       setAgent(data.agent);
       setEditing(false);
     } catch (err) {
-      setEditError(
-        err instanceof Error ? err.message : t.agentDetail.updateFailed
-      );
+      setEditError(err instanceof Error ? err.message : t.agentDetail.updateFailed);
     } finally {
       setEditLoading(false);
     }
@@ -239,9 +250,7 @@ function AgentDetailContent() {
       await api.deleteAgent(agentId);
       router.push("/agents");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t.agentDetail.deleteFailed
-      );
+      setError(err instanceof Error ? err.message : t.agentDetail.deleteFailed);
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
@@ -256,28 +265,16 @@ function AgentDetailContent() {
     e.preventDefault();
     const msg = chatInput.trim();
     if (!msg || chatSending) return;
-
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "user", text: msg, timestamp: Date.now() },
-    ]);
+    setChatMessages((prev) => [...prev, { role: "user", text: msg, timestamp: Date.now() }]);
     setChatInput("");
     setChatSending(true);
-
     try {
       const data = await api.chatWithAgent(agentId, msg);
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "agent", text: data.reply, timestamp: Date.now() },
-      ]);
+      setChatMessages((prev) => [...prev, { role: "agent", text: data.reply, timestamp: Date.now() }]);
     } catch (err) {
       setChatMessages((prev) => [
         ...prev,
-        {
-          role: "agent",
-          text: `Error: ${err instanceof Error ? err.message : "Failed to send message"}`,
-          timestamp: Date.now(),
-        },
+        { role: "agent", text: `Error: ${err instanceof Error ? err.message : "Failed"}`, timestamp: Date.now() },
       ]);
     } finally {
       setChatSending(false);
@@ -293,9 +290,7 @@ function AgentDetailContent() {
           <div className="text-center py-8">
             <p className="text-arena-accent mb-4">{error}</p>
             <Link href="/agents">
-              <Button variant="secondary">
-                {t.agentDetail.backToAgents}
-              </Button>
+              <Button variant="secondary">{t.agentDetail.backToAgents}</Button>
             </Link>
           </div>
         </Card>
@@ -309,273 +304,309 @@ function AgentDetailContent() {
   const losses = agent.stats?.losses || 0;
   const draws = agent.stats?.draws || 0;
   const totalMatches = wins + losses + draws;
+  const isLive = agent.status === "in_match";
 
   return (
     <div className="page-container">
-      {/* Back Link */}
+
+      {/* ═══════ BACK LINK ═══════ */}
       <Link
         href="/agents"
-        className="text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 inline-block opacity-0 animate-fade-in"
+        className="inline-flex items-center gap-1.5 text-sm text-arena-muted hover:text-arena-primary transition-colors mb-6 opacity-0 animate-fade-in group"
+        style={{ animationFillMode: "both" }}
       >
+        <IconChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         {t.agentDetail.backToAgents}
       </Link>
 
       {error && (
-        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6 animate-fade-down">
+        <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6 animate-fade-down" style={{ animationFillMode: "both" }}>
           {error}
         </div>
       )}
 
-      {/* ── Hero Header ── */}
-      <div className="bg-gradient-to-r from-arena-primary/[0.06] via-transparent to-arena-accent/[0.04] rounded-2xl border border-arena-border-light p-6 sm:p-8 mb-8 opacity-0 animate-fade-up">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-arena-text">
-                {agent.name}
-              </h1>
-              <Badge status={agent.status} />
+      {/* ═══════════════════════════════════════════════════
+          HERO HEADER
+          ═══════════════════════════════════════════════════ */}
+      <div className="dash-hero p-6 sm:p-8 mb-8 opacity-0 animate-fade-up" style={{ animationFillMode: "both" }}>
+        {/* Orbs */}
+        <div className="dash-hero-orb w-56 h-56 bg-arena-primary/10 -top-24 -right-14 animate-pulse-soft" />
+        <div className="dash-hero-orb w-36 h-36 bg-arena-accent/8 -bottom-14 left-6 animate-pulse-soft" style={{ animationDelay: "2s" }} />
+        <div className="dash-hero-orb w-20 h-20 bg-arena-success/6 top-2 left-1/3 animate-pulse-soft" style={{ animationDelay: "3.5s" }} />
+
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Left: avatar + info */}
+            <div className="flex items-start gap-5">
+              <div className="relative">
+                <Avatar name={agent.name} size="w-20 h-20" textSize="text-3xl" gradient="from-arena-primary to-arena-accent" />
+                {isLive && (
+                  <span className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-arena-success border-2 border-white">
+                    <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright">
+                    {agent.name}
+                  </h1>
+                  <Badge status={agent.status} />
+                  {isLive && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="relative w-2 h-2 live-dot">
+                        <span className="absolute inset-0 rounded-full bg-arena-success" />
+                      </span>
+                      <span className="text-[10px] text-arena-success font-mono uppercase tracking-wider">{t.common.live}</span>
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-arena-muted font-mono mb-2.5 break-all max-w-lg">
+                  {agent.type === "openclaw" ? agent.openclawUrl : agent.endpointUrl}
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {agent.type === "openclaw" && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OpenClaw</span>
+                  )}
+                  {agent.gameTypes.map((gt) => (
+                    <span key={gt} className="px-2 py-0.5 text-[10px] bg-arena-primary/8 text-arena-primary rounded capitalize font-mono">{gt}</span>
+                  ))}
+                  <span className="text-[11px] text-arena-muted">{formatRelativeTime(agent.createdAt)}</span>
+                </div>
+              </div>
             </div>
 
-            <p className="text-sm text-arena-muted font-mono mb-3 break-all">
-              {agent.type === "openclaw"
-                ? agent.openclawUrl
-                : agent.endpointUrl}
-            </p>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {agent.type === "openclaw" && (
-                <span className="px-2 py-0.5 text-xs font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">
-                  OpenClaw
-                </span>
+            {/* Right: action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setEditing(!editing)}
+                className="w-10 h-10 rounded-xl bg-white border border-arena-border-light flex items-center justify-center text-arena-muted hover:text-arena-primary hover:border-arena-primary/40 transition-all shadow-arena-sm hover:shadow-arena"
+                title={editing ? t.common.cancelEdit : t.common.edit}
+              >
+                <IconEdit />
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-10 h-10 rounded-xl bg-white border border-arena-border-light flex items-center justify-center text-arena-muted hover:text-arena-danger hover:border-arena-danger/40 transition-all shadow-arena-sm hover:shadow-arena"
+                title={t.common.delete}
+              >
+                <IconTrash />
+              </button>
+              {agent.status === "idle" && (
+                <Link href={`/matchmaking?agentId=${agent.id}`}>
+                  <Button size="sm">
+                    <span className="flex items-center gap-1.5">
+                      <IconBolt />
+                      {t.agentDetail.joinQueue}
+                    </span>
+                  </Button>
+                </Link>
               )}
-              {agent.gameTypes.map((gt) => (
-                <span
-                  key={gt}
-                  className="px-2 py-0.5 text-xs bg-arena-primary/8 text-arena-primary rounded capitalize font-mono"
-                >
-                  {gt}
-                </span>
-              ))}
-              <span className="text-xs text-arena-muted">
-                {formatRelativeTime(agent.createdAt)}
-              </span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditing(!editing)}
-            >
-              {editing ? t.common.cancelEdit : t.common.edit}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setShowDeleteModal(true)}
-            >
-              {t.common.delete}
-            </Button>
-            {agent.status === "idle" && (
-              <Link href={`/matchmaking?agentId=${agent.id}`}>
-                <Button size="sm">{t.agentDetail.joinQueue}</Button>
-              </Link>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Edit Form */}
+      {/* ═══════ EDIT FORM ═══════ */}
       {editing && (
-        <Card className="mb-8 animate-fade-down">
+        <div className="bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm mb-8 animate-fade-down" style={{ animationFillMode: "both" }}>
           <form onSubmit={handleEdit} className="space-y-4">
             <CardTitle>{t.agentDetail.editAgent}</CardTitle>
             {editError && (
-              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">
-                {editError}
-              </div>
+              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">{editError}</div>
             )}
-            <Input
-              label={t.common.name}
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm({ ...editForm, name: e.target.value })
-              }
-            />
+            <Input label={t.common.name} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
             {agent.type === "openclaw" ? (
               <>
-                <Input
-                  label={t.agentDetail.openclawUrlLabel}
-                  placeholder="http://your-vps.com:64936"
-                  value={editForm.openclawUrl}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      openclawUrl: e.target.value,
-                    })
-                  }
-                  helperText={t.agentDetail.openclawUrlHelper}
-                />
-                <Input
-                  label={t.agentDetail.gatewayTokenLabel}
-                  type="password"
-                  placeholder="Token from ~/.openclaw/openclaw.json"
-                  value={editForm.openclawToken}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      openclawToken: e.target.value,
-                    })
-                  }
-                  helperText={t.agentDetail.gatewayTokenHelper}
-                />
-                <Input
-                  label={t.agentDetail.agentIdLabel}
-                  placeholder="main"
-                  value={editForm.openclawAgentId}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      openclawAgentId: e.target.value,
-                    })
-                  }
-                  helperText={t.createAgent.agentIdHelper}
-                />
+                <Input label={t.agentDetail.openclawUrlLabel} placeholder="http://your-vps.com:64936" value={editForm.openclawUrl} onChange={(e) => setEditForm({ ...editForm, openclawUrl: e.target.value })} helperText={t.agentDetail.openclawUrlHelper} />
+                <Input label={t.agentDetail.gatewayTokenLabel} type="password" placeholder="Token from ~/.openclaw/openclaw.json" value={editForm.openclawToken} onChange={(e) => setEditForm({ ...editForm, openclawToken: e.target.value })} helperText={t.agentDetail.gatewayTokenHelper} />
+                <Input label={t.agentDetail.agentIdLabel} placeholder="main" value={editForm.openclawAgentId} onChange={(e) => setEditForm({ ...editForm, openclawAgentId: e.target.value })} helperText={t.createAgent.agentIdHelper} />
               </>
             ) : (
-              <Input
-                label={t.createAgent.endpointUrl}
-                value={editForm.endpointUrl}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    endpointUrl: e.target.value,
-                  })
-                }
-              />
+              <Input label={t.createAgent.endpointUrl} value={editForm.endpointUrl} onChange={(e) => setEditForm({ ...editForm, endpointUrl: e.target.value })} />
             )}
             <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editForm.marrakech}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, marrakech: e.target.checked })
-                }
-                className="w-4 h-4 accent-arena-primary"
-              />
-              <span className="text-sm text-arena-text">
-                {t.createAgent.marrakech}
-              </span>
+              <input type="checkbox" checked={editForm.marrakech} onChange={(e) => setEditForm({ ...editForm, marrakech: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
+              <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
             </label>
             <div className="flex gap-3">
-              <Button type="submit" isLoading={editLoading}>
-                {t.common.save}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setEditing(false)}
-              >
-                {t.common.cancel}
-              </Button>
+              <Button type="submit" isLoading={editLoading}>{t.common.save}</Button>
+              <Button type="button" variant="secondary" onClick={() => setEditing(false)}>{t.common.cancel}</Button>
             </div>
           </form>
-        </Card>
+        </div>
       )}
 
-      {/* ── Stats Section ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {/* ELO Card */}
+      {/* ═══════════════════════════════════════════════════
+          STATS
+          ═══════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-8">
+
+        {/* Performance overview — 3 cols wide */}
         <div
-          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
-          style={{ animationDelay: "0.1s" }}
+          className="lg:col-span-3 bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.1s", animationFillMode: "both" }}
         >
-          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
-            {t.common.eloRating}
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono flex items-center gap-2">
+              <IconTrophy className="w-3.5 h-3.5 text-arena-primary" />
+              Performance
+            </h3>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-arena-muted">
+              <div className="w-2 h-2 rounded-full bg-arena-success" />
+              {wins}W
+              <div className="w-2 h-2 rounded-full bg-arena-muted-light/60 ml-1" />
+              {draws}D
+              <div className="w-2 h-2 rounded-full bg-arena-danger/60 ml-1" />
+              {losses}L
+            </div>
           </div>
-          <div className="text-4xl font-bold font-mono text-arena-primary tabular-nums animate-glow-pulse inline-block">
-            {formatElo(agent.elo)}
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-10">
+            {/* Win Rate Ring */}
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              <WinRateRing rate={agent.stats?.winRate || 0} />
+              <span className="text-[10px] text-arena-muted font-mono uppercase tracking-wider">{t.common.winRate}</span>
+            </div>
+
+            {/* ELO + W/L/D bar */}
+            <div className="flex-1 w-full space-y-4">
+              {/* ELO */}
+              <div>
+                <div className="flex items-end gap-2 mb-1">
+                  <span className="text-4xl font-extrabold font-mono text-arena-primary tabular-nums leading-none">
+                    {formatElo(agent.elo)}
+                  </span>
+                  <span className="text-[10px] text-arena-muted font-mono uppercase tracking-widest mb-1">ELO</span>
+                </div>
+              </div>
+
+              {/* WLD Bar */}
+              <div>
+                <WLDBar wins={wins} losses={losses} draws={draws} height="h-3" />
+                <div className="flex items-center justify-between mt-2.5">
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-success" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{wins}</span>
+                      <span className="text-arena-muted">{t.common.wins}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-muted-light/60" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{draws}</span>
+                      <span className="text-arena-muted">{t.common.draws}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-danger/60" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{losses}</span>
+                      <span className="text-arena-muted">{t.common.losses}</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-arena-muted font-mono tabular-nums">
+                    {totalMatches} {t.common.matches.toLowerCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Win Rate Ring Card */}
-        <div
-          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
-          style={{ animationDelay: "0.15s" }}
-        >
-          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
-            {t.common.winRate}
+        {/* Right column: Earnings + WLD breakdown */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Earnings */}
+          <div
+            className="bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.15s", animationFillMode: "both" }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.common.earnings}</h3>
+              <div className="w-8 h-8 rounded-xl bg-arena-accent/10 flex items-center justify-center">
+                <IconCoin className="w-4 h-4 text-arena-accent" />
+              </div>
+            </div>
+            <div className="flex items-end gap-1.5">
+              <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
+                {(agent.stats?.totalEarnings || 0).toFixed(2)}
+              </span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPH</span>
+            </div>
           </div>
-          <div className="flex items-center justify-center">
-            <WinRateRing rate={agent.stats?.winRate || 0} />
-          </div>
-        </div>
 
-        {/* W/L/D Card */}
-        <div
-          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
-          style={{ animationDelay: "0.2s" }}
-        >
-          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
-            {t.common.matches} ({totalMatches})
-          </div>
-          <WLDStackedBar wins={wins} losses={losses} draws={draws} />
-        </div>
-
-        {/* Earnings Card */}
-        <div
-          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
-          style={{ animationDelay: "0.25s" }}
-        >
-          <div className="text-xs text-arena-muted uppercase tracking-wider font-mono mb-3">
-            {t.common.earnings}
-          </div>
-          <div className="text-4xl font-bold font-mono tabular-nums text-arena-text">
-            {(agent.stats?.totalEarnings || 0).toFixed(2)}
-          </div>
-          <div className="text-xs text-arena-muted mt-1 font-mono tracking-wider">
-            ALPH
+          {/* W/L/D breakdown */}
+          <div
+            className="bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.2s", animationFillMode: "both" }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.common.matches}</h3>
+              <span className="text-xs font-mono font-bold text-arena-text-bright tabular-nums">{totalMatches}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center bg-arena-success/5 rounded-xl py-3">
+                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-success">{wins}</div>
+                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.wins}</div>
+              </div>
+              <div className="text-center bg-arena-muted-light/5 rounded-xl py-3">
+                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-muted">{draws}</div>
+                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.draws}</div>
+              </div>
+              <div className="text-center bg-arena-danger/5 rounded-xl py-3">
+                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-danger/70">{losses}</div>
+                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.losses}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Mini Chat (OpenClaw only) ── */}
+      {/* ═══════════════════════════════════════════════════
+          CHAT (OpenClaw)
+          ═══════════════════════════════════════════════════ */}
       {agent.type === "openclaw" && (
         <div
-          className="bg-white border border-arena-border-light rounded-xl shadow-arena-sm mb-8 overflow-hidden opacity-0 animate-fade-up"
-          style={{ animationDelay: "0.3s" }}
+          className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm mb-8 overflow-hidden opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.25s", animationFillMode: "both" }}
         >
           <div
             className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-arena-card-hover transition-colors"
             onClick={() => setChatOpen(!chatOpen)}
           >
-            <CardTitle>{t.agentDetail.chatWithAgent}</CardTitle>
-            <span className="text-arena-muted text-sm">
-              {chatOpen ? t.agentDetail.hide : t.agentDetail.show}
-            </span>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-arena-primary/10 flex items-center justify-center">
+                <IconChat className="w-4.5 h-4.5 text-arena-primary" />
+              </div>
+              <div>
+                <CardTitle>{t.agentDetail.chatWithAgent}</CardTitle>
+                <p className="text-[10px] text-arena-muted mt-0.5">Send messages to your agent</p>
+              </div>
+            </div>
+            <IconChevronDown className={`w-5 h-5 text-arena-muted transition-transform duration-200 ${chatOpen ? "rotate-180" : ""}`} />
           </div>
 
           {chatOpen && (
             <div className="px-6 pb-5 border-t border-arena-border-light/60">
-              {/* Messages */}
-              <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border-light p-3 my-4 space-y-2">
+              <div className="h-72 overflow-y-auto bg-arena-bg rounded-xl border border-arena-border-light p-4 my-4 space-y-3">
                 {chatMessages.length === 0 && (
-                  <p className="text-sm text-arena-muted text-center mt-8">
-                    {t.agentDetail.chatEmpty}
-                  </p>
+                  <div className="flex flex-col items-center justify-center h-full text-arena-muted">
+                    <div className="w-12 h-12 rounded-xl bg-arena-primary/10 flex items-center justify-center mb-3 opacity-50">
+                      <IconChat className="w-6 h-6 text-arena-primary" />
+                    </div>
+                    <p className="text-sm">{t.agentDetail.chatEmpty}</p>
+                  </div>
                 )}
                 {chatMessages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
+                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    {msg.role === "agent" && (
+                      <Avatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" gradient="from-arena-primary to-arena-primary-dark" />
+                    )}
                     <div
-                      className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                      className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
                         msg.role === "user"
-                          ? "bg-arena-primary text-white"
-                          : "bg-white border border-arena-border-light text-arena-text"
+                          ? "bg-arena-primary text-white rounded-br-md"
+                          : "bg-white border border-arena-border-light text-arena-text rounded-bl-md ml-2"
                       }`}
                     >
                       {msg.text}
@@ -584,9 +615,12 @@ function AgentDetailContent() {
                 ))}
                 {chatSending && (
                   <div className="flex justify-start">
-                    <div className="bg-white border border-arena-border-light px-3 py-2 rounded-xl text-sm text-arena-muted">
-                      <span className="animate-pulse">
-                        {t.agentDetail.chatThinking}
+                    <Avatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" gradient="from-arena-primary to-arena-primary-dark" />
+                    <div className="bg-white border border-arena-border-light px-4 py-2.5 rounded-2xl rounded-bl-md text-sm text-arena-muted ml-2">
+                      <span className="inline-flex gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-arena-muted animate-bounce" style={{ animationDelay: "0s" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-arena-muted animate-bounce" style={{ animationDelay: "0.15s" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-arena-muted animate-bounce" style={{ animationDelay: "0.3s" }} />
                       </span>
                     </div>
                   </div>
@@ -594,7 +628,6 @@ function AgentDetailContent() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input */}
               <form onSubmit={handleChatSend} className="flex gap-2">
                 <input
                   type="text"
@@ -602,87 +635,124 @@ function AgentDetailContent() {
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={t.agentDetail.chatPlaceholder}
                   disabled={chatSending}
-                  className="flex-1 px-4 py-2.5 bg-white border border-arena-border-light rounded-lg text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
+                  className="flex-1 px-4 py-2.5 bg-white border border-arena-border-light rounded-xl text-arena-text placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all duration-200 text-sm"
                 />
-                <Button
+                <button
                   type="submit"
-                  size="md"
                   disabled={chatSending || !chatInput.trim()}
+                  className="w-10 h-10 rounded-xl bg-arena-primary text-white flex items-center justify-center hover:bg-arena-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-arena-sm"
                 >
-                  {t.common.send}
-                </Button>
+                  <IconSend />
+                </button>
               </form>
             </div>
           )}
         </div>
       )}
 
-      {/* ── Recent Matches ── */}
-      <div
-        className="opacity-0 animate-fade-up"
-        style={{ animationDelay: "0.35s" }}
-      >
-        <CardTitle className="mb-4">{t.agentDetail.recentMatches}</CardTitle>
+      {/* ═══════════════════════════════════════════════════
+          RECENT MATCHES (Timeline)
+          ═══════════════════════════════════════════════════ */}
+      <div className="opacity-0 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-display font-bold text-arena-text-bright flex items-center gap-2">
+            {t.agentDetail.recentMatches}
+            {recentMatches.length > 0 && (
+              <span className="bg-arena-primary/10 text-arena-primary text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                {recentMatches.length}
+              </span>
+            )}
+          </h2>
+        </div>
+
         {recentMatches.length === 0 ? (
-          <Card>
-            <div className="text-center py-8 text-arena-muted">
-              {t.agentDetail.noMatches}
+          <div className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm">
+            <div className="text-center py-14 px-6">
+              <div className="w-14 h-14 rounded-2xl bg-arena-primary/10 flex items-center justify-center mx-auto mb-4 animate-float">
+                <IconBolt className="w-7 h-7 text-arena-primary" />
+              </div>
+              <p className="text-arena-text-bright font-semibold mb-1">{t.agentDetail.noMatches}</p>
+              <p className="text-sm text-arena-muted mb-5">
+                {agent.status === "idle" ? "Join a match to start competing." : ""}
+              </p>
+              {agent.status === "idle" && (
+                <Link href={`/matchmaking?agentId=${agent.id}`}>
+                  <Button variant="secondary" size="sm">
+                    <span className="flex items-center gap-1.5">
+                      <IconBolt className="w-3.5 h-3.5" />
+                      {t.agentDetail.joinQueue}
+                    </span>
+                  </Button>
+                </Link>
+              )}
             </div>
-          </Card>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-0">
             {recentMatches.map((match, i) => {
               const agentsArr = normalizeMatchAgents(match.agents);
-              const agentEntry = agentsArr.find(
-                (a) => a.agentId === agentId
-              );
+              const agentEntry = agentsArr.find((a) => a.agentId === agentId);
               const isWinner = match.winnerId === agentId;
+              const isLoss = match.status === "completed" && match.winnerId && match.winnerId !== agentId;
+              const isLast = i === recentMatches.length - 1;
+              const isActive = match.status === "active";
+
+              const dotColor = isActive
+                ? "bg-arena-success"
+                : isWinner ? "bg-arena-success" : isLoss ? "bg-arena-danger/70" : "bg-arena-border-light";
+
               return (
                 <Link key={match.id} href={`/matches/${match.id}`}>
                   <div
-                    className="agent-card mb-3 opacity-0 animate-fade-up"
-                    style={{ animationDelay: `${0.4 + i * 0.06}s` }}
+                    className="flex gap-4 group opacity-0 animate-fade-up"
+                    style={{ animationDelay: `${0.35 + i * 0.06}s`, animationFillMode: "both" }}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <Badge status={match.status} />
-                        {match.status === "completed" && (
-                          <span
-                            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                              isWinner
-                                ? "bg-arena-success/15 text-arena-success"
-                                : "bg-arena-danger/15 text-arena-danger"
-                            }`}
-                          >
-                            {isWinner ? t.common.won : t.common.lost}
-                          </span>
+                    {/* Timeline */}
+                    <div className="flex flex-col items-center pt-5 shrink-0">
+                      <div className={`timeline-dot ${dotColor}`}>
+                        {isActive && (
+                          <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-40" />
                         )}
-                        <span className="text-sm text-arena-text font-medium">
-                          {agentsArr
-                            .map((a) => a.agentName)
-                            .join(" vs ") || "Unknown"}
-                        </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-arena-muted">
-                        {agentEntry?.eloChange !== undefined &&
-                          agentEntry.eloChange !== null && (
-                            <span
-                              className={`font-mono font-medium ${
-                                agentEntry.eloChange > 0
-                                  ? "text-arena-success"
-                                  : agentEntry.eloChange < 0
-                                  ? "text-arena-danger"
-                                  : "text-arena-muted"
-                              }`}
-                            >
-                              {agentEntry.eloChange > 0 ? "+" : ""}
-                              {agentEntry.eloChange} {t.common.elo}
+                      {!isLast && (
+                        <div className="w-0.5 flex-1 min-h-[20px] bg-arena-border-light/60" />
+                      )}
+                    </div>
+
+                    {/* Card */}
+                    <div className="bg-white border border-arena-border-light rounded-xl p-4 shadow-arena-sm flex-1 mb-3 transition-all duration-200 group-hover:shadow-arena group-hover:border-arena-primary/30">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <Badge status={match.status} />
+                          {match.status === "completed" && (
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                              isWinner
+                                ? "bg-arena-success/12 text-arena-success"
+                                : isLoss
+                                ? "bg-arena-danger/12 text-arena-danger"
+                                : "bg-arena-muted-light/15 text-arena-muted"
+                            }`}>
+                              {isWinner ? t.common.won : isLoss ? t.common.lost : t.common.draws}
                             </span>
                           )}
-                        <span className="font-mono">
-                          {t.common.stake}: {match.stakeAmount}
-                        </span>
-                        <span>{formatRelativeTime(match.createdAt)}</span>
+                          <span className="text-sm font-medium text-arena-text-bright">
+                            {agentsArr.map((a) => a.agentName).join(" vs ") || "Unknown"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-arena-muted">
+                          <span className="capitalize font-mono">{match.gameType}</span>
+                          {agentEntry?.eloChange !== undefined && agentEntry.eloChange !== null && (
+                            <span className={`font-mono font-semibold ${
+                              agentEntry.eloChange > 0 ? "text-arena-success"
+                              : agentEntry.eloChange < 0 ? "text-arena-danger"
+                              : "text-arena-muted"
+                            }`}>
+                              {agentEntry.eloChange > 0 ? "+" : ""}{agentEntry.eloChange} ELO
+                            </span>
+                          )}
+                          <span className="font-mono">{match.stakeAmount} ALPH</span>
+                          <span>{formatRelativeTime(match.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -693,32 +763,15 @@ function AgentDetailContent() {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title={t.agentDetail.deleteTitle}
-      >
+      {/* ═══════ DELETE MODAL ═══════ */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t.agentDetail.deleteTitle}>
         <div className="space-y-4">
           <p className="text-sm text-arena-muted">
-            {t.agentDetail.deleteConfirm}{" "}
-            <strong className="text-arena-text">{agent.name}</strong>?{" "}
-            {t.agentDetail.deleteWarning}
+            {t.agentDetail.deleteConfirm} <strong className="text-arena-text-bright">{agent.name}</strong>? {t.agentDetail.deleteWarning}
           </p>
           <div className="flex gap-3 justify-end">
-            <Button
-              variant="secondary"
-              onClick={() => setShowDeleteModal(false)}
-            >
-              {t.common.cancel}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              isLoading={deleteLoading}
-            >
-              {t.agentDetail.deleteAgent}
-            </Button>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>{t.common.cancel}</Button>
+            <Button variant="danger" onClick={handleDelete} isLoading={deleteLoading}>{t.agentDetail.deleteAgent}</Button>
           </div>
         </div>
       </Modal>

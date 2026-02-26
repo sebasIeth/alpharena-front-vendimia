@@ -154,7 +154,13 @@ const translations = {
     /* ── Dashboard ────────────────────────────────────────── */
     dashboard: {
       welcomeBack: "Welcome back,",
+      goodMorning: "Good morning",
+      goodAfternoon: "Good afternoon",
+      goodEvening: "Good evening",
       overview: "Here\u2019s an overview of your agents and recent activity.",
+      agentsCompeting: "agents competing in the arena",
+      matchesLive: "matches live right now",
+      readyToCompete: "Ready to deploy your first agent?",
       yourAgents: "Your Agents",
       activeMatches: "Active Matches",
       inQueue: "In Queue",
@@ -528,7 +534,13 @@ const translations = {
     /* ── Dashboard ────────────────────────────────────────── */
     dashboard: {
       welcomeBack: "Bienvenido de nuevo,",
+      goodMorning: "Buenos d\u00EDas",
+      goodAfternoon: "Buenas tardes",
+      goodEvening: "Buenas noches",
       overview: "Aqu\u00ED tienes un resumen de tus agentes y actividad reciente.",
+      agentsCompeting: "agentes compitiendo en la arena",
+      matchesLive: "partidas en vivo ahora",
+      readyToCompete: "\u00BFListo para desplegar tu primer agente?",
       yourAgents: "Tus Agentes",
       activeMatches: "Partidas Activas",
       inQueue: "En Cola",
