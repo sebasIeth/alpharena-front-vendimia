@@ -37,7 +37,7 @@ export function formatNumber(num: number): string {
 }
 
 export function formatElo(elo: number): string {
-  return Math.round(elo).toString();
+  return Math.round(elo || 0).toString();
 }
 
 export function formatWinRate(rate: number): string {

@@ -160,6 +160,48 @@
     @apply bg-white rounded-full flex items-center justify-center;
   }
 
+  /* ---- Dashboard effects ---- */
+  .dash-stat {
+    @apply bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm relative overflow-hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-stat:hover {
+    @apply shadow-arena;
+    transform: translateY(-1px);
+  }
+  .dash-stat-accent {
+    @apply absolute top-0 left-0 w-1 h-full rounded-l-xl;
+  }
+
+  .dash-hero {
+    @apply relative rounded-2xl border border-arena-border-light overflow-hidden;
+    background: linear-gradient(135deg, rgba(91,79,207,0.07) 0%, rgba(245,240,235,0) 50%, rgba(232,165,0,0.05) 100%);
+  }
+
+  .dash-hero-orb {
+    @apply absolute rounded-full pointer-events-none;
+    filter: blur(40px);
+  }
+
+  /* Pulsing live dot */
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.8); }
+  }
+  .live-dot::after {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-arena-success;
+    animation: livePulse 2s ease-in-out infinite;
+  }
+
+  /* Timeline connector */
+  .timeline-dot {
+    @apply w-2 h-2 rounded-full shrink-0 relative z-10;
+  }
+  .timeline-line {
+    @apply absolute left-[3px] top-4 bottom-0 w-0.5 bg-arena-border-light/60;
+  }
+
   /* Scroll-triggered animation classes */
   .animate-on-scroll {
     opacity: 0;

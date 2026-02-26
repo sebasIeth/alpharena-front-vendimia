@@ -1,19 +1,230 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
-import Card, { CardTitle } from "@/components/ui/Card";
+import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatRelativeTime, formatWinRate, normalizeMatchAgents } from "@/lib/utils";
+import {
+  formatRelativeTime,
+  formatWinRate,
+  formatElo,
+  normalizeMatchAgents,
+} from "@/lib/utils";
 import type { Agent, Match } from "@/lib/types";
 
+/* ═══════════════════════════════════════════════════════
+   SVG ICONS
+   ═══════════════════════════════════════════════════════ */
+function IconPlus({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+function IconBolt({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  );
+}
+function IconChart({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  );
+}
+function IconStar({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+function IconUsers({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  );
+}
+function IconTrophy({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0116.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a18.991 18.991 0 01-4.27.492 18.99 18.99 0 01-4.27-.493" />
+    </svg>
+  );
+}
+function IconCoin({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+    </svg>
+  );
+}
+function IconCheck({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUB-COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Avatar with initial ── */
+function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
+  return (
+    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
+      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
+    </div>
+  );
+}
+
+/* ── Win Rate Ring ── */
+function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
+  const pct = Math.round(rate * 100);
+  const inner = size - 14;
+  const color = pct >= 60 ? "#059669" : pct >= 40 ? "#5B4FCF" : "#DC2626";
+  return (
+    <div
+      className="stat-ring shrink-0"
+      style={{
+        width: size,
+        height: size,
+        background: `conic-gradient(${color} ${pct * 3.6}deg, #E8E4DF ${pct * 3.6}deg)`,
+      }}
+    >
+      <div className="stat-ring-inner" style={{ width: inner, height: inner }}>
+        <div className="text-center">
+          <span className="text-2xl font-extrabold font-mono text-arena-text tabular-nums">{pct}</span>
+          <span className="text-xs text-arena-muted ml-0.5">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mini Win Rate Ring ── */
+function MiniRing({ rate, size = 32 }: { rate: number; size?: number }) {
+  const pct = rate * 100;
+  const color = pct >= 60 ? "#059669" : pct >= 40 ? "#5B4FCF" : "#DC2626";
+  const inner = size - 6;
+  return (
+    <div className="stat-ring shrink-0" style={{ width: size, height: size, background: `conic-gradient(${color} ${pct * 3.6}deg, #E8E4DF ${pct * 3.6}deg)` }}>
+      <div className="stat-ring-inner" style={{ width: inner, height: inner }}>
+        <span className="text-[9px] font-bold tabular-nums text-arena-text">{Math.round(pct)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── W/L/D Horizontal Bar ── */
+function WLDBar({ wins, losses, draws, height = "h-2" }: { wins: number; losses: number; draws: number; height?: string }) {
+  const total = wins + losses + draws;
+  if (total === 0) return <div className={`w-full ${height} rounded-full bg-arena-border-light/50`} />;
+  const wPct = (wins / total) * 100;
+  const lPct = (losses / total) * 100;
+  const dPct = (draws / total) * 100;
+  return (
+    <div className={`w-full ${height} rounded-full overflow-hidden flex bg-arena-border-light/30`}>
+      {wPct > 0 && <div className="h-full bg-arena-success transition-all duration-700" style={{ width: `${wPct}%` }} />}
+      {dPct > 0 && <div className="h-full bg-arena-muted-light/60 transition-all duration-700" style={{ width: `${dPct}%` }} />}
+      {lPct > 0 && <div className="h-full bg-arena-danger/60 transition-all duration-700" style={{ width: `${lPct}%` }} />}
+    </div>
+  );
+}
+
+/* ── Stat Card with icon + accent stripe ── */
+function DashStat({ label, value, sub, icon, accentColor, delay, children }: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  delay: number;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="dash-stat opacity-0 animate-fade-up" style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}>
+      <div className={`dash-stat-accent ${accentColor}`} />
+      <div className="pl-3 flex items-start justify-between">
+        <div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1.5">{label}</div>
+          <div className="flex items-end gap-1.5">
+            <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{value}</span>
+            {sub && <span className="text-[10px] text-arena-muted font-mono tracking-wider mb-0.5">{sub}</span>}
+          </div>
+          {children}
+        </div>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accentColor}/10`}>
+          <div className={accentColor.replace("bg-", "text-")}>{icon}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Onboarding empty state ── */
+function OnboardingState({ t }: { t: any }) {
+  const steps = [
+    { num: "01", title: t.home.step1Title, desc: t.home.step1Desc, done: true },
+    { num: "02", title: t.home.step2Title, desc: t.home.step2Desc, href: "/agents/new", cta: t.dashboard.createAgent },
+    { num: "03", title: t.home.step3Title, desc: t.home.step3Desc, href: "/matchmaking", cta: t.dashboard.joinQueue },
+    { num: "04", title: t.home.step4Title, desc: t.home.step4Desc },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {steps.map((step, i) => (
+        <div
+          key={step.num}
+          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          style={{ animationDelay: `${0.2 + i * 0.08}s`, animationFillMode: "both" }}
+        >
+          <div className="flex items-start gap-4">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold font-mono shrink-0 ${
+              step.done ? "bg-arena-success/15 text-arena-success" : "bg-arena-primary/10 text-arena-primary"
+            }`}>
+              {step.done ? <IconCheck /> : step.num}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-arena-text-bright mb-0.5">{step.title}</h4>
+              <p className="text-sm text-arena-muted leading-relaxed">{step.desc}</p>
+              {step.href && step.cta && (
+                <Link href={step.href}>
+                  <Button size="sm" className="mt-3">{step.cta}</Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN DASHBOARD
+   ═══════════════════════════════════════════════════════ */
 function DashboardContent() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -27,20 +238,18 @@ function DashboardContent() {
       try {
         const [agentsRes, matchesRes] = await Promise.allSettled([
           api.getAgents(),
-          api.getMatches({ limit: 5 }),
+          api.getMatches({ limit: 6 }),
         ]);
-
-        if (agentsRes.status === "fulfilled") {
-          setAgents(agentsRes.value.agents || []);
-        }
-        if (matchesRes.status === "fulfilled") {
-          setRecentMatches((matchesRes.value.matches || []).map((m) => ({
-            ...m,
-            id: m.id || (m as any)._id,
-          })));
-        }
+        if (agentsRes.status === "fulfilled") setAgents(agentsRes.value.agents || []);
+        if (matchesRes.status === "fulfilled")
+          setRecentMatches(
+            (matchesRes.value.matches || []).map((m) => ({
+              ...m,
+              id: m.id || (m as any)._id,
+            }))
+          );
       } catch {
-        // silently handle
+        /* silently handle */
       } finally {
         setLoading(false);
       }
@@ -48,178 +257,583 @@ function DashboardContent() {
     fetchData();
   }, []);
 
-  const activeAgents = agents.filter((a) => a.status === "in_match").length;
-  const queuedAgents = agents.filter((a) => a.status === "queued").length;
-  const totalEarnings = agents.reduce(
-    (sum, a) => sum + (a.stats?.totalEarnings || 0),
-    0
-  );
+  const stats = useMemo(() => {
+    const active = agents.filter((a) => a.status === "in_match").length;
+    const queued = agents.filter((a) => a.status === "queued").length;
+    const earnings = agents.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
+    const bestElo = agents.length > 0 ? Math.max(...agents.map((a) => a.elo || 0)) : 0;
+    const wins = agents.reduce((s, a) => s + (a.stats?.wins || 0), 0);
+    const losses = agents.reduce((s, a) => s + (a.stats?.losses || 0), 0);
+    const draws = agents.reduce((s, a) => s + (a.stats?.draws || 0), 0);
+    const total = wins + losses + draws;
+    const winRate = total > 0 ? wins / total : 0;
+    const bestAgent = agents.length > 0
+      ? agents.reduce((best, a) => ((a.elo || 0) > (best.elo || 0) ? a : best), agents[0])
+      : null;
+    return { active, queued, earnings, bestElo, wins, losses, draws, total, winRate, bestAgent };
+  }, [agents]);
+
+  /* Time-based greeting */
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t.dashboard.goodMorning;
+    if (hour < 18) return t.dashboard.goodAfternoon;
+    return t.dashboard.goodEvening;
+  }, [t]);
+
+  /* Dynamic subtitle */
+  const subtitle = useMemo(() => {
+    if (!agents.length) return t.dashboard.readyToCompete;
+    if (stats.active > 0)
+      return `${stats.active} ${t.dashboard.matchesLive}`;
+    return `${agents.length} ${t.dashboard.agentsCompeting}`;
+  }, [agents, stats, t]);
 
   if (loading) return <PageSpinner />;
 
+  const hasAgents = agents.length > 0;
+
   return (
     <div className="page-container">
-      {/* Welcome Header */}
-      <div className="mb-8">
-        <h1 className="page-title">
-          {t.dashboard.welcomeBack} <span className="gradient-text">{user?.username}</span>
-        </h1>
-        <p className="page-subtitle">
-          {t.dashboard.overview}
-        </p>
-      </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <div className="text-sm text-arena-muted mb-1">{t.dashboard.yourAgents}</div>
-          <div className="text-2xl font-bold text-arena-text">{agents.length}</div>
-        </Card>
-        <Card>
-          <div className="text-sm text-arena-muted mb-1">{t.dashboard.activeMatches}</div>
-          <div className="text-2xl font-bold text-arena-success">{activeAgents}</div>
-        </Card>
-        <Card>
-          <div className="text-sm text-arena-muted mb-1">{t.dashboard.inQueue}</div>
-          <div className="text-2xl font-bold text-amber-500">{queuedAgents}</div>
-        </Card>
-        <Card>
-          <div className="text-sm text-arena-muted mb-1">{t.dashboard.totalEarnings}</div>
-          <div className="text-2xl font-bold text-arena-primary">
-            {totalEarnings.toFixed(2)}
+      {/* ═══════════════════════════════════════════════════
+          HERO BANNER
+          ═══════════════════════════════════════════════════ */}
+      <div className="dash-hero p-6 sm:p-8 mb-8 opacity-0 animate-fade-up" style={{ animationFillMode: "both" }}>
+        {/* Gradient orbs */}
+        <div className="dash-hero-orb w-56 h-56 bg-arena-primary/10 -top-24 -right-14 animate-pulse-soft" />
+        <div className="dash-hero-orb w-40 h-40 bg-arena-accent/8 -bottom-14 left-6 animate-pulse-soft" style={{ animationDelay: "2s" }} />
+        <div className="dash-hero-orb w-24 h-24 bg-arena-success/6 top-4 left-1/3 animate-pulse-soft" style={{ animationDelay: "3.5s" }} />
+
+        <div className="relative z-10">
+          {/* Top row: avatar + greeting + CTAs */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 mb-6">
+            {/* Avatar + greeting */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-arena-primary to-arena-accent flex items-center justify-center shadow-arena ring-4 ring-arena-primary/10">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-white">{user?.username?.charAt(0).toUpperCase()}</span>
+                </div>
+                {/* Online dot */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-arena-success border-[2.5px] border-white shadow-sm" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright truncate leading-tight">
+                  {greeting}, <span className="text-arena-primary">{user?.username}</span>
+                </h1>
+                <p className="text-sm text-arena-muted mt-1 flex items-center gap-1.5">
+                  {stats.active > 0 && (
+                    <span className="relative inline-flex w-2 h-2 shrink-0">
+                      <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
+                      <span className="relative inline-flex w-2 h-2 rounded-full bg-arena-success" />
+                    </span>
+                  )}
+                  {subtitle}
+                </p>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Link href="/agents/new">
+                <Button>
+                  <span className="flex items-center gap-2">
+                    <IconPlus className="w-4 h-4" />
+                    {t.dashboard.createAgent}
+                  </span>
+                </Button>
+              </Link>
+              <Link href="/matchmaking">
+                <Button variant="outline">
+                  <span className="flex items-center gap-2">
+                    <IconBolt className="w-4 h-4" />
+                    {t.dashboard.joinQueue}
+                  </span>
+                </Button>
+              </Link>
+            </div>
           </div>
-        </Card>
+
+          {/* Stats pills */}
+          {hasAgents ? (
+            <div className="flex flex-wrap gap-2.5">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
+                <div className="w-7 h-7 rounded-lg bg-arena-primary/10 flex items-center justify-center">
+                  <IconUsers className="w-3.5 h-3.5 text-arena-primary" />
+                </div>
+                <div>
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{agents.length}</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">{t.common.agents}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
+                <div className="w-7 h-7 rounded-lg bg-arena-success/10 flex items-center justify-center">
+                  <IconTrophy className="w-3.5 h-3.5 text-arena-success" />
+                </div>
+                <div>
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-success leading-none">{stats.wins}</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">{t.common.wins}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
+                <div className="w-7 h-7 rounded-lg bg-arena-accent/10 flex items-center justify-center">
+                  <IconCoin className="w-3.5 h-3.5 text-arena-accent" />
+                </div>
+                <div>
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">ALPH</span>
+                </div>
+              </div>
+              {stats.active > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-arena-success/5 border border-arena-success/20 rounded-xl">
+                  <span className="relative w-2.5 h-2.5">
+                    <span className="absolute inset-0 rounded-full bg-arena-success" />
+                    <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-50" />
+                  </span>
+                  <span className="text-xs font-semibold text-arena-success">
+                    {stats.active} {t.common.live}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-arena-muted text-sm">{t.dashboard.overview}</p>
+          )}
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Link href="/agents/new">
-          <Card hover className="text-center">
-            <div className="text-arena-primary text-2xl mb-2">+</div>
-            <div className="text-sm font-medium text-arena-text">{t.dashboard.createAgent}</div>
-            <div className="text-xs text-arena-muted mt-1">
-              {t.dashboard.deployNew}
-            </div>
-          </Card>
-        </Link>
-        <Link href="/matchmaking">
-          <Card hover className="text-center">
-            <div className="text-arena-primary text-2xl mb-2">&#9876;</div>
-            <div className="text-sm font-medium text-arena-text">{t.dashboard.joinQueue}</div>
-            <div className="text-xs text-arena-muted mt-1">
-              {t.dashboard.enterMatchmaking}
-            </div>
-          </Card>
-        </Link>
-        <Link href="/leaderboard">
-          <Card hover className="text-center">
-            <div className="text-arena-primary text-2xl mb-2">&#9733;</div>
-            <div className="text-sm font-medium text-arena-text">
-              {t.dashboard.leaderboard}
-            </div>
-            <div className="text-xs text-arena-muted mt-1">
-              {t.dashboard.viewRankings}
-            </div>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Agents Overview */}
-      {agents.length > 0 && (
+      {/* ═══════════════════════════════════════════════════
+          NO-AGENTS ONBOARDING
+          ═══════════════════════════════════════════════════ */}
+      {!hasAgents && (
         <div className="mb-8">
+          <h2 className="text-lg font-display font-semibold text-arena-text-bright mb-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
+            {t.home.howItWorks}
+          </h2>
+          <OnboardingState t={t} />
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          STATS GRID
+          ═══════════════════════════════════════════════════ */}
+      {hasAgents && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <DashStat
+            label={t.dashboard.yourAgents}
+            value={agents.length}
+            icon={<IconUsers className="w-4 h-4" />}
+            accentColor="bg-arena-primary"
+            delay={0.08}
+          />
+          <DashStat
+            label={t.dashboard.activeMatches}
+            value={stats.active}
+            icon={<IconBolt className="w-4 h-4" />}
+            accentColor="bg-arena-success"
+            delay={0.12}
+          >
+            {stats.active > 0 && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className="relative w-2 h-2 live-dot">
+                  <span className="absolute inset-0 rounded-full bg-arena-success" />
+                </span>
+                <span className="text-[10px] text-arena-success font-mono uppercase tracking-wider">{t.common.live}</span>
+              </div>
+            )}
+          </DashStat>
+          <DashStat
+            label={t.dashboard.inQueue}
+            value={stats.queued}
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            accentColor="bg-amber-400"
+            delay={0.16}
+          />
+          <DashStat
+            label={t.dashboard.totalEarnings}
+            value={stats.earnings.toFixed(2)}
+            sub="ALPH"
+            icon={<IconCoin className="w-4 h-4" />}
+            accentColor="bg-arena-accent"
+            delay={0.2}
+          />
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          PERFORMANCE + BEST AGENT (2-col)
+          ═══════════════════════════════════════════════════ */}
+      {hasAgents && stats.total > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-8">
+          {/* Overall Performance — 3 cols wide */}
+          <div
+            className="lg:col-span-3 bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.18s", animationFillMode: "both" }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono">
+                {t.leaderboard.overallWinRate}
+              </h3>
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-arena-muted">
+                <div className="w-2 h-2 rounded-full bg-arena-success" />
+                {stats.wins}W
+                <div className="w-2 h-2 rounded-full bg-arena-muted-light/60 ml-1" />
+                {stats.draws}D
+                <div className="w-2 h-2 rounded-full bg-arena-danger/60 ml-1" />
+                {stats.losses}L
+              </div>
+            </div>
+
+            <div className="flex items-center gap-8">
+              <WinRateRing rate={stats.winRate} />
+              <div className="flex-1 space-y-4">
+                {/* WLD Bar */}
+                <div>
+                  <WLDBar wins={stats.wins} losses={stats.losses} draws={stats.draws} height="h-3" />
+                  <div className="flex items-center justify-between mt-2 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-success" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{stats.wins}</span>
+                      <span className="text-arena-muted">{t.common.wins}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-muted-light/60" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{stats.draws}</span>
+                      <span className="text-arena-muted">{t.common.draws}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-arena-danger/60" />
+                      <span className="font-mono font-semibold text-arena-text-bright">{stats.losses}</span>
+                      <span className="text-arena-muted">{t.common.losses}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick stats row */}
+                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-arena-border-light/50">
+                  <div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.matches}</div>
+                    <div className="text-lg font-bold text-arena-text-bright font-mono tabular-nums">{stats.total}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">Best {t.common.elo}</div>
+                    <div className="text-lg font-bold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestElo)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.earnings}</div>
+                    <div className="text-lg font-bold text-arena-accent font-mono tabular-nums">{stats.earnings.toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Best Agent Spotlight — 2 cols */}
+          {stats.bestAgent && (
+            <div
+              className="lg:col-span-2 bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm cursor-pointer opacity-0 animate-fade-up group hover:shadow-arena-lg hover:border-arena-primary/30 transition-all"
+              style={{ animationDelay: "0.22s", animationFillMode: "both" }}
+              onClick={() => router.push(`/agents/${stats.bestAgent!.id}`)}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono">Top Agent</h3>
+                <IconStar className="w-5 h-5 text-arena-accent" />
+              </div>
+
+              <div className="flex items-center gap-4 mb-5">
+                <Avatar
+                  name={stats.bestAgent.name}
+                  size="w-14 h-14"
+                  textSize="text-xl"
+                  gradient="from-arena-primary to-arena-accent"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-display font-bold text-arena-text-bright text-lg truncate group-hover:text-arena-primary transition-colors">
+                      {stats.bestAgent.name}
+                    </h4>
+                    <Badge status={stats.bestAgent.status} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-arena-muted">
+                    {stats.bestAgent.type === "openclaw" && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
+                    )}
+                    {stats.bestAgent.gameTypes.map((gt) => (
+                      <span key={gt} className="capitalize font-mono">{gt}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-arena-border-light/60">
+                <div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.elo}</div>
+                  <div className="text-xl font-extrabold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestAgent.elo)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.winRate}</div>
+                  <div className="text-xl font-extrabold text-arena-text-bright font-mono tabular-nums">{formatWinRate(stats.bestAgent.stats?.winRate || 0)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.earnings}</div>
+                  <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{(stats.bestAgent.stats?.totalEarnings || 0).toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* View arrow */}
+              <div className="flex items-center justify-end mt-4 text-xs text-arena-muted group-hover:text-arena-primary transition-colors">
+                <span className="mr-1">View agent</span>
+                <IconArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          QUICK ACTIONS
+          ═══════════════════════════════════════════════════ */}
+      {hasAgents && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {[
+            {
+              href: "/agents/new",
+              icon: <IconPlus />,
+              label: t.dashboard.createAgent,
+              desc: t.dashboard.deployNew,
+              accent: "bg-arena-primary/10 text-arena-primary",
+              hoverBorder: "hover:border-arena-primary/40",
+              delay: 0.24,
+            },
+            {
+              href: "/matchmaking",
+              icon: <IconBolt />,
+              label: t.dashboard.joinQueue,
+              desc: t.dashboard.enterMatchmaking,
+              accent: "bg-arena-accent/10 text-arena-accent",
+              hoverBorder: "hover:border-arena-accent/40",
+              delay: 0.28,
+            },
+            {
+              href: "/leaderboard",
+              icon: <IconChart />,
+              label: t.dashboard.leaderboard,
+              desc: t.dashboard.viewRankings,
+              accent: "bg-arena-success/10 text-arena-success",
+              hoverBorder: "hover:border-arena-success/40",
+              delay: 0.32,
+            },
+          ].map((action) => (
+            <Link key={action.href} href={action.href}>
+              <div
+                className={`bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm group cursor-pointer transition-all duration-200 hover:shadow-arena hover:-translate-y-0.5 ${action.hoverBorder} opacity-0 animate-fade-up`}
+                style={{ animationDelay: `${action.delay}s`, animationFillMode: "both" }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${action.accent}`}>
+                    {action.icon}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-arena-text-bright group-hover:text-arena-primary transition-colors">{action.label}</div>
+                    <div className="text-xs text-arena-muted mt-0.5">{action.desc}</div>
+                  </div>
+                  <IconArrowRight className="w-4 h-4 text-arena-muted-light group-hover:text-arena-primary group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          YOUR AGENTS
+          ═══════════════════════════════════════════════════ */}
+      {hasAgents && (
+        <div className="mb-8 opacity-0 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
           <div className="flex items-center justify-between mb-4">
-            <CardTitle>{t.dashboard.yourAgents}</CardTitle>
+            <h2 className="text-lg font-display font-bold text-arena-text-bright">{t.dashboard.yourAgents}</h2>
             <Link href="/agents">
               <Button variant="ghost" size="sm">
-                {t.common.viewAll}
+                <span className="flex items-center gap-1">
+                  {t.common.viewAll}
+                  <IconArrowRight className="w-3.5 h-3.5" />
+                </span>
               </Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {agents.slice(0, 6).map((agent) => (
-              <Card
-                key={agent.id}
-                hover
-                onClick={() => router.push(`/agents/${agent.id}`)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-arena-text">{agent.name}</h4>
-                  <Badge status={agent.status} />
+            {agents.slice(0, 6).map((agent, i) => {
+              const w = agent.stats?.wins || 0;
+              const l = agent.stats?.losses || 0;
+              const d = agent.stats?.draws || 0;
+              const isBest = stats.bestAgent?.id === agent.id;
+              const isLive = agent.status === "in_match";
+
+              return (
+                <div
+                  key={agent.id}
+                  className={`bg-white border rounded-xl p-5 shadow-arena-sm cursor-pointer transition-all duration-200 hover:shadow-arena-lg hover:-translate-y-0.5 opacity-0 animate-fade-up ${
+                    isBest ? "border-arena-primary/30 ring-1 ring-arena-primary/10" : "border-arena-border-light hover:border-arena-primary/30"
+                  }`}
+                  style={{ animationDelay: `${0.35 + i * 0.06}s`, animationFillMode: "both" }}
+                  onClick={() => router.push(`/agents/${agent.id}`)}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative">
+                        <Avatar
+                          name={agent.name}
+                          size="w-10 h-10"
+                          textSize="text-sm"
+                          gradient={isBest ? "from-arena-primary to-arena-accent" : "from-arena-primary to-arena-primary-dark"}
+                        />
+                        {isLive && (
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-arena-success border-2 border-white">
+                            <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-arena-text-bright truncate text-sm leading-tight">
+                          {isBest && <IconStar className="w-3.5 h-3.5 text-arena-accent inline mr-1 -mt-0.5" />}
+                          {agent.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {agent.type === "openclaw" && (
+                            <span className="px-1 py-0 text-[9px] font-mono bg-purple-50 text-purple-500 rounded">OC</span>
+                          )}
+                          <span className="text-[10px] text-arena-muted font-mono">{formatElo(agent.elo)} ELO</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge status={agent.status} />
+                  </div>
+
+                  {/* WLD Bar */}
+                  <WLDBar wins={w} losses={l} draws={d} height="h-1.5" />
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-arena-success font-mono font-semibold">{w}W</span>
+                      <span className="text-arena-danger/70 font-mono font-semibold">{l}L</span>
+                      <span className="text-arena-muted font-mono">{d}D</span>
+                    </div>
+                    <MiniRing rate={agent.stats?.winRate || 0} size={28} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <div className="text-xs text-arena-muted">{t.common.elo}</div>
-                    <div className="text-sm font-medium text-arena-primary">
-                      {Math.round(agent.elo)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-arena-muted">{t.common.winRate}</div>
-                    <div className="text-sm font-medium text-arena-text">
-                      {formatWinRate(agent.stats?.winRate || 0)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-arena-muted">{t.common.matches}</div>
-                    <div className="text-sm font-medium text-arena-text">
-                      {(agent.stats?.wins || 0) +
-                        (agent.stats?.losses || 0) +
-                        (agent.stats?.draws || 0)}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Recent Matches */}
-      <div>
+      {/* ═══════════════════════════════════════════════════
+          RECENT MATCHES (Timeline)
+          ═══════════════════════════════════════════════════ */}
+      <div className="opacity-0 animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "both" }}>
         <div className="flex items-center justify-between mb-4">
-          <CardTitle>{t.dashboard.recentMatches}</CardTitle>
+          <h2 className="text-lg font-display font-bold text-arena-text-bright">{t.dashboard.recentMatches}</h2>
           <Link href="/matches">
             <Button variant="ghost" size="sm">
-              {t.common.viewAll}
+              <span className="flex items-center gap-1">
+                {t.common.viewAll}
+                <IconArrowRight className="w-3.5 h-3.5" />
+              </span>
             </Button>
           </Link>
         </div>
+
         {recentMatches.length === 0 ? (
-          <Card>
-            <div className="text-center py-8 text-arena-muted">
-              <p className="mb-2">{t.dashboard.noMatchesYet}</p>
-              <Link href="/matchmaking">
+          <div className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm">
+            <div className="text-center py-16 px-6">
+              <div className="w-16 h-16 rounded-2xl bg-arena-primary/10 flex items-center justify-center mx-auto mb-4 animate-float">
+                <IconBolt className="w-8 h-8 text-arena-primary" />
+              </div>
+              <p className="text-arena-text-bright font-semibold mb-1">{t.dashboard.noMatchesYet}</p>
+              <p className="text-sm text-arena-muted mb-6 max-w-xs mx-auto">
+                {hasAgents ? t.matchmaking.subtitle : t.agents.noAgentsDesc}
+              </p>
+              <Link href={hasAgents ? "/matchmaking" : "/agents/new"}>
                 <Button variant="secondary" size="sm">
-                  {t.dashboard.startFirst}
+                  {hasAgents ? t.dashboard.startFirst : t.dashboard.createAgent}
                 </Button>
               </Link>
             </div>
-          </Card>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {recentMatches.map((match) => (
-              <Link key={match.id} href={`/matches/${match.id}`}>
-                <Card hover className="mb-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <Badge status={match.status} />
-                      <span className="text-sm capitalize text-arena-muted">
-                        {match.gameType}
-                      </span>
-                      <div className="text-sm text-arena-text">
-                        {normalizeMatchAgents(match.agents)
-                          .map((a) => a.agentName)
-                          .join(" vs ") || "Unknown"}
+          <div className="space-y-0">
+            {recentMatches.map((match, i) => {
+              const agentsArr = normalizeMatchAgents(match.agents);
+              const myAgent = agentsArr.find((a) => agents.some((ag) => ag.id === a.agentId));
+              const isWinner = myAgent && match.winnerId === myAgent.agentId;
+              const isLoss = myAgent && match.status === "completed" && match.winnerId && match.winnerId !== myAgent.agentId;
+              const isLast = i === recentMatches.length - 1;
+              const isActive = match.status === "active";
+
+              const dotColor = isActive
+                ? "bg-arena-success"
+                : isWinner
+                ? "bg-arena-success"
+                : isLoss
+                ? "bg-arena-danger/70"
+                : "bg-arena-border-light";
+
+              return (
+                <Link key={match.id} href={`/matches/${match.id}`}>
+                  <div
+                    className="flex gap-4 group opacity-0 animate-fade-up"
+                    style={{ animationDelay: `${0.45 + i * 0.06}s`, animationFillMode: "both" }}
+                  >
+                    {/* Timeline */}
+                    <div className="flex flex-col items-center pt-5 shrink-0">
+                      <div className={`timeline-dot ${dotColor}`}>
+                        {isActive && (
+                          <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-40" />
+                        )}
+                      </div>
+                      {!isLast && <div className="timeline-line" style={{ position: "relative", width: 2, flex: 1, minHeight: 20 }} />}
+                    </div>
+
+                    {/* Card */}
+                    <div className="bg-white border border-arena-border-light rounded-xl p-4 shadow-arena-sm flex-1 mb-3 transition-all duration-200 group-hover:shadow-arena group-hover:border-arena-primary/30">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <Badge status={match.status} />
+                          {match.status === "completed" && myAgent && (
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                              isWinner
+                                ? "bg-arena-success/12 text-arena-success"
+                                : isLoss
+                                ? "bg-arena-danger/12 text-arena-danger"
+                                : "bg-arena-muted-light/15 text-arena-muted"
+                            }`}>
+                              {isWinner ? t.common.won : isLoss ? t.common.lost : t.common.draws}
+                            </span>
+                          )}
+                          <span className="text-sm font-medium text-arena-text-bright">
+                            {agentsArr.map((a) => a.agentName).join(" vs ") || "Unknown"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-arena-muted">
+                          <span className="capitalize font-mono">{match.gameType}</span>
+                          {myAgent?.eloChange !== undefined && myAgent.eloChange !== null && (
+                            <span className={`font-mono font-semibold ${
+                              myAgent.eloChange > 0 ? "text-arena-success" : myAgent.eloChange < 0 ? "text-arena-danger" : "text-arena-muted"
+                            }`}>
+                              {myAgent.eloChange > 0 ? "+" : ""}{myAgent.eloChange} ELO
+                            </span>
+                          )}
+                          <span className="font-mono">{match.stakeAmount} ALPH</span>
+                          <span>{formatRelativeTime(match.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-arena-muted">
-                      <span>{t.common.stake}: {match.stakeAmount}</span>
-                      <span>{formatRelativeTime(match.createdAt)}</span>
-                    </div>
                   </div>
-                </Card>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

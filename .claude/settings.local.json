@@ -12,7 +12,8 @@
       "Bash(git -C /c/Users/tiago/AlphArenaFront branch:*)",
       "Bash(git checkout:*)",
       "Bash(npm run build:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx next build:*)"
     ]
   }
 }
