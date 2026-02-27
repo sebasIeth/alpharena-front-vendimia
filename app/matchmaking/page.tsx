@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
 import { formatElo } from "@/lib/utils";
-import type { Agent, AgentBalance, QueueStatus } from "@/lib/types";
+import type { Agent, AgentBalance, QueueStatus, QueueListEntry } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
 interface QueuedAgent {
@@ -235,6 +235,9 @@ function MatchmakingContent() {
   // Queue state
   const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
+  const [playingCount, setPlayingCount] = useState<number | null>(null);
+  const [autoPlayCount, setAutoPlayCount] = useState<number | null>(null);
+  const [queueList, setQueueList] = useState<QueueListEntry[]>([]);
 
   // Backend countdown state (broadcast via WebSocket)
   const [countdownActive, setCountdownActive] = useState(false);
@@ -285,18 +288,26 @@ function MatchmakingContent() {
     return () => { cancelled = true; };
   }, [selectedAgentId]);
 
-  // Fetch queue size
+  // Fetch queue size, playing count, auto-play count, queue list
   useEffect(() => {
-    async function fetchQueueSize() {
+    async function fetchQueueStats() {
       try {
-        const data = await api.getQueueSize(gameType);
-        setQueueSize(data.size);
+        const [sizeRes, playingRes, autoPlayRes, queueListRes] = await Promise.allSettled([
+          api.getQueueSize(gameType),
+          api.getPlayingCount(),
+          api.getAutoPlayCount(),
+          api.getQueueList(gameType),
+        ]);
+        if (sizeRes.status === "fulfilled") setQueueSize(sizeRes.value.size);
+        if (playingRes.status === "fulfilled") setPlayingCount(playingRes.value.playingCount);
+        if (autoPlayRes.status === "fulfilled") setAutoPlayCount(autoPlayRes.value.autoPlayCount);
+        if (queueListRes.status === "fulfilled") setQueueList(queueListRes.value.queue || []);
       } catch {
         // silently handle
       }
     }
-    fetchQueueSize();
-    const interval = setInterval(fetchQueueSize, 5000);
+    fetchQueueStats();
+    const interval = setInterval(fetchQueueStats, 5000);
     return () => clearInterval(interval);
   }, [gameType]);
 
@@ -513,6 +524,22 @@ function MatchmakingContent() {
                     {t.matchmaking.agentsWaiting}
                   </div>
                 </div>
+                <div className="text-center pl-4 border-l border-arena-border-light">
+                  <div className="text-2xl font-extrabold font-mono tabular-nums text-arena-success">
+                    {playingCount !== null ? playingCount : "-"}
+                  </div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-wider font-mono">
+                    {t.matchmaking.playingNow}
+                  </div>
+                </div>
+                <div className="text-center pl-4 border-l border-arena-border-light">
+                  <div className="text-2xl font-extrabold font-mono tabular-nums text-amber-500">
+                    {autoPlayCount !== null ? autoPlayCount : "-"}
+                  </div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-wider font-mono">
+                    {t.matchmaking.autoPlayActive}
+                  </div>
+                </div>
                 {queuedAgents.length > 0 && (
                   <div className="text-center pl-4 border-l border-arena-border-light">
                     <div className="text-2xl font-extrabold font-mono tabular-nums text-arena-accent">
@@ -531,6 +558,43 @@ function MatchmakingContent() {
         {error && (
           <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm mb-6 animate-fade-down">
             {error}
+          </div>
+        )}
+
+        {/* ── Queue List ── */}
+        {queueList.length > 0 && (
+          <div
+            className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm overflow-hidden mb-8 opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.18s", animationFillMode: "both" }}
+          >
+            <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
+              <h2 className="text-lg font-display font-semibold text-arena-text">
+                {t.matchmaking.queueList}
+              </h2>
+            </div>
+            <div className="divide-y divide-arena-border-light/60">
+              {queueList.map((entry) => (
+                <div
+                  key={entry.agentId}
+                  className="px-6 py-3 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-arena-primary/60 shrink-0" />
+                    <span className="text-sm font-mono text-arena-text truncate">
+                      {entry.agentId.slice(0, 12)}...
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-arena-muted shrink-0">
+                    <span className="font-mono">
+                      {t.matchmaking.eloRating}: {Math.round(entry.eloRating)}
+                    </span>
+                    <span className="font-mono">
+                      {t.matchmaking.stake}: {entry.stakeAmount}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -226,6 +226,36 @@
     @apply absolute left-[3px] top-4 bottom-0 w-0.5 bg-arena-border-light/60;
   }
 
+  /* ---- Match card effects ---- */
+  .match-card {
+    @apply bg-white border border-arena-border-light rounded-xl shadow-arena-sm relative overflow-hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .match-card::before {
+    content: "";
+    @apply absolute top-0 left-0 right-0 h-[3px];
+  }
+
+  .match-card:hover {
+    @apply shadow-arena-lg border-arena-primary/40;
+    transform: translateY(-2px);
+  }
+
+  .match-card--active::before {
+    @apply bg-arena-success;
+  }
+  .match-card--completed::before {
+    @apply bg-arena-muted/40;
+  }
+  .match-card--pending::before {
+    background-color: #F59E0B;
+  }
+  .match-card--cancelled::before,
+  .match-card--error::before {
+    @apply bg-arena-danger;
+  }
+
   /* Scroll-triggered animation classes */
   .animate-on-scroll {
     opacity: 0;
