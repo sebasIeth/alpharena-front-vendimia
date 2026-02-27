@@ -25,6 +25,7 @@ function CreateAgentContent() {
     openclawAgentId: "",
     selfclawPublicKey: "",
     marrakech: true,
+    reversi: false,
   });
   const [showGuide, setShowGuide] = useState(true);
   const [error, setError] = useState("");
@@ -156,6 +157,7 @@ function CreateAgentContent() {
 
     const gameTypes: string[] = [];
     if (formData.marrakech) gameTypes.push("marrakech");
+    if (formData.reversi) gameTypes.push("reversi");
 
     if (gameTypes.length === 0) {
       setError(t.createAgent.selectGameType);
@@ -180,13 +182,9 @@ function CreateAgentContent() {
         }
       }
 
-      // SelfClaw verification is required
-      if (selfclawCheck.status !== "success") {
-        setError(t.createAgent.selfclawRequired);
-        setLoading(false);
-        return;
+      if (selfclawCheck.status === "success" && formData.selfclawPublicKey.trim()) {
+        payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
       }
-      payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
 
       const data = await api.createAgent(payload as any);
       setCreatedAgent(data.agent);
@@ -610,7 +608,7 @@ function CreateAgentContent() {
             <div className="space-y-3">
               <label className="block text-sm font-medium text-arena-text">
                 {t.createAgent.selfclawVerification}
-                <span className="text-arena-danger ml-1">*</span>
+                <span className="text-arena-muted ml-1 text-xs font-normal">(optional)</span>
               </label>
 
               <Input
@@ -650,7 +648,7 @@ function CreateAgentContent() {
 
               {selfclawCheck.status === "idle" && (
                 <p className="text-xs text-arena-muted">
-                  {t.createAgent.selfclawRequired}
+                  {t.createAgent.selfclawPublicKeyHelper}
                 </p>
               )}
             </div>
@@ -681,6 +679,27 @@ function CreateAgentContent() {
                     </div>
                   </div>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer bg-arena-bg border border-arena-border rounded-xl p-3 hover:border-arena-primary/30 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.reversi}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        reversi: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 rounded border-arena-border bg-arena-bg text-arena-primary focus:ring-arena-primary accent-arena-primary"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-arena-text">
+                      {t.createAgent.reversi}
+                    </div>
+                    <div className="text-xs text-arena-muted">
+                      {t.createAgent.reversiDesc}
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -688,7 +707,7 @@ function CreateAgentContent() {
               <Button
                 type="submit"
                 isLoading={loading}
-                disabled={loading || selfclawCheck.status !== "success"}
+                disabled={loading}
                 className="flex-1"
                 size="lg"
               >

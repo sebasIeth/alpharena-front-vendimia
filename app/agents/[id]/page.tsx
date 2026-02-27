@@ -168,6 +168,7 @@ function AgentDetailContent() {
     openclawToken: "",
     openclawAgentId: "",
     marrakech: true,
+    reversi: false,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
@@ -211,6 +212,7 @@ function AgentDetailContent() {
             openclawToken: "",
             openclawAgentId: a.openclawAgentId || "",
             marrakech: a.gameTypes.includes("marrakech"),
+            reversi: a.gameTypes.includes("reversi"),
           });
         } else {
           setError(t.agentDetail.agentNotFound);
@@ -247,6 +249,8 @@ function AgentDetailContent() {
   useEffect(() => {
     if (agent) {
       fetchBalance();
+      const interval = setInterval(fetchBalance, 10000);
+      return () => clearInterval(interval);
     }
   }, [agent?.id]);
 
@@ -296,6 +300,7 @@ function AgentDetailContent() {
     setEditLoading(true);
     const gameTypes: string[] = [];
     if (editForm.marrakech) gameTypes.push("marrakech");
+    if (editForm.reversi) gameTypes.push("reversi");
     try {
       const updatePayload: Record<string, unknown> = { name: editForm.name.trim(), gameTypes };
       if (agent?.type === "openclaw") {
@@ -525,6 +530,10 @@ function AgentDetailContent() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={editForm.marrakech} onChange={(e) => setEditForm({ ...editForm, marrakech: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
               <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={editForm.reversi} onChange={(e) => setEditForm({ ...editForm, reversi: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
+              <span className="text-sm text-arena-text">{t.createAgent.reversi}</span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>{t.common.save}</Button>

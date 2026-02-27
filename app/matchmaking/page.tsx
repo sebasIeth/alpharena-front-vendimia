@@ -137,7 +137,7 @@ function MatchmakingContent() {
   // Form state
   const [selectedAgentId, setSelectedAgentId] = useState(preselectedAgentId);
   const [stakeAmount, setStakeAmount] = useState("0");
-  const [gameType] = useState("marrakech");
+  const [gameType, setGameType] = useState("marrakech");
   const [joining, setJoining] = useState(false);
 
   // Agent balance state
@@ -762,15 +762,14 @@ function MatchmakingContent() {
                   helperText={t.matchmaking.stakeHelper}
                 />
 
-                <div>
-                  <label className="block text-sm font-medium text-arena-text mb-1.5">
-                    {t.common.gameType}
-                  </label>
-                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-4 py-2.5 text-arena-text capitalize font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-arena-success" />
-                    {gameType}
-                  </div>
-                </div>
+                <Select
+                  label={t.common.gameType}
+                  value={gameType}
+                  onChange={(e) => setGameType(e.target.value)}
+                >
+                  <option value="marrakech">Marrakech</option>
+                  <option value="reversi">Reversi</option>
+                </Select>
 
                 <Button
                   onClick={handleJoinQueue}

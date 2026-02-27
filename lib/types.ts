@@ -22,7 +22,6 @@ export interface LoginPayload {
 export interface RegisterPayload {
   username: string;
   password: string;
-  walletAddress: string;
   email?: string;
 }
 
@@ -262,6 +261,28 @@ export interface AgentStatsResponse {
 export interface WSMessage {
   type: string;
   data: unknown;
+}
+
+// ========== Human Play ==========
+export interface PlayBalance {
+  walletAddress: string;
+  usdc: string;
+  eth: string;
+}
+
+export interface PlayStatus {
+  inQueue: boolean;
+  inMatch: boolean;
+  agentId?: string;
+  matchId?: string;
+  gameType?: string;
+  stakeAmount?: number;
+  matchStatus?: string;
+}
+
+export interface PlayJoinPayload {
+  gameType: string;
+  stakeAmount: number;
 }
 
 // ========== API Error ==========

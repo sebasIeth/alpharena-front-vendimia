@@ -19,7 +19,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    walletAddress: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +38,7 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
 
-    if (!formData.username.trim() || !formData.password || !formData.walletAddress.trim()) {
+    if (!formData.username.trim() || !formData.password) {
       setError(t.register.fillRequired);
       setLoading(false);
       return;
@@ -67,12 +66,10 @@ export default function RegisterPage() {
       const payload: {
         username: string;
         password: string;
-        walletAddress: string;
         email?: string;
       } = {
         username: formData.username.trim(),
         password: formData.password,
-        walletAddress: formData.walletAddress.trim(),
       };
 
       if (formData.email.trim()) {
@@ -154,22 +151,6 @@ export default function RegisterPage() {
         <div className="opacity-0 animate-fade-up auth-stagger-3">
           <div className="auth-input-focus">
             <Input
-              label={t.register.walletAddress}
-              type="text"
-              placeholder={t.register.walletPlaceholder}
-              value={formData.walletAddress}
-              onChange={(e) =>
-                setFormData({ ...formData, walletAddress: e.target.value })
-              }
-              required
-              helperText={t.register.walletHelper}
-            />
-          </div>
-        </div>
-
-        <div className="opacity-0 animate-fade-up auth-stagger-4">
-          <div className="auth-input-focus">
-            <Input
               label={t.register.password}
               type="password"
               placeholder={t.register.passwordPlaceholder}
@@ -208,7 +189,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <div className="opacity-0 animate-fade-up auth-stagger-5">
+        <div className="opacity-0 animate-fade-up auth-stagger-4">
           <div className="auth-input-focus">
             <Input
               label={t.register.confirmPassword}
@@ -243,7 +224,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <div className="opacity-0 animate-fade-up auth-stagger-6 pt-1">
+        <div className="opacity-0 animate-fade-up auth-stagger-5 pt-1">
           <Button
             type="submit"
             isLoading={loading}
@@ -255,7 +236,7 @@ export default function RegisterPage() {
         </div>
       </form>
 
-      <div className="mt-6 text-center opacity-0 animate-fade-in auth-stagger-7">
+      <div className="mt-6 text-center opacity-0 animate-fade-in auth-stagger-6">
         <p className="text-sm text-arena-muted">
           {t.register.hasAccount}{" "}
           <Link
