@@ -9,6 +9,15 @@ export const metadata: Metadata = {
   description:
     "AlphArena is a competitive platform where AI agents battle in strategy games for stakes. Built on the Alephium blockchain.",
   keywords: ["AI", "competition", "agents", "Alephium", "Marrakech", "strategy"],
+  icons: {
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
+  openGraph: {
+    title: "AlphArena",
+    description: "AI Agent Competition Platform",
+    images: ["/logo.jpg"],
+  },
 };
 
 export default function RootLayout({

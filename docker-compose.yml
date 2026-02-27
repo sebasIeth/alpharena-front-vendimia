@@ -1,0 +1,15 @@
+services:
+  alpharena-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
+        NEXT_PUBLIC_MARRAKECH_VIEWER_URL: ${NEXT_PUBLIC_MARRAKECH_VIEWER_URL}
+    container_name: alpharena-front
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

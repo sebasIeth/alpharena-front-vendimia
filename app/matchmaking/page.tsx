@@ -12,7 +12,7 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
 import { formatElo } from "@/lib/utils";
-import type { Agent, QueueStatus } from "@/lib/types";
+import type { Agent, AgentBalance, QueueStatus } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
 interface QueuedAgent {
@@ -140,6 +140,10 @@ function MatchmakingContent() {
   const [gameType] = useState("marrakech");
   const [joining, setJoining] = useState(false);
 
+  // Agent balance state
+  const [agentBalance, setAgentBalance] = useState<AgentBalance | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
   // Queue state
   const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
@@ -170,6 +174,28 @@ function MatchmakingContent() {
     }
     fetchAgents();
   }, [t.matchmaking.joinFailed]);
+
+  // Fetch agent balance when selection changes
+  useEffect(() => {
+    if (!selectedAgentId) {
+      setAgentBalance(null);
+      return;
+    }
+    let cancelled = false;
+    async function fetchBalance() {
+      setBalanceLoading(true);
+      try {
+        const data = await api.getAgentBalance(selectedAgentId);
+        if (!cancelled) setAgentBalance(data);
+      } catch {
+        if (!cancelled) setAgentBalance(null);
+      } finally {
+        if (!cancelled) setBalanceLoading(false);
+      }
+    }
+    fetchBalance();
+    return () => { cancelled = true; };
+  }, [selectedAgentId]);
 
   // Fetch queue size
   useEffect(() => {
@@ -621,6 +647,39 @@ function MatchmakingContent() {
                     </div>
                   );
                 })()}
+
+                {/* Agent Balance Info */}
+                {selectedAgentId && (
+                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-2">Agent Balance</div>
+                    {balanceLoading ? (
+                      <div className="text-sm text-arena-muted font-mono">Loading...</div>
+                    ) : agentBalance ? (
+                      <div className="flex items-end gap-4">
+                        <div>
+                          <span className="text-xl font-bold font-mono tabular-nums text-arena-primary">{agentBalance.usdc}</span>
+                          <span className="text-xs text-arena-muted ml-1">USDC</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-mono tabular-nums text-arena-muted">{agentBalance.eth}</span>
+                          <span className="text-xs text-arena-muted ml-1">ETH</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-arena-muted font-mono">Balance unavailable</div>
+                    )}
+                    {agentBalance && parseFloat(stakeAmount) > 0 && parseFloat(agentBalance.usdc) < parseFloat(stakeAmount) && (
+                      <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2 text-sm">
+                        Insufficient balance: {agentBalance.usdc} USDC available, need {stakeAmount} USDC.
+                        {agentBalance.walletAddress && (
+                          <span className="block text-xs mt-1 text-amber-600">
+                            Deposit to: <span className="font-mono">{agentBalance.walletAddress}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <Input
                   label={t.matchmaking.stakeAmount}

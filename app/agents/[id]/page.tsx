@@ -18,7 +18,7 @@ import {
   formatRelativeTime,
   normalizeMatchAgents,
 } from "@/lib/utils";
-import type { Agent, Match } from "@/lib/types";
+import type { Agent, AgentBalance, Match } from "@/lib/types";
 
 interface ChatMessage {
   role: "user" | "agent";
@@ -188,6 +188,15 @@ function AgentDetailContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Wallet & balance state
+  const [balance, setBalance] = useState<AgentBalance | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState("");
+  const [withdrawSuccess, setWithdrawSuccess] = useState("");
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -226,6 +235,64 @@ function AgentDetailContent() {
     }
     fetchData();
   }, [agentId]);
+
+  const fetchBalance = async () => {
+    setBalanceLoading(true);
+    try {
+      const data = await api.getAgentBalance(agentId);
+      setBalance(data);
+    } catch {
+      // silently handle — balance may not be available
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (agent) {
+      fetchBalance();
+    }
+  }, [agent?.id]);
+
+  const walletAddress = balance?.walletAddress || agent?.walletAddress;
+
+  const handleCopyAddress = async () => {
+    if (!walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback ignored
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (withdrawLoading) return;
+    setWithdrawError("");
+    setWithdrawSuccess("");
+    const value = Number(withdrawAmount);
+    if (isNaN(value) || value <= 0) {
+      setWithdrawError("Amount must be greater than 0.");
+      return;
+    }
+    const usdcBalance = parseFloat(balance?.usdc || "0");
+    if (value > usdcBalance) {
+      setWithdrawError(`Exceeds available balance (${usdcBalance} USDC).`);
+      return;
+    }
+    setWithdrawLoading(true);
+    try {
+      const data = await api.withdrawAgent(agentId, value);
+      setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}`);
+      setWithdrawAmount("");
+      fetchBalance();
+    } catch (err) {
+      setWithdrawError(err instanceof Error ? err.message : "Withdraw failed.");
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,6 +461,11 @@ function AgentDetailContent() {
                     {agent.name}
                   </h1>
                   <Badge status={agent.status} />
+                  {walletAddress && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-arena-bg text-arena-muted border border-arena-border-light rounded truncate max-w-[120px]" title={walletAddress}>
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </span>
+                  )}
                   {agent.autoPlay && (
                     <span className="px-2 py-0.5 text-xs font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded font-medium">
                       Auto-Play
@@ -605,6 +677,98 @@ function AgentDetailContent() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
+          WALLET & BALANCE
+          ═══════════════════════════════════════════════════ */}
+      <div
+        className="bg-white border border-arena-border-light rounded-2xl p-5 shadow-arena-sm mb-8 opacity-0 animate-fade-up"
+        style={{ animationDelay: "0.25s", animationFillMode: "both" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle>Wallet & Balance</CardTitle>
+          <button
+            onClick={fetchBalance}
+            disabled={balanceLoading}
+            className="text-xs text-arena-primary hover:text-arena-primary-dark font-mono transition-colors disabled:opacity-50"
+          >
+            {balanceLoading ? "..." : "Refresh"}
+          </button>
+        </div>
+
+        {/* Wallet Address */}
+        {walletAddress ? (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm font-mono text-arena-text break-all">
+              {walletAddress}
+            </span>
+            <button
+              onClick={handleCopyAddress}
+              className="shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border border-arena-border-light bg-arena-bg hover:border-arena-primary/40 hover:text-arena-primary transition-all"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        ) : (
+          <div className="text-sm text-arena-muted font-mono mb-4">
+            {balanceLoading ? "Loading wallet..." : "Wallet address unavailable"}
+          </div>
+        )}
+
+        {/* Balances */}
+        <div className="flex items-end gap-6 mb-3">
+          <div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">USDC</div>
+            <span className="text-2xl font-extrabold font-mono tabular-nums text-arena-primary leading-none">
+              {balanceLoading ? "..." : (balance?.usdc ?? "—")}
+            </span>
+          </div>
+          <div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ETH (gas)</div>
+            <span className="text-base font-bold font-mono tabular-nums text-arena-muted leading-none">
+              {balanceLoading ? "..." : (balance?.eth ?? "—")}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs text-arena-muted mb-4">
+          Send USDC + ETH (gas) to the wallet address above to fund your agent.
+        </p>
+
+        {/* Withdraw */}
+        <div className="border-t border-arena-border-light/60 pt-4">
+          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw USDC</div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={withdrawAmount}
+              onChange={(e) => {
+                setWithdrawAmount(e.target.value);
+                setWithdrawError("");
+                setWithdrawSuccess("");
+              }}
+              placeholder="Amount"
+              className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+            />
+            <Button
+              size="sm"
+              onClick={handleWithdraw}
+              disabled={withdrawLoading || !withdrawAmount}
+              isLoading={withdrawLoading}
+            >
+              Withdraw
+            </Button>
+          </div>
+          {withdrawError && (
+            <p className="text-sm text-arena-danger mt-2">{withdrawError}</p>
+          )}
+          {withdrawSuccess && (
+            <p className="text-sm text-arena-success mt-2">{withdrawSuccess}</p>
+          )}
         </div>
       </div>
 

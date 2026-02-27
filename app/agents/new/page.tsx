@@ -6,7 +6,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
-import type { AgentType } from "@/lib/types";
+import type { Agent, AgentType } from "@/lib/types";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -29,6 +29,8 @@ function CreateAgentContent() {
   const [showGuide, setShowGuide] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createdAgent, setCreatedAgent] = useState<Agent | null>(null);
+  const [walletCopied, setWalletCopied] = useState(false);
   const [healthCheck, setHealthCheck] = useState<{
     status: "idle" | "checking" | "success" | "error";
     latencyMs?: number;
@@ -187,7 +189,7 @@ function CreateAgentContent() {
       payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
 
       const data = await api.createAgent(payload as any);
-      router.push(`/agents/${data.agent.id}`);
+      setCreatedAgent(data.agent);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t.createAgent.createFailed
@@ -196,6 +198,78 @@ function CreateAgentContent() {
       setLoading(false);
     }
   };
+
+  const handleCopyWallet = async () => {
+    if (!createdAgent?.walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(createdAgent.walletAddress);
+      setWalletCopied(true);
+      setTimeout(() => setWalletCopied(false), 2000);
+    } catch {
+      // fallback ignored
+    }
+  };
+
+  if (createdAgent) {
+    return (
+      <div className="page-container">
+        <div className="max-w-xl mx-auto">
+          <Card>
+            <div className="text-center py-4">
+              <div className="w-14 h-14 rounded-2xl bg-arena-success/10 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-arena-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-display font-bold text-arena-text-bright mb-2">
+                Agent Created!
+              </h2>
+              <p className="text-sm text-arena-muted mb-6">
+                <strong>{createdAgent.name}</strong> has been created with its own on-chain wallet.
+              </p>
+
+              {/* Wallet Address */}
+              {createdAgent.walletAddress ? (
+                <div className="bg-arena-bg border border-arena-border-light rounded-xl p-4 mb-4 text-left">
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1.5">Agent Wallet Address</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono text-arena-text break-all flex-1">
+                      {createdAgent.walletAddress}
+                    </span>
+                    <button
+                      onClick={handleCopyWallet}
+                      className="shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border border-arena-border-light bg-white hover:border-arena-primary/40 hover:text-arena-primary transition-all"
+                    >
+                      {walletCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Deposit instructions */}
+              <div className="bg-arena-primary/5 border border-arena-primary/20 rounded-xl px-4 py-3 mb-6 text-left">
+                <p className="text-sm text-arena-primary font-medium mb-1">Fund your agent to start competing</p>
+                <p className="text-xs text-arena-muted">
+                  {createdAgent.walletAddress
+                    ? "Send USDC (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
+                    : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs USDC before it can join matchmaking queues."}
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-center">
+                <Link href={`/agents/${createdAgent.id}`}>
+                  <Button size="lg">View Agent</Button>
+                </Link>
+                <Link href="/agents">
+                  <Button variant="secondary" size="lg">All Agents</Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

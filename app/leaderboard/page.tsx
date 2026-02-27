@@ -1,64 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
 import { formatElo, formatWinRate } from "@/lib/utils";
 import { useLanguage, agentPlural } from "@/lib/i18n";
+import { api } from "@/lib/api";
 import type { LeaderboardAgent, LeaderboardUser } from "@/lib/types";
 
 type Tab = "agents" | "users";
 
-// ── Mock data ──────────────────────────────────────────────
-const MOCK_AGENTS: LeaderboardAgent[] = [
-  { rank: 1, id: "a1", name: "DeepCarpet-v3",  ownerUsername: "alpha_dev",  elo: 1847, winRate: 0.78, totalMatches: 312, totalEarnings: 48.50 },
-  { rank: 2, id: "a2", name: "RugMaster",       ownerUsername: "sebas",      elo: 1791, winRate: 0.73, totalMatches: 287, totalEarnings: 35.20 },
-  { rank: 3, id: "a3", name: "MarrakechMind",   ownerUsername: "tiago_ml",   elo: 1734, winRate: 0.69, totalMatches: 265, totalEarnings: 29.80 },
-  { rank: 4, id: "a4", name: "AssaBot-2",       ownerUsername: "cryptoq",    elo: 1688, winRate: 0.65, totalMatches: 241, totalEarnings: 22.15 },
-  { rank: 5, id: "a5", name: "TileForge",       ownerUsername: "forgeai",    elo: 1655, winRate: 0.62, totalMatches: 198, totalEarnings: 18.90 },
-  { rank: 6, id: "a6", name: "CarpetBomber",    ownerUsername: "bomberx",    elo: 1621, winRate: 0.60, totalMatches: 176, totalEarnings: 14.30 },
-  { rank: 7, id: "a7", name: "SoukSniper",      ownerUsername: "sniper99",   elo: 1598, winRate: 0.58, totalMatches: 154, totalEarnings: 11.75 },
-  { rank: 8, id: "a8", name: "BazaarBot",       ownerUsername: "bazaar_ai",  elo: 1567, winRate: 0.55, totalMatches: 142, totalEarnings: 9.40 },
-  { rank: 9, id: "a9", name: "MedinaryAgent",   ownerUsername: "medina_lab", elo: 1540, winRate: 0.53, totalMatches: 130, totalEarnings: 7.60 },
-  { rank: 10, id: "a10", name: "NeuralRug",     ownerUsername: "nn_player",  elo: 1512, winRate: 0.51, totalMatches: 118, totalEarnings: 5.85 },
-  { rank: 11, id: "a11", name: "PatternWeaver", ownerUsername: "weaverbot",  elo: 1489, winRate: 0.49, totalMatches: 105, totalEarnings: 4.20 },
-  { rank: 12, id: "a12", name: "GridWalker",    ownerUsername: "grid_dev",   elo: 1460, winRate: 0.47, totalMatches: 98,  totalEarnings: 3.10 },
-];
+// ── Normalize backend responses ──────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeAgent(raw: any, index: number): LeaderboardAgent {
+  return {
+    rank: raw.rank ?? index + 1,
+    id: raw.id ?? raw._id ?? "",
+    name: raw.name ?? "Unknown",
+    ownerUsername: raw.ownerUsername ?? raw.owner?.username ?? "—",
+    elo: raw.elo ?? raw.eloRating ?? 1200,
+    winRate: raw.winRate ?? 0,
+    totalMatches: raw.totalMatches ?? 0,
+    totalEarnings: raw.totalEarnings ?? 0,
+  };
+}
 
-const MOCK_USERS: LeaderboardUser[] = [
-  { rank: 1, id: "u1", username: "alpha_dev",  totalEarnings: 48.50, agentCount: 3 },
-  { rank: 2, id: "u2", username: "sebas",      totalEarnings: 35.20, agentCount: 2 },
-  { rank: 3, id: "u3", username: "tiago_ml",   totalEarnings: 29.80, agentCount: 2 },
-  { rank: 4, id: "u4", username: "cryptoq",    totalEarnings: 22.15, agentCount: 1 },
-  { rank: 5, id: "u5", username: "forgeai",    totalEarnings: 18.90, agentCount: 1 },
-  { rank: 6, id: "u6", username: "bomberx",    totalEarnings: 14.30, agentCount: 2 },
-  { rank: 7, id: "u7", username: "sniper99",   totalEarnings: 11.75, agentCount: 1 },
-  { rank: 8, id: "u8", username: "bazaar_ai",  totalEarnings: 9.40,  agentCount: 1 },
-  { rank: 9, id: "u9", username: "medina_lab", totalEarnings: 7.60,  agentCount: 1 },
-  { rank: 10, id: "u10", username: "nn_player", totalEarnings: 5.85, agentCount: 1 },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeUser(raw: any, index: number): LeaderboardUser {
+  return {
+    rank: raw.rank ?? index + 1,
+    id: raw.id ?? raw._id ?? "",
+    username: raw.username ?? "Unknown",
+    totalEarnings: raw.totalEarnings ?? 0,
+    agentCount: raw.agentCount ?? 0,
+  };
+}
 
-// ── Derived mock details ───────────────────────────────────
+// ── Derived detail helpers ───────────────────────────────────
 function getAgentDetails(a: LeaderboardAgent) {
   const wins = Math.round(a.totalMatches * a.winRate);
   const losses = Math.round(a.totalMatches * (1 - a.winRate) * 0.85);
   const draws = Math.max(0, a.totalMatches - wins - losses);
-  const streak = Math.max(2, Math.round(a.winRate * 10));
-  const peakElo = a.elo + Math.round((1 - a.rank / 15) * 60) + 12;
   const form: ("W" | "L" | "D")[] = Array.from({ length: 5 }, (_, i) =>
     i < Math.round(a.winRate * 5) ? "W" : i < Math.round(a.winRate * 5) + (draws > 0 ? 1 : 0) ? "D" : "L"
   );
-  return { wins, losses, draws, streak, peakElo, form };
-}
-
-function getUserDetails(u: LeaderboardUser) {
-  const userAgents = MOCK_AGENTS.filter((a) => a.ownerUsername === u.username);
-  const totalMatches = userAgents.reduce((s, a) => s + a.totalMatches, 0) || Math.round(u.totalEarnings * 8);
-  const bestAgent = userAgents.length > 0 ? [...userAgents].sort((a, b) => b.elo - a.elo)[0] : null;
-  const overallWinRate =
-    userAgents.length > 0
-      ? userAgents.reduce((s, a) => s + a.winRate * a.totalMatches, 0) / totalMatches
-      : 0.5 + u.rank * -0.03;
-  return { totalMatches, bestAgent, overallWinRate, agents: userAgents };
+  return { wins, losses, draws, form };
 }
 
 // ── Podium config ──────────────────────────────────────────
@@ -253,8 +238,6 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
         <StatRow label={t.common.wins} value={d.wins} accentColor="text-emerald-600" />
         <StatRow label={t.common.losses} value={d.losses} accentColor="text-rose-600" />
         <StatRow label={t.common.draws} value={d.draws} />
-        <StatRow label={t.leaderboard.peakElo} value={formatElo(d.peakElo)} accentColor={rc.text} />
-        <StatRow label={t.leaderboard.bestStreak} value={`${d.streak} ${t.leaderboard.winsStreak}`} />
         <StatRow label={t.leaderboard.totalEarnings} value={`${agent.totalEarnings.toFixed(2)} USDC`} accentColor="text-arena-accent" />
       </div>
 
@@ -269,7 +252,6 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
 /* ── User detail modal ────────────────────────────────────── */
 function UserModalContent({ user }: { user: LeaderboardUser }) {
   const { t } = useLanguage();
-  const d = getUserDetails(user);
   const rc = getRankColor(user.rank);
   const rankLabel = user.rank <= 3 ? ["", "1st", "2nd", "3rd"][user.rank] : `#${user.rank}`;
 
@@ -290,33 +272,9 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
       </div>
 
       <div className="bg-arena-bg-light rounded-xl px-4">
-        <StatRow label={t.leaderboard.totalMatches} value={d.totalMatches} />
-        <StatRow label={t.leaderboard.overallWinRate} value={formatWinRate(d.overallWinRate)} accentColor={rc.text} />
         <StatRow label={t.leaderboard.agentsDeployed} value={user.agentCount} />
         <StatRow label={t.leaderboard.totalEarnings} value={`${user.totalEarnings.toFixed(2)} USDC`} accentColor="text-arena-accent" />
       </div>
-
-      {d.agents.length > 0 && (
-        <div>
-          <div className="text-xs uppercase tracking-wider text-arena-muted mb-2">{t.common.agents}</div>
-          <div className="space-y-2">
-            {d.agents.map((a) => (
-              <div key={a.id} className="bg-arena-bg-light rounded-xl px-4 py-3 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-arena-text-bright">{a.name}</div>
-                  <div className="text-xs text-arena-muted">
-                    {formatWinRate(a.winRate)} {t.leaderboard.winRateShort} &middot; {a.totalMatches} {t.leaderboard.matchesShort}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-arena-primary font-mono tabular-nums">{formatElo(a.elo)}</div>
-                  <div className="text-[10px] text-arena-muted">{t.common.elo}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -330,8 +288,34 @@ export default function LeaderboardPage() {
   const [selectedAgent, setSelectedAgent] = useState<LeaderboardAgent | null>(null);
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
 
-  const agents = MOCK_AGENTS;
-  const users = MOCK_USERS;
+  const [agents, setAgents] = useState<LeaderboardAgent[]>([]);
+  const [users, setUsers] = useState<LeaderboardUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [agentsRes, usersRes] = await Promise.all([
+          api.getLeaderboardAgents(50),
+          api.getLeaderboardUsers(50),
+        ]);
+        if (cancelled) return;
+        setAgents((agentsRes.agents || []).map(normalizeAgent));
+        setUsers((usersRes.users || []).map(normalizeUser));
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load leaderboard");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchData();
+    return () => { cancelled = true; };
+  }, []);
 
   const top3Agents = agents.slice(0, 3);
   const restAgents = agents.slice(3);
@@ -340,7 +324,7 @@ export default function LeaderboardPage() {
 
   // Summary stats
   const totalMatches = agents.reduce((s, a) => s + a.totalMatches, 0);
-  const avgElo = Math.round(agents.reduce((s, a) => s + a.elo, 0) / agents.length);
+  const avgElo = agents.length > 0 ? Math.round(agents.reduce((s, a) => s + a.elo, 0) / agents.length) : 0;
   const totalEarnings = agents.reduce((s, a) => s + a.totalEarnings, 0);
 
   return (
@@ -420,10 +404,33 @@ export default function LeaderboardPage() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
 
+        {/* ── Loading / Error / Empty ───────────────────────── */}
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-3 border-arena-primary/30 border-t-arena-primary rounded-full animate-spin" />
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-center mt-8">
+            <p className="text-rose-700 font-medium">{error}</p>
+            <button onClick={() => window.location.reload()} className="mt-3 text-sm text-arena-primary underline">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && agents.length === 0 && users.length === 0 && (
+          <div className="text-center py-20 text-arena-muted">
+            <p className="text-lg font-medium">{t.leaderboard.title}</p>
+            <p className="text-sm mt-1">No data yet. Start playing to see rankings!</p>
+          </div>
+        )}
+
         {/* ══════════════════════════════════════════════════════ */}
         {/*  AGENTS TAB                                           */}
         {/* ══════════════════════════════════════════════════════ */}
-        {tab === "agents" && (
+        {tab === "agents" && !loading && !error && agents.length > 0 && (
           <>
             {/* ── Podium (top 3) desktop ─────────────────────── */}
             <div className="hidden sm:flex items-end gap-5 mt-10 mb-14 h-[380px]">
@@ -621,14 +628,13 @@ export default function LeaderboardPage() {
         {/* ══════════════════════════════════════════════════════ */}
         {/*  USERS TAB                                            */}
         {/* ══════════════════════════════════════════════════════ */}
-        {tab === "users" && (
+        {tab === "users" && !loading && !error && users.length > 0 && (
           <>
             {/* ── Podium (top 3) desktop ─────────────────────── */}
             <div className="hidden sm:flex items-end gap-5 mt-10 mb-14 h-[360px]">
               {top3Users.map((user, i) => {
                 const place = (i + 1) as 1 | 2 | 3;
                 const c = PODIUM[place];
-                const d = getUserDetails(user);
                 return (
                   <div key={user.id} className={`${c.order} flex items-end flex-1 min-w-0 animate-fade-up`} style={{ animationDelay: `${0.1 + i * 0.15}s`, animationFillMode: "both" }}>
                     <div
@@ -661,29 +667,6 @@ export default function LeaderboardPage() {
                       <div className="text-xs text-arena-muted mt-0.5">
                         {user.agentCount} {agentPlural(user.agentCount, t)}
                       </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-3 mt-4 w-full pt-3 border-t border-arena-border-light/50">
-                        <div>
-                          <div className="text-[10px] text-arena-muted uppercase tracking-wide">{t.common.winRate}</div>
-                          <div className="text-sm font-bold text-arena-text tabular-nums">{formatWinRate(d.overallWinRate)}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-arena-muted uppercase tracking-wide">{t.common.matches}</div>
-                          <div className="text-sm font-bold text-arena-text tabular-nums">{d.totalMatches}</div>
-                        </div>
-                      </div>
-
-                      {/* Best agent */}
-                      {d.bestAgent && (
-                        <div className="mt-3 pt-3 border-t border-arena-border-light/50 w-full">
-                          <div className="text-[10px] text-arena-muted uppercase tracking-wide mb-1">Best Agent</div>
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="text-xs font-semibold text-arena-text-bright truncate">{d.bestAgent.name}</span>
-                            <span className="text-xs font-bold text-arena-primary font-mono tabular-nums">{formatElo(d.bestAgent.elo)}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
@@ -695,7 +678,6 @@ export default function LeaderboardPage() {
               {top3Users.map((user, i) => {
                 const place = (i + 1) as 1 | 2 | 3;
                 const pc = PODIUM[place];
-                const d = getUserDetails(user);
                 return (
                   <div
                     key={user.id}
@@ -710,7 +692,7 @@ export default function LeaderboardPage() {
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
                           <span className="font-bold text-arena-text-bright text-sm">{user.username}</span>
                         </div>
-                        <span className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)} &middot; {formatWinRate(d.overallWinRate)}</span>
+                        <span className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</span>
                       </div>
                       <div className="text-right shrink-0">
                         <div className={`text-xl font-extrabold font-mono ${pc.accent} tabular-nums`}>{user.totalEarnings.toFixed(2)}</div>
@@ -727,15 +709,12 @@ export default function LeaderboardPage() {
               <div className="bg-white border border-arena-border-light rounded-2xl overflow-hidden shadow-arena-sm animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "both" }}>
                 <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3.5 text-[11px] uppercase tracking-wider text-arena-muted bg-arena-bg-light/60 border-b border-arena-border-light font-medium">
                   <div className="col-span-1">{t.leaderboard.rank}</div>
-                  <div className="col-span-3">{t.leaderboard.player}</div>
-                  <div className="col-span-2 text-center">{t.common.winRate}</div>
-                  <div className="col-span-2 text-center">{t.common.agents}</div>
-                  <div className="col-span-2 text-center">{t.common.matches}</div>
-                  <div className="col-span-2 text-right">{t.common.earnings}</div>
+                  <div className="col-span-4">{t.leaderboard.player}</div>
+                  <div className="col-span-3 text-center">{t.common.agents}</div>
+                  <div className="col-span-4 text-right">{t.common.earnings}</div>
                 </div>
 
                 {restUsers.map((user) => {
-                  const d = getUserDetails(user);
                   return (
                     <div key={user.id}>
                       {/* Desktop */}
@@ -748,27 +727,14 @@ export default function LeaderboardPage() {
                             {user.rank}
                           </span>
                         </div>
-                        <div className="col-span-3 flex items-center gap-3">
+                        <div className="col-span-4 flex items-center gap-3">
                           <Avatar name={user.username} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
-                          <div>
-                            <span className="font-semibold text-arena-text-bright text-sm group-hover:text-arena-primary transition-colors">{user.username}</span>
-                            {d.bestAgent && (
-                              <div className="text-xs text-arena-muted truncate">
-                                Best: {d.bestAgent.name} ({formatElo(d.bestAgent.elo)})
-                              </div>
-                            )}
-                          </div>
+                          <span className="font-semibold text-arena-text-bright text-sm group-hover:text-arena-primary transition-colors">{user.username}</span>
                         </div>
-                        <div className="col-span-2 flex justify-center">
-                          <MiniRing rate={d.overallWinRate} />
-                        </div>
-                        <div className="col-span-2 text-center text-sm text-arena-muted tabular-nums">
+                        <div className="col-span-3 text-center text-sm text-arena-muted tabular-nums">
                           {user.agentCount}
                         </div>
-                        <div className="col-span-2 text-center text-sm text-arena-muted tabular-nums">
-                          {d.totalMatches}
-                        </div>
-                        <div className="col-span-2 text-right">
+                        <div className="col-span-4 text-right">
                           <span className="text-sm font-bold text-arena-accent tabular-nums">
                             {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">USDC</span>
                           </span>
@@ -792,10 +758,6 @@ export default function LeaderboardPage() {
                           <div className="text-right shrink-0">
                             <div className="text-sm font-bold text-arena-accent tabular-nums">
                               {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium">USDC</span>
-                            </div>
-                            <div className="flex items-center justify-end gap-1 mt-0.5">
-                              <MiniRing rate={d.overallWinRate} size={22} />
-                              <span className="text-[10px] text-arena-muted tabular-nums">{d.totalMatches} {t.leaderboard.games}</span>
                             </div>
                           </div>
                         </div>

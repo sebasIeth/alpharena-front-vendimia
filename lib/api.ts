@@ -8,6 +8,8 @@ import type {
   CreateAgentPayload,
   UpdateAgentPayload,
   HealthCheckResponse,
+  AgentBalance,
+  WithdrawResponse,
   Match,
   MatchesResponse,
   Move,
@@ -158,6 +160,14 @@ class ApiClient {
 
   async chatWithAgent(agentId: string, message: string): Promise<{ reply: string }> {
     return this.post<{ reply: string }>(`/agents/${agentId}/chat`, { message });
+  }
+
+  async getAgentBalance(id: string): Promise<AgentBalance> {
+    return this.get<AgentBalance>(`/agents/${id}/balance`);
+  }
+
+  async withdrawAgent(id: string, amount: number): Promise<WithdrawResponse> {
+    return this.post<WithdrawResponse>(`/agents/${id}/withdraw`, { amount });
   }
 
   // ========== SelfClaw ==========

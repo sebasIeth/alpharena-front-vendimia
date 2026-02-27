@@ -47,6 +47,7 @@ export interface Agent {
   openclawToken?: string;
   openclawAgentId?: string;
   selfclawPublicKey?: string;
+  walletAddress?: string;
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
@@ -56,6 +57,18 @@ export interface Agent {
   stats: AgentStats;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AgentBalance {
+  walletAddress: string;
+  usdc: string;
+  eth: string;
+}
+
+export interface WithdrawResponse {
+  txHash: string;
+  amount: number;
+  to: string;
 }
 
 export interface CreateAgentPayload {
