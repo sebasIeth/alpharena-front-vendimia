@@ -202,6 +202,22 @@
     @apply absolute left-[3px] top-4 bottom-0 w-0.5 bg-arena-border-light/60;
   }
 
+  /* ---- Matchmaking radar ---- */
+  .mm-radar-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 2px solid rgba(74, 45, 138, 0.25);
+    animation: mmRadarPulse 2.4s ease-out infinite;
+  }
+  .mm-radar-ring:nth-child(2) { animation-delay: 0.8s; }
+  .mm-radar-ring:nth-child(3) { animation-delay: 1.6s; }
+
+  @keyframes mmRadarPulse {
+    0% { transform: scale(0.5); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
   /* Scroll-triggered animation classes */
   .animate-on-scroll {
     opacity: 0;
