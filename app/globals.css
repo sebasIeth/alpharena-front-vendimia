@@ -363,6 +363,65 @@
   .idle-pulse {
     animation: idlePulse 2.5s ease-in-out infinite;
   }
+
+  /* ---- Skeleton shimmer ---- */
+  @keyframes skeletonShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(212, 208, 200, 0.15) 25%,
+      rgba(212, 208, 200, 0.35) 50%,
+      rgba(212, 208, 200, 0.15) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.8s ease-in-out infinite;
+    border-radius: 0.5rem;
+  }
+
+  /* ---- Match card enhanced hover ---- */
+  .match-card-enhanced {
+    @apply bg-white border border-arena-border-light rounded-xl shadow-arena-sm relative overflow-hidden;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .match-card-enhanced::before {
+    content: "";
+    @apply absolute top-0 left-0 right-0 h-[3px];
+    transition: height 0.25s ease;
+  }
+  .match-card-enhanced:hover {
+    @apply shadow-arena-lg;
+    transform: translateY(-3px);
+    border-color: rgba(91, 79, 207, 0.3);
+  }
+  .match-card-enhanced:hover::before {
+    height: 4px;
+  }
+  .match-card-enhanced--active::before {
+    @apply bg-arena-success;
+  }
+  .match-card-enhanced--completed::before {
+    @apply bg-arena-muted/40;
+  }
+  .match-card-enhanced--pending::before {
+    background-color: #F59E0B;
+  }
+  .match-card-enhanced--cancelled::before,
+  .match-card-enhanced--error::before {
+    @apply bg-arena-danger;
+  }
+
+  /* ELO comparison bar */
+  .elo-bar-track {
+    @apply h-2 rounded-full overflow-hidden;
+    background: rgba(212, 208, 200, 0.2);
+  }
+  .elo-bar-fill {
+    @apply h-full rounded-full;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
 @layer utilities {

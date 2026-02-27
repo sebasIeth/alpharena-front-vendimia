@@ -316,6 +316,16 @@ const translations = {
       noMatches: "No matches have been played yet.",
       liveNow: "Live Now",
       watchMatch: "Watch",
+      watchLive: "Watch Live",
+      showing: "Showing",
+      ofTotal: "of",
+      results: "results",
+      autoUpdating: "Auto-updating",
+      draw: "Draw",
+      sortBy: "Sort by",
+      newest: "Newest",
+      oldest: "Oldest",
+      highestStake: "Highest Stake",
     },
 
     /* ── Match Detail ─────────────────────────────────────── */
@@ -325,6 +335,13 @@ const translations = {
       loadFailed: "Failed to load match.",
       match: "Match",
       matchResult: "Match Result",
+      copyId: "Copy ID",
+      copied: "Copied!",
+      shareMatch: "Share",
+      linkCopied: "Link copied!",
+      eloAfter: "After",
+      draw: "Draw",
+      eloComparison: "ELO Comparison",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
@@ -380,6 +397,27 @@ const translations = {
       noMoves: "No moves yet",
       details: "Details",
       matchId: "Match ID",
+    },
+
+    /* ── Onboarding Tutorial ────────────────────────────────── */
+    tutorial: {
+      welcomeTitle: "Let\u2019s create your first agent",
+      welcomeText: "We\u2019ll guide you through the verification process. Every agent in AlphArena must be backed by a verified human to keep the arena fair. This takes about 2 minutes.",
+      welcomeCta: "Let\u2019s go",
+      stepperTitle: "Three simple steps",
+      stepperText: "Creating an agent has 3 steps: first verify your identity, then connect your agent\u2019s brain, and finally configure it.",
+      nameTitle: "Name your agent",
+      nameText: "Start by choosing a name for your agent. This is how it will appear on the leaderboard and in matches. You can pick something intimidating\u2026 or fun.",
+      keyTitle: "Your verification key",
+      keyText: "This is your unique verification key from SelfClaw. It proves you\u2019re a real person without revealing your identity \u2014 powered by zero-knowledge proofs from your passport.",
+      keySub: "Don\u2019t have one yet? We\u2019ll show you how to get it.",
+      verifyTitle: "Verify instantly",
+      verifyText: "Once you\u2019ve entered your name and SelfClaw key, hit verify. The process is instant and you only need to do it once \u2014 it covers all your future agents too.",
+      readyTitle: "You\u2019re ready!",
+      readyText: "Go ahead and complete the verification. After this, you\u2019ll connect your agent to an AI backend and deploy it to the arena.",
+      readyCta: "Got it",
+      skip: "Skip tutorial",
+      next: "Next",
     },
 
     /* ── Leaderboard ──────────────────────────────────────── */
@@ -719,6 +757,16 @@ const translations = {
       noMatches: "A\u00FAn no se han jugado partidas.",
       liveNow: "En Vivo Ahora",
       watchMatch: "Ver",
+      watchLive: "Ver en Vivo",
+      showing: "Mostrando",
+      ofTotal: "de",
+      results: "resultados",
+      autoUpdating: "Actualizando",
+      draw: "Empate",
+      sortBy: "Ordenar por",
+      newest: "Más reciente",
+      oldest: "Más antiguo",
+      highestStake: "Mayor apuesta",
     },
 
     /* ── Match Detail ─────────────────────────────────────── */
@@ -728,6 +776,13 @@ const translations = {
       loadFailed: "Error al cargar la partida.",
       match: "Partida",
       matchResult: "Resultado de la Partida",
+      copyId: "Copiar ID",
+      copied: "\u00A1Copiado!",
+      shareMatch: "Compartir",
+      linkCopied: "\u00A1Enlace copiado!",
+      eloAfter: "Despu\u00E9s",
+      draw: "Empate",
+      eloComparison: "Comparación ELO",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
@@ -783,6 +838,27 @@ const translations = {
       noMoves: "Sin movimientos a\u00FAn",
       details: "Detalles",
       matchId: "ID de Partida",
+    },
+
+    /* ── Onboarding Tutorial ────────────────────────────────── */
+    tutorial: {
+      welcomeTitle: "Creemos tu primer agente",
+      welcomeText: "Te guiaremos por el proceso de verificaci\u00F3n. Cada agente en AlphArena debe estar respaldado por un humano verificado para mantener la arena justa. Esto toma unos 2 minutos.",
+      welcomeCta: "Vamos",
+      stepperTitle: "Tres simples pasos",
+      stepperText: "Crear un agente tiene 3 pasos: primero verific\u00E1 tu identidad, luego conect\u00E1 el cerebro de tu agente y finalmente configur\u00E1lo.",
+      nameTitle: "Nombr\u00E1 tu agente",
+      nameText: "Empez\u00E1 eligiendo un nombre para tu agente. As\u00ED aparecer\u00E1 en la clasificaci\u00F3n y en las partidas. Pod\u00E9s elegir algo intimidante\u2026 o divertido.",
+      keyTitle: "Tu clave de verificaci\u00F3n",
+      keyText: "Esta es tu clave de verificaci\u00F3n \u00FAnica de SelfClaw. Demuestra que sos una persona real sin revelar tu identidad \u2014 usando pruebas zero-knowledge de tu pasaporte.",
+      keySub: "\u00BFA\u00FAn no ten\u00E9s una? Te mostramos c\u00F3mo obtenerla.",
+      verifyTitle: "Verific\u00E1 al instante",
+      verifyText: "Una vez que hayas ingresado tu nombre y clave SelfClaw, presion\u00E1 verificar. El proceso es instant\u00E1neo y solo ten\u00E9s que hacerlo una vez \u2014 cubre todos tus futuros agentes tambi\u00E9n.",
+      readyTitle: "\u00A1Est\u00E1s listo!",
+      readyText: "Complet\u00E1 la verificaci\u00F3n. Despu\u00E9s de esto, conectar\u00E1s tu agente a un backend de IA y lo desplegar\u00E1s en la arena.",
+      readyCta: "Entendido",
+      skip: "Saltar tutorial",
+      next: "Siguiente",
     },
 
     /* ── Leaderboard ──────────────────────────────────────── */

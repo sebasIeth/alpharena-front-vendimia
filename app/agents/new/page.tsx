@@ -10,6 +10,7 @@ import type { Agent, AgentType } from "@/lib/types";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 
 /* ── Step indicator ── */
 function StepIndicator({
@@ -280,6 +281,7 @@ function CreateAgentContent() {
   /* ── Wizard Form ── */
   return (
     <div className="page-container">
+      {step === 1 && <OnboardingTutorial />}
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -294,7 +296,9 @@ function CreateAgentContent() {
         </div>
 
         {/* Step Indicator */}
-        <StepIndicator currentStep={step} steps={stepLabels} />
+        <div data-tutorial="stepper">
+          <StepIndicator currentStep={step} steps={stepLabels} />
+        </div>
 
         {/* Form Card */}
         <div className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm overflow-hidden">
@@ -319,43 +323,49 @@ function CreateAgentContent() {
                   </p>
                 </div>
 
-                <Input
-                  label={t.createAgent.agentName}
-                  type="text"
-                  placeholder={t.createAgent.agentNamePlaceholder}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  helperText={t.createAgent.agentNameHelper}
-                />
+                <div data-tutorial="agent-name">
+                  <Input
+                    label={t.createAgent.agentName}
+                    type="text"
+                    placeholder={t.createAgent.agentNamePlaceholder}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    helperText={t.createAgent.agentNameHelper}
+                  />
+                </div>
 
                 {/* SelfClaw Verification */}
                 <div className="space-y-3">
-                  <Input
-                    label={t.createAgent.selfclawPublicKey}
-                    type="text"
-                    placeholder={t.createAgent.selfclawPublicKeyPlaceholder}
-                    value={formData.selfclawPublicKey}
-                    onChange={(e) => setFormData({ ...formData, selfclawPublicKey: e.target.value })}
-                    helperText={t.createAgent.selfclawPublicKeyHelper}
-                  />
+                  <div data-tutorial="selfclaw-key">
+                    <Input
+                      label={t.createAgent.selfclawPublicKey}
+                      type="text"
+                      placeholder={t.createAgent.selfclawPublicKeyPlaceholder}
+                      value={formData.selfclawPublicKey}
+                      onChange={(e) => setFormData({ ...formData, selfclawPublicKey: e.target.value })}
+                      helperText={t.createAgent.selfclawPublicKeyHelper}
+                    />
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSelfClawVerify}
-                    disabled={selfclawCheck.status === "checking" || !formData.selfclawPublicKey.trim()}
-                    className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {selfclawCheck.status === "checking" && (
-                      <svg className="w-4 h-4 animate-spin text-arena-primary" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    )}
-                    {selfclawCheck.status === "checking"
-                      ? t.createAgent.selfclawVerifying
-                      : t.createAgent.selfclawVerify}
-                  </button>
+                  <div data-tutorial="verify-btn">
+                    <button
+                      type="button"
+                      onClick={handleSelfClawVerify}
+                      disabled={selfclawCheck.status === "checking" || !formData.selfclawPublicKey.trim()}
+                      className="w-full px-4 py-2.5 rounded-xl border border-arena-border bg-arena-bg-card text-sm font-medium text-arena-text hover:border-arena-primary/50 hover:bg-arena-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {selfclawCheck.status === "checking" && (
+                        <svg className="w-4 h-4 animate-spin text-arena-primary" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      )}
+                      {selfclawCheck.status === "checking"
+                        ? t.createAgent.selfclawVerifying
+                        : t.createAgent.selfclawVerify}
+                    </button>
+                  </div>
 
                   {selfclawCheck.status === "success" && (
                     <div className="bg-arena-success/10 border border-arena-success/30 text-arena-success rounded-xl px-4 py-2.5 text-sm flex items-center gap-2">
