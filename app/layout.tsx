@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+
 import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
@@ -31,7 +31,6 @@ export default function RootLayout({
         <LanguageProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
-          <Footer />
         </LanguageProvider>
       </body>
     </html>

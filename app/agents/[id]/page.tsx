@@ -649,7 +649,7 @@ function AgentDetailContent() {
               <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
                 {(agent.stats?.totalEarnings || 0).toFixed(2)}
               </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPH</span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5">USDC</span>
             </div>
           </div>
 
@@ -1031,7 +1031,7 @@ function AgentDetailContent() {
                               {agentEntry.eloChange > 0 ? "+" : ""}{agentEntry.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} ALPH</span>
+                          <span className="font-mono">{match.stakeAmount} USDC</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

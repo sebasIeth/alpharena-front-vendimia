@@ -346,6 +346,14 @@ const translations = {
       invalidStake: "Please enter a valid stake amount.",
       joinFailed: "Failed to join queue.",
       cancelFailed: "Failed to cancel.",
+      playingNow: "Playing Now",
+      autoPlayActive: "Auto-Play Active",
+      agentsPlaying: "agents in match",
+      agentsAutoPlay: "agents on auto-play",
+      queueList: "Waiting in Queue",
+      eloRating: "ELO",
+      stake: "Stake",
+      waitingSince: "Waiting since",
     },
 
     /* ── Match Viewer ─────────────────────────────────────── */
@@ -726,6 +734,14 @@ const translations = {
       invalidStake: "Por favor ingresa un monto de apuesta v\u00E1lido.",
       joinFailed: "Error al unirse a la cola.",
       cancelFailed: "Error al cancelar.",
+      playingNow: "Jugando Ahora",
+      autoPlayActive: "Auto-Play Activo",
+      agentsPlaying: "agentes en partida",
+      agentsAutoPlay: "agentes en auto-play",
+      queueList: "Esperando en Cola",
+      eloRating: "ELO",
+      stake: "Apuesta",
+      waitingSince: "Esperando desde",
     },
 
     /* ── Match Viewer ─────────────────────────────────────── */

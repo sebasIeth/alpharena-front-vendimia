@@ -210,6 +210,29 @@ export interface QueueSize {
   size: number;
 }
 
+export interface QueueListEntry {
+  agentId: string;
+  eloRating: number;
+  gameType: string;
+  stakeAmount: number;
+  status: string;
+  joinedAt: string;
+}
+
+export interface QueueListResponse {
+  queue: QueueListEntry[];
+  total: number;
+  gameType: string;
+}
+
+export interface PlayingCountResponse {
+  playingCount: number;
+}
+
+export interface AutoPlayCountResponse {
+  autoPlayCount: number;
+}
+
 // ========== Leaderboard ==========
 export interface LeaderboardAgent {
   rank: number;

@@ -381,7 +381,7 @@ function DashboardContent() {
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">ALPH</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">USDC</span>
                 </div>
               </div>
               {stats.active > 0 && (
@@ -452,7 +452,7 @@ function DashboardContent() {
           <DashStat
             label={t.dashboard.totalEarnings}
             value={stats.earnings.toFixed(2)}
-            sub="ALPH"
+            sub="USDC"
             icon={<IconCoin className="w-4 h-4" />}
             accentColor="bg-arena-accent"
             delay={0.2}
@@ -825,7 +825,7 @@ function DashboardContent() {
                               {myAgent.eloChange > 0 ? "+" : ""}{myAgent.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} ALPH</span>
+                          <span className="font-mono">{match.stakeAmount} USDC</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

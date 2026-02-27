@@ -16,6 +16,9 @@ import type {
   QueueEntry,
   QueueStatus,
   QueueSize,
+  QueueListResponse,
+  PlayingCountResponse,
+  AutoPlayCountResponse,
   LeaderboardAgent,
   LeaderboardUser,
   AgentStatsResponse,
@@ -207,6 +210,19 @@ class ApiClient {
 
   async getQueueSize(gameType: string): Promise<QueueSize> {
     return this.get<QueueSize>(`/matchmaking/queue-size?gameType=${gameType}`, false);
+  }
+
+  async getQueueList(gameType?: string): Promise<QueueListResponse> {
+    const params = gameType ? `?gameType=${gameType}` : "";
+    return this.get<QueueListResponse>(`/matchmaking/queue${params}`, false);
+  }
+
+  async getPlayingCount(): Promise<PlayingCountResponse> {
+    return this.get<PlayingCountResponse>("/matchmaking/playing-count", false);
+  }
+
+  async getAutoPlayCount(): Promise<AutoPlayCountResponse> {
+    return this.get<AutoPlayCountResponse>("/matchmaking/auto-play-count", false);
   }
 
   // ========== Matches ==========
