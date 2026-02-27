@@ -168,6 +168,7 @@ function AgentDetailContent() {
     openclawToken: "",
     openclawAgentId: "",
     marrakech: true,
+    reversi: false,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
@@ -180,9 +181,6 @@ function AgentDetailContent() {
 
   // Auto-play state
   const [autoPlayToggling, setAutoPlayToggling] = useState(false);
-  const [stakeInput, setStakeInput] = useState("");
-  const [stakeLoading, setStakeLoading] = useState(false);
-  const [stakeError, setStakeError] = useState("");
 
   // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -214,8 +212,8 @@ function AgentDetailContent() {
             openclawToken: "",
             openclawAgentId: a.openclawAgentId || "",
             marrakech: a.gameTypes.includes("marrakech"),
+            reversi: a.gameTypes.includes("reversi"),
           });
-          setStakeInput(String(a.autoPlayStakeAmount || 0));
         } else {
           setError(t.agentDetail.agentNotFound);
         }
@@ -251,6 +249,8 @@ function AgentDetailContent() {
   useEffect(() => {
     if (agent) {
       fetchBalance();
+      const interval = setInterval(fetchBalance, 10000);
+      return () => clearInterval(interval);
     }
   }, [agent?.id]);
 
@@ -300,6 +300,7 @@ function AgentDetailContent() {
     setEditLoading(true);
     const gameTypes: string[] = [];
     if (editForm.marrakech) gameTypes.push("marrakech");
+    if (editForm.reversi) gameTypes.push("reversi");
     try {
       const updatePayload: Record<string, unknown> = { name: editForm.name.trim(), gameTypes };
       if (agent?.type === "openclaw") {
@@ -338,30 +339,10 @@ function AgentDetailContent() {
     try {
       const data = await api.updateAgent(agentId, { autoPlay: !agent.autoPlay });
       setAgent(data.agent);
-      setStakeInput(String(data.agent.autoPlayStakeAmount || 0));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to toggle auto-play.");
     } finally {
       setAutoPlayToggling(false);
-    }
-  };
-
-  const handleStakeSet = async () => {
-    if (!agent || stakeLoading) return;
-    setStakeError("");
-    const value = Number(stakeInput);
-    if (isNaN(value) || value < 0 || value > 10000) {
-      setStakeError("Stake must be between 0 and 10,000.");
-      return;
-    }
-    setStakeLoading(true);
-    try {
-      const data = await api.updateAgent(agentId, { autoPlayStakeAmount: value });
-      setAgent(data.agent);
-    } catch (err) {
-      setStakeError(err instanceof Error ? err.message : "Failed to set stake.");
-    } finally {
-      setStakeLoading(false);
     }
   };
 
@@ -549,6 +530,10 @@ function AgentDetailContent() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={editForm.marrakech} onChange={(e) => setEditForm({ ...editForm, marrakech: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
               <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={editForm.reversi} onChange={(e) => setEditForm({ ...editForm, reversi: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
+              <span className="text-sm text-arena-text">{t.createAgent.reversi}</span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>{t.common.save}</Button>
@@ -781,7 +766,7 @@ function AgentDetailContent() {
       >
         <CardTitle className="mb-4">Auto-Play</CardTitle>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-4">
           {/* Toggle */}
           <button
             onClick={handleAutoPlayToggle}
@@ -798,34 +783,7 @@ function AgentDetailContent() {
           >
             {autoPlayToggling ? "..." : agent.autoPlay ? "ON" : "OFF"}
           </button>
-
-          {/* Stake Input */}
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              max={10000}
-              value={stakeInput}
-              onChange={(e) => setStakeInput(e.target.value)}
-              disabled={!agent.autoPlay}
-              placeholder="Stake amount"
-              className="w-32 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all disabled:opacity-50"
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleStakeSet}
-              disabled={!agent.autoPlay || stakeLoading}
-              isLoading={stakeLoading}
-            >
-              Set
-            </Button>
-          </div>
         </div>
-
-        {stakeError && (
-          <p className="text-sm text-arena-danger mt-2">{stakeError}</p>
-        )}
 
         {/* Error counter */}
         {agent.autoPlayConsecutiveErrors > 0 && (

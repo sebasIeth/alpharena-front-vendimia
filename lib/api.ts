@@ -22,6 +22,9 @@ import type {
   LeaderboardAgent,
   LeaderboardUser,
   AgentStatsResponse,
+  PlayJoinPayload,
+  PlayStatus,
+  PlayBalance,
 } from "./types";
 
 // Client-side: use Next.js rewrite proxy to avoid CORS
@@ -264,6 +267,27 @@ class ApiClient {
 
   async getAgentStats(id: string): Promise<AgentStatsResponse> {
     return this.get<AgentStatsResponse>(`/leaderboard/agents/${id}/stats`, false);
+  }
+
+  // ========== Human Play ==========
+  async playJoin(payload: PlayJoinPayload): Promise<{ message: string; agentId: string }> {
+    return this.post("/play/join", payload);
+  }
+
+  async playCancel(): Promise<void> {
+    return this.post("/play/cancel");
+  }
+
+  async playStatus(): Promise<PlayStatus> {
+    return this.get("/play/status");
+  }
+
+  async playBalance(): Promise<PlayBalance> {
+    return this.get("/play/balance");
+  }
+
+  async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
+    return this.post("/play/move", { matchId, move });
   }
 
   // ========== Socket.IO ==========
