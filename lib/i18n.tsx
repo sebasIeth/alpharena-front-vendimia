@@ -124,8 +124,46 @@ const translations = {
       password: "Password",
       passwordPlaceholder: "Enter your password",
       signIn: "Sign In",
+      forgotPassword: "Forgot password?",
       noAccount: "Don\u2019t have an account?",
       createOne: "Create one",
+    },
+
+    /* ── Forgot Password ─────────────────────────────────────── */
+    forgotPassword: {
+      title: "Reset Password",
+      subtitle: "Enter your email to receive a reset link",
+      email: "Email Address",
+      emailPlaceholder: "Enter your email",
+      emailRequired: "Please enter your email address.",
+      emailInvalid: "Please enter a valid email address.",
+      submit: "Send Reset Link",
+      sending: "Sending...",
+      successTitle: "Check Your Email",
+      successMessage: "If an account with that email exists, we've sent a password reset link. Check your inbox and spam folder.",
+      backToLogin: "Back to Login",
+      rememberPassword: "Remember your password?",
+      signIn: "Sign in",
+    },
+
+    /* ── Reset Password ──────────────────────────────────────── */
+    resetPassword: {
+      title: "Set New Password",
+      subtitle: "Choose a new password for your account",
+      password: "New Password",
+      passwordPlaceholder: "Enter new password (min. 8 chars)",
+      confirmPassword: "Confirm Password",
+      confirmPlaceholder: "Confirm your new password",
+      passwordMin: "Password must be at least 8 characters.",
+      passwordMismatch: "Passwords do not match.",
+      submit: "Reset Password",
+      resetting: "Resetting...",
+      successTitle: "Password Reset!",
+      successMessage: "Your password has been reset successfully. You can now log in with your new password.",
+      goToLogin: "Go to Login",
+      invalidToken: "This reset link is invalid or has expired.",
+      requestNew: "Request a new one",
+      tokenMissing: "No reset token found. Please request a new password reset link.",
     },
 
     /* ── Register ─────────────────────────────────────────── */
@@ -602,8 +640,46 @@ const translations = {
       password: "Contrase\u00F1a",
       passwordPlaceholder: "Ingresa tu contrase\u00F1a",
       signIn: "Iniciar Sesi\u00F3n",
+      forgotPassword: "\u00BFOlvidaste tu contrase\u00F1a?",
       noAccount: "\u00BFNo tienes cuenta?",
       createOne: "Crea una",
+    },
+
+    /* ── Forgot Password ─────────────────────────────────────── */
+    forgotPassword: {
+      title: "Recuperar Contrase\u00F1a",
+      subtitle: "Ingresa tu email para recibir un enlace de recuperaci\u00F3n",
+      email: "Correo Electr\u00F3nico",
+      emailPlaceholder: "Ingresa tu email",
+      emailRequired: "Por favor ingresa tu correo electr\u00F3nico.",
+      emailInvalid: "Por favor ingresa un correo electr\u00F3nico v\u00E1lido.",
+      submit: "Enviar Enlace",
+      sending: "Enviando...",
+      successTitle: "Revisa tu Email",
+      successMessage: "Si existe una cuenta con ese email, hemos enviado un enlace de recuperaci\u00F3n. Revisa tu bandeja de entrada y spam.",
+      backToLogin: "Volver al Login",
+      rememberPassword: "\u00BFRecuerdas tu contrase\u00F1a?",
+      signIn: "Inicia sesi\u00F3n",
+    },
+
+    /* ── Reset Password ──────────────────────────────────────── */
+    resetPassword: {
+      title: "Nueva Contrase\u00F1a",
+      subtitle: "Elige una nueva contrase\u00F1a para tu cuenta",
+      password: "Nueva Contrase\u00F1a",
+      passwordPlaceholder: "Ingresa nueva contrase\u00F1a (m\u00EDn. 8 caracteres)",
+      confirmPassword: "Confirmar Contrase\u00F1a",
+      confirmPlaceholder: "Confirma tu nueva contrase\u00F1a",
+      passwordMin: "La contrase\u00F1a debe tener al menos 8 caracteres.",
+      passwordMismatch: "Las contrase\u00F1as no coinciden.",
+      submit: "Cambiar Contrase\u00F1a",
+      resetting: "Cambiando...",
+      successTitle: "\u00A1Contrase\u00F1a Cambiada!",
+      successMessage: "Tu contrase\u00F1a ha sido cambiada exitosamente. Ya puedes iniciar sesi\u00F3n con tu nueva contrase\u00F1a.",
+      goToLogin: "Ir al Login",
+      invalidToken: "Este enlace es inv\u00E1lido o ha expirado.",
+      requestNew: "Solicitar uno nuevo",
+      tokenMissing: "No se encontr\u00F3 token de recuperaci\u00F3n. Solicita un nuevo enlace.",
     },
 
     /* ── Register ─────────────────────────────────────────── */

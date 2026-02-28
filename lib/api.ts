@@ -194,6 +194,15 @@ class ApiClient {
     return data;
   }
 
+  // ========== Password Reset ==========
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return this.post<{ message: string }>("/auth/forgot-password", { email }, false);
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return this.post<{ message: string }>("/auth/reset-password", { token, password }, false);
+  }
+
   // ========== Matchmaking ==========
   async joinQueue(agentId: string, stakeAmount: number, gameType: string): Promise<{ queueEntry: QueueEntry }> {
     return this.post<{ queueEntry: QueueEntry }>("/matchmaking/join", {

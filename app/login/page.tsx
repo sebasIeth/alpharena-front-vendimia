@@ -94,6 +94,15 @@ export default function LoginPage() {
           </div>
         </div>
 
+        <div className="opacity-0 animate-fade-up auth-stagger-4 flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="text-xs text-arena-muted hover:text-arena-primary transition-colors"
+          >
+            {t.login.forgotPassword}
+          </Link>
+        </div>
+
         <div className="opacity-0 animate-fade-up auth-stagger-4 pt-1">
           <Button
             type="submit"
