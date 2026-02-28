@@ -26,6 +26,7 @@ function CreateAgentContent() {
     selfclawPublicKey: "",
     marrakech: true,
     reversi: false,
+    chess: false,
   });
   const [showGuide, setShowGuide] = useState(true);
   const [error, setError] = useState("");
@@ -158,6 +159,7 @@ function CreateAgentContent() {
     const gameTypes: string[] = [];
     if (formData.marrakech) gameTypes.push("marrakech");
     if (formData.reversi) gameTypes.push("reversi");
+    if (formData.chess) gameTypes.push("chess");
 
     if (gameTypes.length === 0) {
       setError(t.createAgent.selectGameType);
@@ -697,6 +699,27 @@ function CreateAgentContent() {
                     </div>
                     <div className="text-xs text-arena-muted">
                       {t.createAgent.reversiDesc}
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer bg-arena-bg border border-arena-border rounded-xl p-3 hover:border-arena-primary/30 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.chess}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        chess: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 rounded border-arena-border bg-arena-bg text-arena-primary focus:ring-arena-primary accent-arena-primary"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-arena-text">
+                      {t.createAgent.chess}
+                    </div>
+                    <div className="text-xs text-arena-muted">
+                      {t.createAgent.chessDesc}
                     </div>
                   </div>
                 </label>

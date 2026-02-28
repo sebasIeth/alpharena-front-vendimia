@@ -5,6 +5,8 @@ import type { Socket } from "socket.io-client";
 import { api } from "@/lib/api";
 import type { Match, Move, BoardState, AssamPosition, PlayerState, DiceResult, TributeEvent, GamePhase } from "@/lib/types";
 import MarrakechBoard from "./MarrakechBoard";
+import ChessBoard from "./ChessBoard";
+import ReversiBoard from "./ReversiBoard";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 
@@ -95,8 +97,31 @@ const PHASE_CONFIG: Record<string, { label: string; color: string }> = {
 // moveData from backend — now includes phase, diceResult, tribute, etc.
 function formatMoveDisplay(
   moveData: Record<string, unknown>,
+  gameType?: string,
 ): { text: string; phase?: string } {
   const md = moveData as any;
+
+  // Chess: show UCI move notation
+  if (gameType === "chess") {
+    const move = md.move || md.uci || md.san || md.notation;
+    if (typeof move === "string") return { text: move };
+    // Try to extract from raw JSON
+    if (md.raw && typeof md.raw === "string") {
+      try {
+        const parsed = JSON.parse(md.raw);
+        if (parsed.move) return { text: parsed.move };
+      } catch { /* ignore */ }
+    }
+    // Fallback: array [from, to]
+    if (Array.isArray(md)) return { text: md.join("") };
+  }
+
+  // Reversi: show [row, col]
+  if (gameType === "reversi") {
+    const move = md.move || md;
+    if (Array.isArray(move) && move.length === 2) return { text: `(${move[0]}, ${move[1]})` };
+    if (md.row != null && md.col != null) return { text: `(${md.row}, ${md.col})` };
+  }
 
   // New rich format: check phase first
   if (md.phase === "roll" && md.diceResult) {
@@ -128,6 +153,10 @@ function formatMoveDisplay(
 
 // Extract board from various response formats
 function extractBoard(data: any): any[] | null {
+  if (!data) return null;
+  // data is already a board array (e.g. number[][] for chess/reversi)
+  if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) return data;
+  // data is an object with a board inside
   const raw = data?.boardState || data?.currentBoard || data?.board || data?.grid;
   if (!raw) return null;
   if (Array.isArray(raw)) return raw;
@@ -464,18 +493,34 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 )}
               </div>
             </div>
-            <MarrakechBoard
-              boardState={
-                playerStates
-                  ? { ...(currentBoard || match.boardState || {}), players: playerStates } as BoardState
-                  : currentBoard || match.boardState
-              }
-              assamOverride={currentAssam}
-              playerCount={agents.length || 2}
-            />
+            {match.gameType === "chess" ? (
+              <ChessBoard
+                board={extractBoard(currentBoard || match.boardState || (match as any).currentBoard) as number[][] | null}
+                legalMoves={[]}
+                mySide={null}
+                isMyTurn={false}
+              />
+            ) : match.gameType === "reversi" ? (
+              <ReversiBoard
+                board={extractBoard(currentBoard || match.boardState || (match as any).currentBoard) as number[][] | null}
+                legalMoves={[]}
+                mySide={null}
+                isMyTurn={false}
+              />
+            ) : (
+              <MarrakechBoard
+                boardState={
+                  playerStates
+                    ? { ...(currentBoard || match.boardState || {}), players: playerStates } as BoardState
+                    : currentBoard || match.boardState
+                }
+                assamOverride={currentAssam}
+                playerCount={agents.length || 2}
+              />
+            )}
 
-            {/* Game Status Bar */}
-            {(gamePhase || diceResult || tribute || score) && (
+            {/* Game Status Bar (Marrakech-specific) */}
+            {match.gameType !== "chess" && match.gameType !== "reversi" && (gamePhase || diceResult || tribute || score) && (
               <div className="mt-4 flex flex-wrap items-center gap-3 bg-arena-bg rounded-lg px-4 py-2.5">
                 {/* Phase badge */}
                 {gamePhase && (
@@ -564,8 +609,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               </div>
             </div>
 
-            {/* Info: Assam not available from backend */}
-            {!currentAssam && match.status === "active" && (
+            {/* Info: Assam not available from backend (Marrakech only) */}
+            {match.gameType !== "chess" && match.gameType !== "reversi" && !currentAssam && match.status === "active" && (
               <div className="mt-2 text-center text-[10px] text-arena-muted/50">
                 Assam position not available from backend
               </div>
@@ -681,7 +726,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 moves.map((move, idx) => {
                   const info = agentLookup.get(move.agentId);
                   const side = info?.side || "a";
-                  const { text: display, phase } = formatMoveDisplay(move.moveData);
+                  const { text: display, phase } = formatMoveDisplay(move.moveData, match.gameType);
                   const phaseConf = phase ? PHASE_CONFIG[phase] : null;
                   return (
                     <div

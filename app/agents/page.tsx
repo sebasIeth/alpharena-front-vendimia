@@ -231,6 +231,9 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
+                {agent.isHuman && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                )}
               </div>
               <div className="flex items-center gap-3 text-xs text-arena-muted">
                 {agent.gameTypes.map((gt) => (
@@ -331,6 +334,11 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
             {agent.autoPlay && (
               <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded">
                 AP
+              </span>
+            )}
+            {agent.isHuman && (
+              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">
+                Human
               </span>
             )}
           </div>

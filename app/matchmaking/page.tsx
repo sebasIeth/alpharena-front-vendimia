@@ -769,6 +769,7 @@ function MatchmakingContent() {
                 >
                   <option value="marrakech">Marrakech</option>
                   <option value="reversi">Reversi</option>
+                  <option value="chess">Chess</option>
                 </Select>
 
                 <Button

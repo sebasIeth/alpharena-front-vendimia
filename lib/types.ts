@@ -41,6 +41,7 @@ export interface Agent {
   userId: string;
   name: string;
   type: AgentType;
+  isHuman?: boolean;
   endpointUrl?: string;
   openclawUrl?: string;
   openclawToken?: string;
@@ -238,8 +239,12 @@ export interface LeaderboardAgent {
   id: string;
   name: string;
   ownerUsername: string;
+  isHuman?: boolean;
   elo: number;
   winRate: number;
+  wins: number;
+  losses: number;
+  draws: number;
   totalMatches: number;
   totalEarnings: number;
 }

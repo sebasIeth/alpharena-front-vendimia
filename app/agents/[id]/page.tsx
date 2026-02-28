@@ -219,10 +219,52 @@ function AgentDetailContent() {
         }
         if (statsRes.status === "fulfilled") {
           setRecentMatches(
-            (statsRes.value.recentMatches || []).map((m) => ({
-              ...m,
-              id: m.id || (m as any)._id,
-            }))
+            (statsRes.value.recentMatches || []).map((m: any) => {
+              // Backend format: { matchId, gameType, opponent, outcome, eloChange, finalScore, stakeAmount, endedAt }
+              // Frontend expects: Match { id, gameType, status, agents[], winnerId, stakeAmount, createdAt, ... }
+              const matchId = m.id || m.matchId || m._id || "";
+              const opponent = m.opponent || {};
+              const outcome = m.outcome as string | undefined; // "win" | "loss" | "draw"
+
+              // Build agents array from opponent data
+              const agents: any[] = [];
+              agents.push({
+                agentId: agentId,
+                agentName: agent?.name || "You",
+                userId: "",
+                username: "",
+                eloAtStart: 0,
+                eloChange: m.eloChange ?? undefined,
+              });
+              if (opponent.agentId) {
+                agents.push({
+                  agentId: opponent.agentId,
+                  agentName: opponent.name || "Opponent",
+                  userId: "",
+                  username: "",
+                  eloAtStart: 0,
+                });
+              }
+
+              // Determine winnerId from outcome
+              let winnerId: string | undefined;
+              if (outcome === "win") winnerId = agentId;
+              else if (outcome === "loss" && opponent.agentId) winnerId = opponent.agentId;
+
+              return {
+                ...m,
+                id: matchId,
+                gameType: m.gameType || "",
+                status: "completed" as const,
+                agents,
+                winnerId,
+                stakeAmount: m.stakeAmount ?? 0,
+                pot: m.pot ?? 0,
+                moveCount: m.moveCount ?? 0,
+                createdAt: m.endedAt || m.createdAt || "",
+                updatedAt: m.endedAt || m.updatedAt || "",
+              };
+            })
           );
         }
       } catch (err) {
@@ -452,6 +494,11 @@ function AgentDetailContent() {
                       Auto-Play
                     </span>
                   )}
+                  {agent.isHuman && (
+                    <span className="px-2 py-0.5 text-xs font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-medium">
+                      Human
+                    </span>
+                  )}
                   {isLive && (
                     <span className="flex items-center gap-1.5">
                       <span className="relative w-2 h-2 live-dot">
@@ -469,6 +516,9 @@ function AgentDetailContent() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {agent.type === "openclaw" && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OpenClaw</span>
+                  )}
+                  {agent.isHuman && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
                   )}
                   {agent.gameTypes.map((gt) => (
                     <span key={gt} className="px-2 py-0.5 text-[10px] bg-arena-primary/8 text-arena-primary rounded capitalize font-mono">{gt}</span>

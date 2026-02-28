@@ -255,14 +255,21 @@ class ApiClient {
   }
 
   // ========== Leaderboard ==========
-  async getLeaderboardAgents(limit?: number): Promise<{ agents: LeaderboardAgent[] }> {
-    const query = limit ? `?limit=${limit}` : "";
-    return this.get<{ agents: LeaderboardAgent[] }>(`/leaderboard/agents${query}`, false);
+  async getLeaderboardAgents(limit?: number, gameType?: string): Promise<{ agents: LeaderboardAgent[] }> {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (gameType) params.set("gameType", gameType);
+    const query = params.toString() ? `?${params}` : "";
+    const res = await this.get<Record<string, unknown>>(`/leaderboard/agents${query}`, false);
+    const list = (res.agents ?? res.leaderboard ?? []) as LeaderboardAgent[];
+    return { agents: list };
   }
 
   async getLeaderboardUsers(limit?: number): Promise<{ users: LeaderboardUser[] }> {
     const query = limit ? `?limit=${limit}` : "";
-    return this.get<{ users: LeaderboardUser[] }>(`/leaderboard/users${query}`, false);
+    const res = await this.get<Record<string, unknown>>(`/leaderboard/users${query}`, false);
+    const list = (res.users ?? res.leaderboard ?? []) as LeaderboardUser[];
+    return { users: list };
   }
 
   async getAgentStats(id: string): Promise<AgentStatsResponse> {

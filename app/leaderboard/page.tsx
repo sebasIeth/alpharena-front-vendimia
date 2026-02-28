@@ -12,15 +12,24 @@ type Tab = "agents" | "users";
 // ── Normalize backend responses ──────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeAgent(raw: any, index: number): LeaderboardAgent {
+  const stats = raw.stats || {};
+  const wins = raw.wins ?? stats.wins ?? 0;
+  const losses = raw.losses ?? stats.losses ?? 0;
+  const draws = raw.draws ?? stats.draws ?? 0;
+  const totalMatches = raw.totalMatches ?? stats.totalMatches ?? (wins + losses + draws);
   return {
     rank: raw.rank ?? index + 1,
-    id: raw.id ?? raw._id ?? "",
+    id: raw.id ?? raw.agentId ?? raw._id ?? "",
     name: raw.name ?? "Unknown",
     ownerUsername: raw.ownerUsername ?? raw.owner?.username ?? "—",
-    elo: raw.elo ?? raw.eloRating ?? 1200,
-    winRate: raw.winRate ?? 0,
-    totalMatches: raw.totalMatches ?? 0,
-    totalEarnings: raw.totalEarnings ?? 0,
+    isHuman: raw.isHuman ?? false,
+    elo: raw.elo ?? raw.eloRating ?? stats.elo ?? 1200,
+    winRate: raw.winRate ?? stats.winRate ?? 0,
+    wins,
+    losses,
+    draws,
+    totalMatches,
+    totalEarnings: raw.totalEarnings ?? stats.totalEarnings ?? 0,
   };
 }
 
@@ -28,7 +37,7 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
 function normalizeUser(raw: any, index: number): LeaderboardUser {
   return {
     rank: raw.rank ?? index + 1,
-    id: raw.id ?? raw._id ?? "",
+    id: raw.id ?? raw.userId ?? raw._id ?? "",
     username: raw.username ?? "Unknown",
     totalEarnings: raw.totalEarnings ?? 0,
     agentCount: raw.agentCount ?? 0,
@@ -37,9 +46,7 @@ function normalizeUser(raw: any, index: number): LeaderboardUser {
 
 // ── Derived detail helpers ───────────────────────────────────
 function getAgentDetails(a: LeaderboardAgent) {
-  const wins = Math.round(a.totalMatches * a.winRate);
-  const losses = Math.round(a.totalMatches * (1 - a.winRate) * 0.85);
-  const draws = Math.max(0, a.totalMatches - wins - losses);
+  const { wins, losses, draws } = a;
   const form: ("W" | "L" | "D")[] = Array.from({ length: 5 }, (_, i) =>
     i < Math.round(a.winRate * 5) ? "W" : i < Math.round(a.winRate * 5) + (draws > 0 ? 1 : 0) ? "D" : "L"
   );
@@ -223,7 +230,12 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
           <span className="font-extrabold text-lg">{rankLabel}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-arena-text-bright truncate">{agent.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-arena-text-bright truncate">{agent.name}</span>
+            {agent.isHuman && (
+              <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+            )}
+          </div>
           <div className="text-xs text-arena-muted">{t.common.by} {agent.ownerUsername}</div>
         </div>
         <div className="text-right shrink-0">
@@ -284,6 +296,7 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
 /* ================================================================== */
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("agents");
+  const [gameType, setGameType] = useState<string>("");
   const { t } = useLanguage();
   const [selectedAgent, setSelectedAgent] = useState<LeaderboardAgent | null>(null);
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
@@ -300,7 +313,7 @@ export default function LeaderboardPage() {
       setError(null);
       try {
         const [agentsRes, usersRes] = await Promise.all([
-          api.getLeaderboardAgents(50),
+          api.getLeaderboardAgents(50, gameType || undefined),
           api.getLeaderboardUsers(50),
         ]);
         if (cancelled) return;
@@ -315,7 +328,7 @@ export default function LeaderboardPage() {
     }
     fetchData();
     return () => { cancelled = true; };
-  }, []);
+  }, [gameType]);
 
   const top3Agents = agents.slice(0, 3);
   const restAgents = agents.slice(3);
@@ -399,6 +412,31 @@ export default function LeaderboardPage() {
               </button>
             </div>
           </div>
+
+          {/* Game type filter */}
+          {tab === "agents" && (
+            <div className="flex justify-center mt-4 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
+              <div className="inline-flex items-center gap-1.5 bg-white rounded-xl p-1 border border-arena-border-light shadow-arena-sm">
+                {[
+                  { value: "", label: "All" },
+                  { value: "chess", label: "Chess" },
+                  { value: "reversi", label: "Reversi" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setGameType(opt.value)}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 ${
+                      gameType === opt.value
+                        ? "bg-arena-accent text-white shadow-arena-sm"
+                        : "text-arena-muted hover:text-arena-text"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -473,7 +511,12 @@ export default function LeaderboardPage() {
                       </div>
 
                       {/* Name + owner */}
-                      <div className="font-bold text-arena-text-bright truncate w-full text-sm">{agent.name}</div>
+                      <div className="flex items-center justify-center gap-1.5 w-full">
+                        <span className="font-bold text-arena-text-bright truncate text-sm">{agent.name}</span>
+                        {agent.isHuman && (
+                          <span className="shrink-0 px-1.5 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                        )}
+                      </div>
                       <div className="text-xs text-arena-muted mt-0.5 truncate w-full">{t.common.by} {agent.ownerUsername}</div>
 
                       {/* Stats grid */}
@@ -517,6 +560,9 @@ export default function LeaderboardPage() {
                         <div className="flex items-center gap-2">
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
                           <span className="font-bold text-arena-text-bright text-sm truncate">{agent.name}</span>
+                          {agent.isHuman && (
+                            <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                          )}
                         </div>
                         <span className="text-xs text-arena-muted">{t.common.by} {agent.ownerUsername}</span>
                       </div>
@@ -565,7 +611,12 @@ export default function LeaderboardPage() {
                         <div className="col-span-3 flex items-center gap-3 min-w-0">
                           <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="min-w-0">
-                            <div className="font-semibold text-arena-text-bright text-sm truncate group-hover:text-arena-primary transition-colors">{agent.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-arena-text-bright text-sm truncate group-hover:text-arena-primary transition-colors">{agent.name}</span>
+                              {agent.isHuman && (
+                                <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                              )}
+                            </div>
                             <div className="text-xs text-arena-muted truncate">{agent.ownerUsername}</div>
                           </div>
                         </div>
@@ -600,7 +651,12 @@ export default function LeaderboardPage() {
                           <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <span className="font-semibold text-arena-text-bright text-sm truncate">{agent.name}</span>
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-semibold text-arena-text-bright text-sm truncate">{agent.name}</span>
+                                {agent.isHuman && (
+                                  <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                                )}
+                              </span>
                               <span className="text-arena-primary font-bold text-sm font-mono shrink-0 ml-2 tabular-nums">{formatElo(agent.elo)}</span>
                             </div>
                             <div className="flex items-center justify-between mt-1">

@@ -10,12 +10,48 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Select } from "@/components/ui/Input";
 import ReversiBoard from "@/components/game/ReversiBoard";
-import type { PlayBalance, PlayStatus } from "@/lib/types";
+import ChessBoard from "@/components/game/ChessBoard";
+import type { PlayBalance } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
 type Phase = "lobby" | "queue" | "playing" | "result";
 
-/* ── Pulsing ring (reused from matchmaking) ── */
+/* ── Parse agent thinking raw text ── */
+function parseAgentThinking(raw: string): { thinking: string; move: string | null } {
+  // Try to extract JSON block from the text
+  const jsonMatch = raw.match(/\{[\s\S]*"thinking"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Use the parsed thinking text; fall back to text before the JSON
+      const before = raw.slice(0, raw.indexOf(jsonMatch[0])).trim();
+      const thinkingText = parsed.thinking || before || raw;
+      return { thinking: thinkingText, move: parsed.move || null };
+    } catch {
+      /* not valid JSON, fall through */
+    }
+  }
+
+  // Try the whole string as JSON
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.thinking) {
+      return { thinking: parsed.thinking, move: parsed.move || null };
+    }
+  } catch {
+    /* not JSON */
+  }
+
+  // Plain text — strip stray JSON-like artifacts
+  const cleaned = raw
+    .replace(/\{"thinking":[^}]*\}/g, "")
+    .replace(/\{"move":[^}]*\}/g, "")
+    .trim();
+
+  return { thinking: cleaned || raw, move: null };
+}
+
+/* ── Pulsing ring ── */
 function PulseRing() {
   return (
     <div className="relative w-20 h-20 mx-auto">
@@ -33,13 +69,12 @@ function PlayContent() {
   const { t } = useLanguage();
   const router = useRouter();
 
-  // Phase state machine
   const [phase, setPhase] = useState<Phase>("lobby");
   const [error, setError] = useState("");
 
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
-  const [gameType, setGameType] = useState("reversi");
+  const [gameType, setGameType] = useState("chess");
   const [stakeAmount, setStakeAmount] = useState("0");
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -47,30 +82,73 @@ function PlayContent() {
   // Match state
   const [agentId, setAgentId] = useState<string | null>(null);
   const [matchId, setMatchId] = useState<string | null>(null);
-  const [board, setBoard] = useState<number[][] | null>(null);
-  const [legalMoves, setLegalMoves] = useState<[number, number][]>([]);
+  const [boardState, setBoardState] = useState<unknown>(null);
+  const [gameLegalMoves, setGameLegalMoves] = useState<unknown>([]);
   const [mySide, setMySide] = useState<"a" | "b" | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [turnTimer, setTurnTimer] = useState<number | null>(null);
   const [playerA, setPlayerA] = useState<string>("");
   const [playerB, setPlayerB] = useState<string>("");
+  const [agentThinking, setAgentThinking] = useState<string | null>(null);
 
   // Result
   const [resultMessage, setResultMessage] = useState("");
   const [resultType, setResultType] = useState<"win" | "lose" | "draw">("draw");
 
   const socketRef = useRef<Socket | null>(null);
+  const matchIdRef = useRef<string | null>(null);
+  const agentIdRef = useRef<string | null>(null);
+  const mySideRef = useRef<"a" | "b" | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const balancePollRef = useRef<NodeJS.Timeout | null>(null);
   const queuePollRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ── Fetch balance ──
+  useEffect(() => { matchIdRef.current = matchId; }, [matchId]);
+  useEffect(() => { agentIdRef.current = agentId; }, [agentId]);
+  useEffect(() => { mySideRef.current = mySide; }, [mySide]);
+
   const fetchBalance = useCallback(async () => {
     try {
       const data = await api.playBalance();
       setBalance(data);
     } catch {
-      // silently handle — user might not have a play wallet yet
+      /* no play wallet yet */
+    }
+  }, []);
+
+  // Fetch match state via HTTP — used on restore and after socket switch
+  const fetchMatchState = useCallback(async (mid: string, myAgentId?: string | null) => {
+    try {
+      const { match } = await api.getMatch(mid);
+      const m = match as unknown as Record<string, unknown>;
+
+      if (m.status === "completed" || m.status === "cancelled" || m.status === "error") {
+        setPhase("lobby");
+        return;
+      }
+
+      const board = (m.currentBoard ?? m.board) as unknown;
+      if (board) setBoardState(board);
+
+      const agents = m.agents as Record<string, Record<string, unknown>> | undefined;
+      const agent = myAgentId ?? agentIdRef.current;
+      if (agents && agent) {
+        if (agents.a?.agentId === agent) setMySide("a");
+        else if (agents.b?.agentId === agent) setMySide("b");
+      }
+
+      if (agents?.a?.name) setPlayerA(agents.a.name as string);
+      if (agents?.b?.name) setPlayerB(agents.b.name as string);
+
+      const currentTurn = m.currentTurn as string | undefined;
+      if (currentTurn && agent) {
+        const myTurn =
+          (currentTurn === "a" && agents?.a?.agentId === agent) ||
+          (currentTurn === "b" && agents?.b?.agentId === agent);
+        setIsMyTurn(myTurn);
+      }
+    } catch {
+      /* fetch failed — WS will handle it */
     }
   }, []);
 
@@ -82,18 +160,39 @@ function PlayContent() {
         if (status.inMatch && status.matchId) {
           setMatchId(status.matchId);
           setAgentId(status.agentId || null);
+          if (status.gameType) setGameType(status.gameType);
+          await fetchMatchState(status.matchId, status.agentId);
           setPhase("playing");
         } else if (status.inQueue) {
           setAgentId(status.agentId || null);
+          if (status.gameType) setGameType(status.gameType);
           setPhase("queue");
         }
       } catch {
-        // not in queue or match — stay in lobby
+        /* stay in lobby */
       }
     }
     restore();
     fetchBalance();
-  }, [fetchBalance]);
+  }, [fetchBalance, fetchMatchState]);
+
+  // ── Fallback: if playing with no board data, re-check status ──
+  useEffect(() => {
+    if (phase !== "playing" || boardState !== null) return;
+    const timeout = setTimeout(async () => {
+      try {
+        const status = await api.playStatus();
+        if (!status.inMatch) {
+          setPhase("lobby");
+          setMatchId(null);
+          setAgentId(null);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [phase, boardState]);
 
   // ── Balance polling (30s) ──
   useEffect(() => {
@@ -111,29 +210,172 @@ function PlayContent() {
       if (queuePollRef.current) clearInterval(queuePollRef.current);
       return;
     }
-
     queuePollRef.current = setInterval(async () => {
       try {
         const status = await api.playStatus();
         if (status.inMatch && status.matchId) {
           setMatchId(status.matchId);
           setAgentId(status.agentId || null);
+          if (status.gameType) setGameType(status.gameType);
           setPhase("playing");
         } else if (!status.inQueue) {
-          // Kicked out of queue
           setPhase("lobby");
         }
       } catch {
-        // ignore
+        /* ignore */
       }
     }, 3000);
-
     return () => {
       if (queuePollRef.current) clearInterval(queuePollRef.current);
     };
   }, [phase]);
 
-  // ── WebSocket ──
+  // ── WebSocket: match event listeners ──
+  const attachMatchListeners = useCallback((socket: Socket) => {
+    socket.onAny((eventName: string, raw: unknown) => {
+      if (eventName !== "message") return;
+      const msg = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      const type = msg?.type as string | undefined;
+      const data = msg?.data as Record<string, unknown> | undefined;
+      if (!type || !data) return;
+
+      if (type === "match:start" || type === "match:started") {
+        const boardData = (data.currentBoard ?? data.board) as unknown;
+        const side = data.side as "a" | "b" | undefined;
+        const pA = data.playerA as string | undefined;
+        const pB = data.playerB as string | undefined;
+        const gt = data.gameType as string | undefined;
+        if (boardData) setBoardState(boardData);
+        if (side) setMySide(side);
+        if (pA) setPlayerA(pA);
+        if (pB) setPlayerB(pB);
+        if (gt) setGameType(gt);
+      }
+
+      if (type === "match:your_turn") {
+        const moves = data.legalMoves as unknown;
+        const boardData = (data.currentBoard ?? data.board) as unknown;
+        const timeMs = (data.timeRemainingMs ?? data.timeLimit) as number | undefined;
+        const side = data.side as "a" | "b" | undefined;
+        if (moves) setGameLegalMoves(moves);
+        if (boardData) setBoardState(boardData);
+        if (side) setMySide(side);
+        setIsMyTurn(true);
+        if (timeMs) setTurnTimer(Math.ceil(timeMs / 1000));
+      }
+
+      if (type === "match:move") {
+        const boardData = (data.currentBoard ?? data.boardState ?? data.board) as unknown;
+        if (boardData) setBoardState(boardData);
+
+        // Only clear turn state if this was MY move.
+        // For opponent moves, don't touch isMyTurn/legalMoves —
+        // match:your_turn is the authoritative source for that.
+        const moveAgentId = (data.agentId ?? data.agent) as string | undefined;
+        if (moveAgentId && moveAgentId === agentIdRef.current) {
+          setIsMyTurn(false);
+          setGameLegalMoves([]);
+          setTurnTimer(null);
+        }
+      }
+
+      if (type === "match:state") {
+        // Sent on reconnect — restore full board + turn state
+        const boardData = (data.currentBoard ?? data.board) as unknown;
+        if (boardData) setBoardState(boardData);
+        const currentTurn = data.currentTurn as string | undefined;
+        const agents = data.agents as Record<string, Record<string, unknown>> | undefined;
+        const agent = agentIdRef.current;
+        if (agents && agent) {
+          if (agents.a?.agentId === agent) setMySide("a");
+          else if (agents.b?.agentId === agent) setMySide("b");
+        }
+        if (currentTurn && agent && agents) {
+          const myTurn =
+            (currentTurn === "a" && agents.a?.agentId === agent) ||
+            (currentTurn === "b" && agents.b?.agentId === agent);
+          setIsMyTurn(myTurn);
+        }
+      }
+
+      if (type === "agent:thinking") {
+        const rawText = (data.raw ?? data.text ?? data.thinking ?? data.content ?? data.message) as string | undefined;
+        if (rawText) {
+          setAgentThinking(rawText);
+        } else {
+          // Try stringifying the whole data object as fallback
+          const fallback = JSON.stringify(data);
+          if (fallback && fallback !== "{}") setAgentThinking(fallback);
+        }
+      }
+
+      if (type === "match:end" || type === "match:ended") {
+        const boardData = (data.currentBoard ?? data.boardState ?? data.board) as unknown;
+        if (boardData) setBoardState(boardData);
+        setIsMyTurn(false);
+        setGameLegalMoves([]);
+        setTurnTimer(null);
+
+        const result = data.result as Record<string, unknown> | undefined;
+        const reason = (result?.reason ?? data.reason) as string | undefined;
+        const outcome = data.outcome as string | undefined;
+        const myAgent = agentIdRef.current;
+        const side = mySideRef.current;
+
+        // Extract winnerId — could be a string agentId, a side letter, or nested in an object
+        let winnerId: string | undefined;
+        for (const src of [result, data]) {
+          if (!src) continue;
+          const r = src as Record<string, unknown>;
+          const w = r.winnerId ?? r.winner;
+          if (typeof w === "string") { winnerId = w; break; }
+          if (typeof w === "object" && w && (w as Record<string, unknown>).agentId) {
+            winnerId = (w as Record<string, unknown>).agentId as string;
+            break;
+          }
+        }
+
+        const isDraw = !winnerId || winnerId === "draw" || reason === "draw" || outcome === "draw";
+        const iWon = !isDraw && (
+          winnerId === myAgent ||    // winnerId is my agentId
+          winnerId === side ||       // winnerId is my side letter ("a"/"b")
+          winnerId === "you" ||      // explicit "you"
+          outcome === "win"          // outcome field says I won
+        );
+
+        if (isDraw) {
+          setResultType("draw");
+          setResultMessage(t.play.draw);
+        } else if (iWon) {
+          setResultType("win");
+          setResultMessage(reason === "checkmate" ? t.play.checkmate : t.play.youWin);
+        } else {
+          setResultType("lose");
+          setResultMessage(reason === "checkmate" ? t.play.checkmate : t.play.youLose);
+        }
+        setPhase("result");
+      }
+    });
+  }, [t.play.draw, t.play.youWin, t.play.youLose, t.play.checkmate]);
+
+  // Switch from queue socket to match socket
+  const switchToMatchSocket = useCallback((mid: string) => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+    const matchSocket = api.connectMatchSocket(mid);
+    if (!matchSocket) return;
+    socketRef.current = matchSocket;
+    attachMatchListeners(matchSocket);
+
+    // Fetch initial state via HTTP since we likely missed match:start / match:your_turn
+    matchSocket.on("connect", () => {
+      fetchMatchState(mid);
+    });
+  }, [attachMatchListeners, fetchMatchState]);
+
+  // ── WebSocket effect ──
   useEffect(() => {
     if (phase !== "queue" && phase !== "playing") {
       if (socketRef.current) {
@@ -143,9 +385,19 @@ function PlayContent() {
       return;
     }
 
-    const socket = matchId
-      ? api.connectMatchSocket(matchId)
-      : api.connectSocket();
+    if (socketRef.current) return;
+
+    // Restoring mid-match
+    if (matchIdRef.current) {
+      const socket = api.connectMatchSocket(matchIdRef.current);
+      if (!socket) return;
+      socketRef.current = socket;
+      attachMatchListeners(socket);
+      return;
+    }
+
+    // Queue → listen for matchmaking:matched
+    const socket = api.connectSocket();
     if (!socket) return;
     socketRef.current = socket;
 
@@ -156,76 +408,30 @@ function PlayContent() {
       const data = msg?.data as Record<string, unknown> | undefined;
       if (!type || !data) return;
 
-      // Queue → matched
       if (type === "matchmaking:matched") {
         const mid = data.matchId as string;
         if (mid) {
+          matchIdRef.current = mid;
           setMatchId(mid);
+          if (data.gameType) setGameType(data.gameType as string);
           setPhase("playing");
+          switchToMatchSocket(mid);
         }
-      }
-
-      // Match started
-      if (type === "match:start") {
-        const boardData = data.board as number[][] | undefined;
-        const side = data.side as "a" | "b" | undefined;
-        const pA = data.playerA as string | undefined;
-        const pB = data.playerB as string | undefined;
-        if (boardData) setBoard(boardData);
-        if (side) setMySide(side);
-        if (pA) setPlayerA(pA);
-        if (pB) setPlayerB(pB);
-      }
-
-      // Your turn
-      if (type === "match:your_turn") {
-        const moves = data.legalMoves as [number, number][] | undefined;
-        const boardData = data.board as number[][] | undefined;
-        const timeLimit = data.timeLimit as number | undefined;
-        if (moves) setLegalMoves(moves);
-        if (boardData) setBoard(boardData);
-        setIsMyTurn(true);
-        if (timeLimit) setTurnTimer(Math.ceil(timeLimit / 1000));
-      }
-
-      // Move made (opponent or self)
-      if (type === "match:move") {
-        const boardData = data.board as number[][] | undefined;
-        if (boardData) setBoard(boardData);
-        setIsMyTurn(false);
-        setLegalMoves([]);
-        setTurnTimer(null);
-      }
-
-      // Match ended
-      if (type === "match:end") {
-        const boardData = data.board as number[][] | undefined;
-        const winner = data.winner as string | undefined;
-        const myId = data.yourAgentId as string | undefined;
-        if (boardData) setBoard(boardData);
-        setIsMyTurn(false);
-        setLegalMoves([]);
-        setTurnTimer(null);
-
-        if (winner === "draw" || !winner) {
-          setResultType("draw");
-          setResultMessage(t.play.draw);
-        } else if (winner === myId || winner === "you") {
-          setResultType("win");
-          setResultMessage(t.play.youWin);
-        } else {
-          setResultType("lose");
-          setResultMessage(t.play.youLose);
-        }
-        setPhase("result");
       }
     });
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, attachMatchListeners, switchToMatchSocket]);
+
+  // Disconnect socket on unmount
+  useEffect(() => {
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
-  }, [phase, matchId, t.play.draw, t.play.youWin, t.play.youLose]);
+  }, []);
 
   // ── Turn timer countdown ──
   useEffect(() => {
@@ -233,7 +439,6 @@ function PlayContent() {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
-
     timerRef.current = setInterval(() => {
       setTurnTimer((prev) => {
         if (prev === null || prev <= 1) {
@@ -243,7 +448,6 @@ function PlayContent() {
         return prev - 1;
       });
     }, 1000);
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -257,10 +461,8 @@ function PlayContent() {
       setError(t.play.invalidStake);
       return;
     }
-
     setJoining(true);
     try {
-      // Cancel any lingering queue entry before joining
       await api.playCancel().catch(() => {});
       const result = await api.playJoin({ gameType, stakeAmount: stake });
       setAgentId(result.agentId);
@@ -285,18 +487,16 @@ function PlayContent() {
     }
   };
 
-  const handleCellClick = async (row: number, col: number) => {
-    if (!matchId) return;
+  const handleGameMove = async (move: unknown) => {
+    const mid = matchId || matchIdRef.current;
+    if (!mid) return;
     setIsMyTurn(false);
-    setLegalMoves([]);
-
-    // Try WebSocket first
+    setGameLegalMoves([]);
     if (socketRef.current?.connected) {
-      socketRef.current.emit("game:move", { matchId, move: [row, col] });
+      socketRef.current.emit("game:move", { matchId: mid, move });
     } else {
-      // HTTP fallback
       try {
-        await api.playMove(matchId, [row, col]);
+        await api.playMove(mid, move);
       } catch (err) {
         setError(err instanceof Error ? err.message : t.play.moveFailed);
         setIsMyTurn(true);
@@ -304,24 +504,67 @@ function PlayContent() {
     }
   };
 
-  const handlePlayAgain = async () => {
-    // Ensure any leftover queue/match state is cleaned up
-    await api.playCancel().catch(() => {});
+  const handleReversiCellClick = (row: number, col: number) => handleGameMove([row, col]);
+  const handleChessMove = (move: string) => handleGameMove(move);
+
+  const resetState = () => {
     setPhase("lobby");
     setMatchId(null);
     setAgentId(null);
-    setBoard(null);
-    setLegalMoves([]);
+    setBoardState(null);
+    setGameLegalMoves([]);
     setMySide(null);
     setIsMyTurn(false);
     setTurnTimer(null);
     setResultMessage("");
     setPlayerA("");
     setPlayerB("");
+    setAgentThinking(null);
     fetchBalance();
   };
 
-  // ── Render phases ──
+  const handlePlayAgain = async () => {
+    await api.playCancel().catch(() => {});
+    resetState();
+  };
+
+  const handleAbandonMatch = async () => {
+    await api.playCancel().catch(() => {});
+    resetState();
+  };
+
+  // ── Board renderer ──
+  const renderBoard = (interactive: boolean) => {
+    if (gameType === "chess") {
+      return (
+        <ChessBoard
+          board={boardState as number[][] | null}
+          legalMoves={interactive ? (gameLegalMoves as string[] || []) : []}
+          mySide={mySide}
+          isMyTurn={interactive ? isMyTurn : false}
+          onMove={interactive ? handleChessMove : undefined}
+        />
+      );
+    }
+    return (
+      <ReversiBoard
+        board={boardState as number[][] | null}
+        legalMoves={interactive ? (gameLegalMoves as [number, number][] || []) : []}
+        mySide={mySide}
+        isMyTurn={interactive ? isMyTurn : false}
+        onCellClick={interactive ? handleReversiCellClick : undefined}
+      />
+    );
+  };
+
+  // Player labels
+  const isChess = gameType === "chess";
+  const sideALabel = isChess ? t.play.white : t.play.black;
+  const sideBLabel = isChess ? t.play.black : t.play.white;
+  const sideAColor = isChess ? "#fff" : "#222";
+  const sideBColor = isChess ? "#222" : "#fff";
+
+  // ── Render ──
   return (
     <div className="page-container">
       <div className="max-w-4xl mx-auto">
@@ -330,9 +573,7 @@ function PlayContent() {
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-arena-text mb-2">
             {t.play.title}
           </h1>
-          <p className="text-arena-muted leading-relaxed">
-            {t.play.subtitle}
-          </p>
+          <p className="text-arena-muted leading-relaxed">{t.play.subtitle}</p>
         </div>
 
         {error && (
@@ -344,66 +585,46 @@ function PlayContent() {
         {/* ════════ LOBBY ════════ */}
         {phase === "lobby" && (
           <div className="space-y-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            {/* Balance card */}
             <Card>
               <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
-                <h2 className="text-lg font-display font-semibold text-arena-text">
-                  {t.play.balance}
-                </h2>
+                <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.balance}</h2>
               </div>
               <div className="p-6">
                 {balance ? (
                   <div className="space-y-3">
                     <div className="flex items-end gap-4">
                       <div>
-                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">
-                          {balance.usdc}
-                        </span>
+                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{balance.usdc}</span>
                         <span className="text-xs text-arena-muted ml-1">USDC</span>
                       </div>
                       <div>
-                        <span className="text-sm font-mono tabular-nums text-arena-muted">
-                          {balance.eth}
-                        </span>
+                        <span className="text-sm font-mono tabular-nums text-arena-muted">{balance.eth}</span>
                         <span className="text-xs text-arena-muted ml-1">ETH</span>
                       </div>
                     </div>
                     {balance.walletAddress && (
                       <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
-                        <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
-                          {t.play.depositAddress}
-                        </div>
-                        <div className="text-xs font-mono text-arena-text break-all">
-                          {balance.walletAddress}
-                        </div>
+                        <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.play.depositAddress}</div>
+                        <div className="text-xs font-mono text-arena-text break-all">{balance.walletAddress}</div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-sm text-arena-muted font-mono">
-                    {t.common.loading}
-                  </div>
+                  <div className="text-sm text-arena-muted font-mono">{t.common.loading}</div>
                 )}
               </div>
             </Card>
 
-            {/* Join form */}
             <Card>
               <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
-                <h2 className="text-lg font-display font-semibold text-arena-text">
-                  {t.play.joinQueue}
-                </h2>
+                <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.joinQueue}</h2>
               </div>
               <div className="p-6 space-y-5">
-                <Select
-                  label={t.play.gameType}
-                  value={gameType}
-                  onChange={(e) => setGameType(e.target.value)}
-                >
+                <Select label={t.play.gameType} value={gameType} onChange={(e) => setGameType(e.target.value)}>
+                  <option value="chess">Chess</option>
                   <option value="reversi">Reversi</option>
                   <option value="marrakech">Marrakech</option>
                 </Select>
-
                 <Input
                   label={t.play.stakeAmount}
                   type="number"
@@ -413,19 +634,12 @@ function PlayContent() {
                   onChange={(e) => setStakeAmount(e.target.value)}
                   helperText={t.play.stakeHelper}
                 />
-
                 {balance && parseFloat(stakeAmount) > 0 && parseFloat(balance.usdc) < parseFloat(stakeAmount) && (
                   <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2 text-sm">
                     Insufficient balance: {balance.usdc} USDC available, need {stakeAmount} USDC.
                   </div>
                 )}
-
-                <Button
-                  onClick={handleJoinQueue}
-                  isLoading={joining}
-                  className="w-full"
-                  size="lg"
-                >
+                <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
                   {t.play.joinQueue}
                 </Button>
               </div>
@@ -440,20 +654,11 @@ function PlayContent() {
             style={{ animationDelay: "0.1s" }}
           >
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-arena-primary via-arena-primary-light to-arena-primary rounded-l-2xl" />
-
             <div className="text-center space-y-5">
               <PulseRing />
-              <h2 className="text-xl font-display font-bold text-arena-text">
-                {t.play.waiting}
-              </h2>
-              <p className="text-sm text-arena-muted max-w-sm mx-auto">
-                {t.play.waitingDesc}
-              </p>
-              <Button
-                variant="danger"
-                onClick={handleCancelQueue}
-                isLoading={cancelling}
-              >
+              <h2 className="text-xl font-display font-bold text-arena-text">{t.play.waiting}</h2>
+              <p className="text-sm text-arena-muted max-w-sm mx-auto">{t.play.waitingDesc}</p>
+              <Button variant="danger" onClick={handleCancelQueue} isLoading={cancelling}>
                 {t.play.cancelQueue}
               </Button>
             </div>
@@ -462,99 +667,133 @@ function PlayContent() {
 
         {/* ════════ PLAYING ════════ */}
         {phase === "playing" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            {/* Board (2 cols) */}
-            <div className="lg:col-span-2">
-              <Card>
-                <div className="p-4 sm:p-6">
-                  <ReversiBoard
-                    board={board}
-                    legalMoves={legalMoves}
-                    mySide={mySide}
-                    isMyTurn={isMyTurn}
-                    onCellClick={handleCellClick}
-                  />
-                </div>
-              </Card>
-            </div>
+          <div className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Board */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <div className="p-4 sm:p-6">{renderBoard(true)}</div>
+                </Card>
+              </div>
 
-            {/* Sidebar */}
-            <div className="space-y-4">
-              {/* Turn indicator */}
-              <Card>
-                <div className="p-4 text-center">
-                  <div className={`text-lg font-display font-bold ${isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
-                    {isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
+              {/* Sidebar */}
+              <div className="space-y-3">
+                {/* Turn indicator + Timer */}
+                <Card>
+                  <div className="p-5">
+                    <div className={`flex items-center justify-between ${isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
+                        <span className="text-base font-display font-bold">
+                          {isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
+                        </span>
+                      </div>
+                      {turnTimer !== null && (
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{turnTimer}</span>
+                          <span className="text-[10px] text-arena-muted">s</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {turnTimer !== null && (
-                    <div className="mt-2">
-                      <span className="text-3xl font-bold font-mono tabular-nums text-arena-primary">
-                        {turnTimer}
-                      </span>
-                      <span className="text-xs text-arena-muted ml-1">s</span>
+                </Card>
+
+                {/* Players */}
+                <Card>
+                  <div className="p-4">
+                    <div className="space-y-2.5">
+                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                        !isMyTurn && mySide !== "a" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                      }`}>
+                        <div
+                          className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
+                          style={{ backgroundColor: sideAColor }}
+                        />
+                        <span className="text-sm text-arena-text font-medium truncate">{playerA || sideALabel}</span>
+                        {mySide === "a" && (
+                          <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+                            {t.play.you}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 px-3">
+                        <div className="flex-1 border-t border-arena-border-light/60" />
+                        <span className="text-[10px] text-arena-muted font-mono">VS</span>
+                        <div className="flex-1 border-t border-arena-border-light/60" />
+                      </div>
+                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                        !isMyTurn && mySide !== "b" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                      }`}>
+                        <div
+                          className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
+                          style={{ backgroundColor: sideBColor }}
+                        />
+                        <span className="text-sm text-arena-text font-medium truncate">{playerB || sideBLabel}</span>
+                        {mySide === "b" && (
+                          <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+                            {t.play.you}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Match info + Abandon */}
+                <div className="pt-1 space-y-2">
+                  {matchId && (
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="text-[10px] text-arena-muted/60 font-mono uppercase tracking-wider">Match</span>
+                      <span className="text-[10px] font-mono text-arena-muted/60 truncate">{matchId}</span>
                     </div>
                   )}
+                  <button
+                    onClick={handleAbandonMatch}
+                    className="w-full text-xs text-arena-danger/70 hover:text-arena-danger hover:bg-arena-danger/5 rounded-lg py-2 transition-colors font-medium"
+                  >
+                    {t.play.abandonMatch}
+                  </button>
                 </div>
-              </Card>
-
-              {/* Players */}
-              <Card>
-                <div className="p-4 space-y-3">
-                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">
-                    Players
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded-full shadow-sm shrink-0"
-                        style={{ background: "radial-gradient(circle at 35% 35%, #555, #111)" }}
-                      />
-                      <span className="text-sm text-arena-text truncate font-medium">
-                        {playerA || (t.play.black)}
-                      </span>
-                      {mySide === "a" && (
-                        <span className="text-[10px] text-arena-primary uppercase tracking-wider font-semibold ml-auto">
-                          {t.play.you}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded-full shadow-sm shrink-0"
-                        style={{ background: "radial-gradient(circle at 35% 35%, #fff, #ccc)" }}
-                      />
-                      <span className="text-sm text-arena-text truncate font-medium">
-                        {playerB || (t.play.white)}
-                      </span>
-                      {mySide === "b" && (
-                        <span className="text-[10px] text-arena-primary uppercase tracking-wider font-semibold ml-auto">
-                          {t.play.you}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Match ID */}
-              {matchId && (
-                <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
-                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
-                    Match
-                  </div>
-                  <div className="text-xs font-mono text-arena-text truncate">
-                    {matchId}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
+
+            {/* Agent Reasoning — full width below the board */}
+            {agentThinking && (() => {
+              const parsed = parseAgentThinking(agentThinking);
+              return (
+                <Card>
+                  <div className="p-5">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-arena-primary/15 to-arena-accent/15 flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-arena-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-display font-semibold text-arena-text">Agent Reasoning</span>
+                      {parsed.move && (
+                        <span className="ml-auto text-[10px] font-mono font-bold bg-arena-primary/10 text-arena-primary px-2 py-1 rounded-md">
+                          {parsed.move}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-arena-primary/30 via-arena-accent/20 to-transparent rounded-full" />
+                      <div className="pl-4">
+                        <p className="text-sm text-arena-text/80 leading-relaxed">
+                          {parsed.thinking}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })()}
           </div>
         )}
 
         {/* ════════ RESULT ════════ */}
         {phase === "result" && (
           <div className="space-y-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            {/* Result banner */}
             <div className={`rounded-2xl border-2 p-8 text-center ${
               resultType === "win"
                 ? "border-arena-success/40 bg-arena-success/5"
@@ -573,28 +812,13 @@ function PlayContent() {
               </div>
             </div>
 
-            {/* Final board */}
             <Card>
-              <div className="p-4 sm:p-6">
-                <ReversiBoard
-                  board={board}
-                  legalMoves={[]}
-                  mySide={mySide}
-                  isMyTurn={false}
-                />
-              </div>
+              <div className="p-4 sm:p-6">{renderBoard(false)}</div>
             </Card>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handlePlayAgain} size="lg">
-                {t.play.playAgain}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => router.push("/dashboard")}
-              >
+              <Button onClick={handlePlayAgain} size="lg">{t.play.playAgain}</Button>
+              <Button variant="secondary" size="lg" onClick={() => router.push("/dashboard")}>
                 {t.play.backToDashboard}
               </Button>
             </div>
