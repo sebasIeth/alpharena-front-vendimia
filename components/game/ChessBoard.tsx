@@ -11,6 +11,8 @@ interface ChessBoardProps {
   mySide: "a" | "b" | null;
   /** Whether it's the current player's turn */
   isMyTurn: boolean;
+  /** Whether the current player is in check */
+  isCheck?: boolean;
   /** Callback when a move is made */
   onMove?: (move: string) => void;
 }
@@ -80,10 +82,15 @@ function isPromotionMove(piece: number, toRow: number): boolean {
   return (piece === WHITE_PAWN && toRow === 0) || (piece === BLACK_PAWN && toRow === 7);
 }
 
+/* ── Piece IDs ── */
+const WHITE_KING = 6;
+const BLACK_KING = 12;
+
 /* ── Colors ── */
 const LIGHT_SQ = "#f0d9b5";
 const DARK_SQ = "#b58863";
 const SELECTED_SQ = "rgba(255, 255, 0, 0.5)";
+const CHECK_SQ = "rgba(239, 68, 68, 0.55)";
 const LEGAL_DOT = "rgba(91, 79, 207, 0.5)";
 const LEGAL_CAPTURE = "rgba(91, 79, 207, 0.35)";
 
@@ -92,6 +99,7 @@ export default function ChessBoard({
   legalMoves,
   mySide,
   isMyTurn,
+  isCheck,
   onMove,
 }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -116,6 +124,18 @@ export default function ChessBoard({
     const dests = movesFromSquare.get(selectedSquare) || [];
     return new Set(dests.map((d) => d.slice(0, 2)));
   }, [selectedSquare, movesFromSquare]);
+
+  // Find the king square for check highlighting
+  const myKingSquare = useMemo(() => {
+    if (!board || !mySide || !isCheck) return null;
+    const kingId = mySide === "a" ? WHITE_KING : BLACK_KING;
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        if (board[r]?.[c] === kingId) return coordToSquare(r, c);
+      }
+    }
+    return null;
+  }, [board, mySide, isCheck]);
 
   // When legalMoves is empty but it's our turn, allow free selection (backend validates)
   const permissive = legalMoves.length === 0;
@@ -253,6 +273,7 @@ export default function ChessBoard({
                 const isLight = (r + c) % 2 === 0;
                 const isSelected = sq === selectedSquare;
                 const isDestination = destinations.has(sq);
+                const isKingInCheck = sq === myKingSquare;
                 const hasPiece = piece !== 0;
                 const clickable =
                   isMyTurn &&
@@ -261,6 +282,7 @@ export default function ChessBoard({
                     (selectedSquare && (permissive || isDestination)));
 
                 let bgColor = isLight ? LIGHT_SQ : DARK_SQ;
+                if (isKingInCheck) bgColor = CHECK_SQ;
                 if (isSelected) bgColor = SELECTED_SQ;
 
                 return (

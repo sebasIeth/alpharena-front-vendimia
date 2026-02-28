@@ -89,6 +89,7 @@ function PlayContent() {
   const [turnTimer, setTurnTimer] = useState<number | null>(null);
   const [playerA, setPlayerA] = useState<string>("");
   const [playerB, setPlayerB] = useState<string>("");
+  const [isCheck, setIsCheck] = useState(false);
   const [agentThinking, setAgentThinking] = useState<string | null>(null);
 
   // Result
@@ -265,6 +266,7 @@ function PlayContent() {
         const boardData = (data.currentBoard ?? data.board) as unknown;
         const timeMs = (data.timeRemainingMs ?? data.timeLimit) as number | undefined;
         const side = data.side as "a" | "b" | undefined;
+        const check = !!(data.isCheck ?? data.check ?? data.inCheck);
         if (moves) setGameLegalMoves(moves);
         if (boardData) {
           setBoardState(boardData);
@@ -272,6 +274,7 @@ function PlayContent() {
         }
         if (side) setMySide(side);
         setIsMyTurn(true);
+        setIsCheck(check);
         setPhase("playing");
         if (timeMs) setTurnTimer(Math.ceil(timeMs / 1000));
       }
@@ -286,6 +289,7 @@ function PlayContent() {
         const moveAgentId = (data.agentId ?? data.agent) as string | undefined;
         if (moveAgentId && moveAgentId === agentIdRef.current) {
           setIsMyTurn(false);
+          setIsCheck(false);
           setGameLegalMoves([]);
           setTurnTimer(null);
         }
@@ -325,6 +329,7 @@ function PlayContent() {
         const boardData = (data.currentBoard ?? data.boardState ?? data.board) as unknown;
         if (boardData) setBoardState(boardData);
         setIsMyTurn(false);
+        setIsCheck(false);
         setGameLegalMoves([]);
         setTurnTimer(null);
 
@@ -527,6 +532,7 @@ function PlayContent() {
     setGameLegalMoves([]);
     setMySide(null);
     setIsMyTurn(false);
+    setIsCheck(false);
     setTurnTimer(null);
     setResultMessage("");
     setPlayerA("");
@@ -554,6 +560,7 @@ function PlayContent() {
           legalMoves={interactive ? (gameLegalMoves as string[] || []) : []}
           mySide={mySide}
           isMyTurn={interactive ? isMyTurn : false}
+          isCheck={interactive ? isCheck : false}
           onMove={interactive ? handleChessMove : undefined}
         />
       );
@@ -746,6 +753,14 @@ function PlayContent() {
 
               {/* Sidebar */}
               <div className="space-y-3">
+                {/* Check warning */}
+                {isCheck && isMyTurn && gameType === "chess" && (
+                  <div className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 flex items-center gap-2.5 animate-pulse">
+                    <span className="text-red-500 text-lg">&#9888;</span>
+                    <span className="text-sm font-display font-bold text-red-600">{t.play.check}!</span>
+                  </div>
+                )}
+
                 {/* Turn indicator + Timer */}
                 <Card>
                   <div className="p-5">
