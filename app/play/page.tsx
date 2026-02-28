@@ -14,7 +14,7 @@ import ChessBoard from "@/components/game/ChessBoard";
 import type { PlayBalance } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
-type Phase = "lobby" | "queue" | "playing" | "result";
+type Phase = "lobby" | "queue" | "entering" | "playing" | "result";
 
 /* ── Parse agent thinking raw text ── */
 function parseAgentThinking(raw: string): { thinking: string; move: string | null } {
@@ -128,7 +128,10 @@ function PlayContent() {
       }
 
       const board = (m.currentBoard ?? m.board) as unknown;
-      if (board) setBoardState(board);
+      if (board) {
+        setBoardState(board);
+        setPhase("playing");
+      }
 
       const agents = m.agents as Record<string, Record<string, unknown>> | undefined;
       const agent = myAgentId ?? agentIdRef.current;
@@ -162,7 +165,9 @@ function PlayContent() {
           setAgentId(status.agentId || null);
           if (status.gameType) setGameType(status.gameType);
           await fetchMatchState(status.matchId, status.agentId);
-          setPhase("playing");
+          // fetchMatchState sets phase to "playing" if board is available
+          // Otherwise stay in "entering" while on-chain tx completes
+          setPhase((prev) => prev === "playing" ? "playing" : "entering");
         } else if (status.inQueue) {
           setAgentId(status.agentId || null);
           if (status.gameType) setGameType(status.gameType);
@@ -217,7 +222,7 @@ function PlayContent() {
           setMatchId(status.matchId);
           setAgentId(status.agentId || null);
           if (status.gameType) setGameType(status.gameType);
-          setPhase("playing");
+          setPhase("entering");
         } else if (!status.inQueue) {
           setPhase("lobby");
         }
@@ -245,7 +250,10 @@ function PlayContent() {
         const pA = data.playerA as string | undefined;
         const pB = data.playerB as string | undefined;
         const gt = data.gameType as string | undefined;
-        if (boardData) setBoardState(boardData);
+        if (boardData) {
+          setBoardState(boardData);
+          setPhase("playing");
+        }
         if (side) setMySide(side);
         if (pA) setPlayerA(pA);
         if (pB) setPlayerB(pB);
@@ -258,9 +266,13 @@ function PlayContent() {
         const timeMs = (data.timeRemainingMs ?? data.timeLimit) as number | undefined;
         const side = data.side as "a" | "b" | undefined;
         if (moves) setGameLegalMoves(moves);
-        if (boardData) setBoardState(boardData);
+        if (boardData) {
+          setBoardState(boardData);
+          setPhase("playing");
+        }
         if (side) setMySide(side);
         setIsMyTurn(true);
+        setPhase("playing");
         if (timeMs) setTurnTimer(Math.ceil(timeMs / 1000));
       }
 
@@ -377,7 +389,7 @@ function PlayContent() {
 
   // ── WebSocket effect ──
   useEffect(() => {
-    if (phase !== "queue" && phase !== "playing") {
+    if (phase !== "queue" && phase !== "entering" && phase !== "playing") {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -414,7 +426,7 @@ function PlayContent() {
           matchIdRef.current = mid;
           setMatchId(mid);
           if (data.gameType) setGameType(data.gameType as string);
-          setPhase("playing");
+          setPhase("entering");
           switchToMatchSocket(mid);
         }
       }
@@ -661,6 +673,62 @@ function PlayContent() {
               <Button variant="danger" onClick={handleCancelQueue} isLoading={cancelling}>
                 {t.play.cancelQueue}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ════════ ENTERING MATCH ════════ */}
+        {phase === "entering" && (
+          <div
+            className="bg-white border border-arena-accent/30 rounded-2xl p-10 shadow-arena relative overflow-hidden opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.1s" }}
+          >
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-arena-accent via-arena-primary to-arena-accent rounded-l-2xl" />
+            <div className="absolute inset-0 bg-gradient-to-br from-arena-primary/[0.02] via-transparent to-arena-accent/[0.03]" />
+            <div className="relative text-center space-y-6">
+              {/* Animated chess/game icon */}
+              <div className="relative w-24 h-24 mx-auto">
+                <div className="absolute inset-0 rounded-2xl bg-arena-primary/10 animate-pulse" />
+                <div className="absolute inset-2 rounded-xl bg-arena-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-4xl">
+                    {gameType === "chess" ? "\u265A" : gameType === "reversi" ? "\u25CF" : "\u{1FA79}"}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-display font-bold text-arena-text mb-2">
+                  {t.play.enteringMatch}
+                </h2>
+                <p className="text-sm text-arena-muted max-w-sm mx-auto">
+                  {t.play.enteringMatchDesc}
+                </p>
+              </div>
+
+              {/* Progress steps */}
+              <div className="flex items-center justify-center gap-3 text-xs text-arena-muted">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-arena-success" />
+                  <span>Matched</span>
+                </span>
+                <div className="w-6 border-t border-arena-border-light" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-arena-primary animate-pulse" />
+                  <span>On-chain setup</span>
+                </span>
+                <div className="w-6 border-t border-dashed border-arena-border-light" />
+                <span className="flex items-center gap-1.5 opacity-40">
+                  <span className="w-2 h-2 rounded-full bg-arena-muted/40" />
+                  <span>Game start</span>
+                </span>
+              </div>
+
+              {matchId && (
+                <div className="text-[10px] text-arena-muted/50 font-mono">
+                  Match: {matchId}
+                </div>
+              )}
             </div>
           </div>
         )}
