@@ -93,8 +93,8 @@ function IconCheck({ className = "w-5 h-5" }: { className?: string }) {
 /* ── Avatar with initial ── */
 function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
   return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
+    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`} style={{ boxShadow: "0 2px 8px rgba(91, 79, 207, 0.25), inset 0 1px 0 rgba(255,255,255,0.2)" }}>
+      <span className={`${textSize} font-extrabold text-white drop-shadow-sm`}>{name.charAt(0).toUpperCase()}</span>
     </div>
   );
 }
@@ -102,21 +102,24 @@ function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
   const pct = Math.round(rate * 100);
-  const inner = size - 14;
+  const inner = size - 16;
   const color = pct >= 60 ? "#059669" : pct >= 40 ? "#5B4FCF" : "#DC2626";
+  const colorLight = pct >= 60 ? "#34D399" : pct >= 40 ? "#7B6FE0" : "#F87171";
+  const deg = pct * 3.6;
   return (
     <div
       className="stat-ring shrink-0"
       style={{
         width: size,
         height: size,
-        background: `conic-gradient(${color} ${pct * 3.6}deg, #E8E4DF ${pct * 3.6}deg)`,
+        background: `conic-gradient(${color} 0deg, ${colorLight} ${deg * 0.6}deg, ${color} ${deg}deg, rgba(212, 208, 200, 0.25) ${deg}deg)`,
+        boxShadow: `0 0 20px ${color}18, 0 4px 12px rgba(0,0,0,0.06)`,
       }}
     >
       <div className="stat-ring-inner" style={{ width: inner, height: inner }}>
         <div className="text-center">
-          <span className="text-2xl font-extrabold font-mono text-arena-text tabular-nums">{pct}</span>
-          <span className="text-xs text-arena-muted ml-0.5">%</span>
+          <span className="text-2xl font-extrabold font-mono text-arena-text-bright tabular-nums">{pct}</span>
+          <span className="text-[11px] text-arena-muted font-semibold ml-0.5">%</span>
         </div>
       </div>
     </div>
@@ -127,11 +130,13 @@ function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
 function MiniRing({ rate, size = 32 }: { rate: number; size?: number }) {
   const pct = rate * 100;
   const color = pct >= 60 ? "#059669" : pct >= 40 ? "#5B4FCF" : "#DC2626";
+  const colorLight = pct >= 60 ? "#34D399" : pct >= 40 ? "#7B6FE0" : "#F87171";
   const inner = size - 6;
+  const deg = pct * 3.6;
   return (
-    <div className="stat-ring shrink-0" style={{ width: size, height: size, background: `conic-gradient(${color} ${pct * 3.6}deg, #E8E4DF ${pct * 3.6}deg)` }}>
+    <div className="stat-ring shrink-0" style={{ width: size, height: size, background: `conic-gradient(${color} 0deg, ${colorLight} ${deg * 0.6}deg, ${color} ${deg}deg, rgba(212, 208, 200, 0.25) ${deg}deg)`, boxShadow: `0 0 8px ${color}12` }}>
       <div className="stat-ring-inner" style={{ width: inner, height: inner }}>
-        <span className="text-[9px] font-bold tabular-nums text-arena-text">{Math.round(pct)}</span>
+        <span className="text-[9px] font-bold tabular-nums text-arena-text-bright">{Math.round(pct)}</span>
       </div>
     </div>
   );
@@ -140,15 +145,15 @@ function MiniRing({ rate, size = 32 }: { rate: number; size?: number }) {
 /* ── W/L/D Horizontal Bar ── */
 function WLDBar({ wins, losses, draws, height = "h-2" }: { wins: number; losses: number; draws: number; height?: string }) {
   const total = wins + losses + draws;
-  if (total === 0) return <div className={`w-full ${height} rounded-full bg-arena-border-light/50`} />;
+  if (total === 0) return <div className={`w-full ${height} rounded-full bg-arena-border-light/40`} style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.06)" }} />;
   const wPct = (wins / total) * 100;
   const lPct = (losses / total) * 100;
   const dPct = (draws / total) * 100;
   return (
-    <div className={`w-full ${height} rounded-full overflow-hidden flex bg-arena-border-light/30`}>
-      {wPct > 0 && <div className="h-full bg-arena-success transition-all duration-700" style={{ width: `${wPct}%` }} />}
-      {dPct > 0 && <div className="h-full bg-arena-muted-light/60 transition-all duration-700" style={{ width: `${dPct}%` }} />}
-      {lPct > 0 && <div className="h-full bg-arena-danger/60 transition-all duration-700" style={{ width: `${lPct}%` }} />}
+    <div className={`w-full ${height} rounded-full overflow-hidden flex bg-arena-border-light/25`} style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.06)" }}>
+      {wPct > 0 && <div className="h-full bg-gradient-to-r from-arena-success to-emerald-400 transition-all duration-700" style={{ width: `${wPct}%` }} />}
+      {dPct > 0 && <div className="h-full bg-arena-muted-light/50 transition-all duration-700" style={{ width: `${dPct}%` }} />}
+      {lPct > 0 && <div className="h-full bg-gradient-to-r from-arena-danger/70 to-arena-danger/50 transition-all duration-700" style={{ width: `${lPct}%` }} />}
     </div>
   );
 }
@@ -168,14 +173,14 @@ function DashStat({ label, value, sub, icon, accentColor, delay, children }: {
       <div className={`dash-stat-accent ${accentColor}`} />
       <div className="pl-3 flex items-start justify-between">
         <div>
-          <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1.5">{label}</div>
+          <div className="text-[11px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{label}</div>
           <div className="flex items-end gap-1.5">
             <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{value}</span>
-            {sub && <span className="text-[10px] text-arena-muted font-mono tracking-wider mb-0.5">{sub}</span>}
+            {sub && <span className="text-[11px] text-arena-muted font-mono font-medium tracking-wider mb-0.5">{sub}</span>}
           </div>
           {children}
         </div>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accentColor}/10`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accentColor}/10 ring-1 ring-inset ${accentColor}/5`}>
           <div className={accentColor.replace("bg-", "text-")}>{icon}</div>
         </div>
       </div>
@@ -197,7 +202,7 @@ function OnboardingState({ t }: { t: any }) {
       {steps.map((step, i) => (
         <div
           key={step.num}
-          className="bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm opacity-0 animate-fade-up"
+          className="dash-glass-card rounded-xl p-5 opacity-0 animate-fade-up"
           style={{ animationDelay: `${0.2 + i * 0.08}s`, animationFillMode: "both" }}
         >
           <div className="flex items-start gap-4">
@@ -311,7 +316,7 @@ function DashboardContent() {
             {/* Avatar + greeting */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-arena-primary to-arena-accent flex items-center justify-center shadow-arena ring-4 ring-arena-primary/10">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-arena-primary to-arena-accent flex items-center justify-center ring-4 ring-arena-primary/10" style={{ boxShadow: "0 4px 16px rgba(91, 79, 207, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
                   <span className="text-2xl sm:text-3xl font-extrabold text-white">{user?.username?.charAt(0).toUpperCase()}</span>
                 </div>
                 {/* Online dot */}
@@ -357,31 +362,31 @@ function DashboardContent() {
           {/* Stats pills */}
           {hasAgents ? (
             <div className="flex flex-wrap gap-2.5">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-arena-primary/10 flex items-center justify-center">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
+                <div className="w-7 h-7 rounded-lg bg-arena-primary/10 flex items-center justify-center ring-1 ring-inset ring-arena-primary/5">
                   <IconUsers className="w-3.5 h-3.5 text-arena-primary" />
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{agents.length}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">{t.common.agents}</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.agents}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-arena-success/10 flex items-center justify-center">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
+                <div className="w-7 h-7 rounded-lg bg-arena-success/10 flex items-center justify-center ring-1 ring-inset ring-arena-success/5">
                   <IconTrophy className="w-3.5 h-3.5 text-arena-success" />
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-success leading-none">{stats.wins}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">{t.common.wins}</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.wins}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm border border-arena-border-light/60 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-arena-accent/10 flex items-center justify-center">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
+                <div className="w-7 h-7 rounded-lg bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
                   <IconCoin className="w-3.5 h-3.5 text-arena-accent" />
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider ml-1.5">USDC</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">USDC</span>
                 </div>
               </div>
               {stats.active > 0 && (
@@ -467,11 +472,11 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-8">
           {/* Overall Performance — 3 cols wide */}
           <div
-            className="lg:col-span-3 bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
+            className="lg:col-span-3 dash-glass-card rounded-2xl p-6 opacity-0 animate-fade-up"
             style={{ animationDelay: "0.18s", animationFillMode: "both" }}
           >
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono">
+              <h3 className="text-[11px] text-arena-text font-semibold uppercase tracking-widest font-mono">
                 {t.leaderboard.overallWinRate}
               </h3>
               <div className="flex items-center gap-1.5 text-[10px] font-mono text-arena-muted">
@@ -510,18 +515,18 @@ function DashboardContent() {
                 </div>
 
                 {/* Quick stats row */}
-                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-arena-border-light/50">
+                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-arena-border-light/40">
                   <div>
-                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.matches}</div>
-                    <div className="text-lg font-bold text-arena-text-bright font-mono tabular-nums">{stats.total}</div>
+                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.matches}</div>
+                    <div className="text-xl font-extrabold text-arena-text-bright font-mono tabular-nums">{stats.total}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">Best {t.common.elo}</div>
-                    <div className="text-lg font-bold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestElo)}</div>
+                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">Best {t.common.elo}</div>
+                    <div className="text-xl font-extrabold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestElo)}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.earnings}</div>
-                    <div className="text-lg font-bold text-arena-accent font-mono tabular-nums">{stats.earnings.toFixed(2)}</div>
+                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
+                    <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{stats.earnings.toFixed(2)}</div>
                   </div>
                 </div>
               </div>
@@ -531,7 +536,7 @@ function DashboardContent() {
           {/* Best Agent Spotlight — 2 cols */}
           {stats.bestAgent && (
             <div
-              className="lg:col-span-2 bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm cursor-pointer opacity-0 animate-fade-up group hover:shadow-arena-lg hover:border-arena-primary/30 transition-all"
+              className="lg:col-span-2 dash-glass-card rounded-2xl p-6 cursor-pointer opacity-0 animate-fade-up group"
               style={{ animationDelay: "0.22s", animationFillMode: "both" }}
               onClick={() => router.push(`/agents/${stats.bestAgent!.id}`)}
             >
@@ -565,17 +570,17 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-arena-border-light/60">
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-arena-border-light/40">
                 <div>
-                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.elo}</div>
+                  <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.elo}</div>
                   <div className="text-xl font-extrabold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestAgent.elo)}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.winRate}</div>
+                  <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.winRate}</div>
                   <div className="text-xl font-extrabold text-arena-text-bright font-mono tabular-nums">{formatWinRate(stats.bestAgent.stats?.winRate || 0)}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-arena-muted uppercase tracking-wider">{t.common.earnings}</div>
+                  <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
                   <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{(stats.bestAgent.stats?.totalEarnings || 0).toFixed(2)}</div>
                 </div>
               </div>
@@ -602,7 +607,6 @@ function DashboardContent() {
               label: t.dashboard.createAgent,
               desc: t.dashboard.deployNew,
               accent: "bg-arena-primary/10 text-arena-primary",
-              hoverBorder: "hover:border-arena-primary/40",
               delay: 0.24,
             },
             {
@@ -611,7 +615,6 @@ function DashboardContent() {
               label: t.dashboard.joinQueue,
               desc: t.dashboard.enterMatchmaking,
               accent: "bg-arena-accent/10 text-arena-accent",
-              hoverBorder: "hover:border-arena-accent/40",
               delay: 0.28,
             },
             {
@@ -620,13 +623,12 @@ function DashboardContent() {
               label: t.dashboard.leaderboard,
               desc: t.dashboard.viewRankings,
               accent: "bg-arena-success/10 text-arena-success",
-              hoverBorder: "hover:border-arena-success/40",
               delay: 0.32,
             },
           ].map((action) => (
             <Link key={action.href} href={action.href}>
               <div
-                className={`bg-white border border-arena-border-light rounded-xl p-5 shadow-arena-sm group cursor-pointer transition-all duration-200 hover:shadow-arena hover:-translate-y-0.5 ${action.hoverBorder} opacity-0 animate-fade-up`}
+                className="dash-glass-card rounded-xl p-5 group cursor-pointer opacity-0 animate-fade-up"
                 style={{ animationDelay: `${action.delay}s`, animationFillMode: "both" }}
               >
                 <div className="flex items-center gap-4">
@@ -672,8 +674,8 @@ function DashboardContent() {
               return (
                 <div
                   key={agent.id}
-                  className={`bg-white border rounded-xl p-5 shadow-arena-sm cursor-pointer transition-all duration-200 hover:shadow-arena-lg hover:-translate-y-0.5 opacity-0 animate-fade-up ${
-                    isBest ? "border-arena-primary/30 ring-1 ring-arena-primary/10" : "border-arena-border-light hover:border-arena-primary/30"
+                  className={`dash-glass-card rounded-xl p-5 cursor-pointer opacity-0 animate-fade-up ${
+                    isBest ? "ring-1 ring-arena-primary/15" : ""
                   }`}
                   style={{ animationDelay: `${0.35 + i * 0.06}s`, animationFillMode: "both" }}
                   onClick={() => router.push(`/agents/${agent.id}`)}
@@ -707,7 +709,12 @@ function DashboardContent() {
                         </div>
                       </div>
                     </div>
-                    <Badge status={agent.status} />
+                    <div className="flex items-center gap-1.5">
+                      {agent.status === "idle" && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-arena-muted-light idle-pulse" />
+                      )}
+                      <Badge status={agent.status} />
+                    </div>
                   </div>
 
                   {/* WLD Bar */}
@@ -746,7 +753,7 @@ function DashboardContent() {
         </div>
 
         {recentMatches.length === 0 ? (
-          <div className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm">
+          <div className="dash-glass-card rounded-2xl">
             <div className="text-center py-16 px-6">
               <div className="w-16 h-16 rounded-2xl bg-arena-primary/10 flex items-center justify-center mx-auto mb-4 animate-float">
                 <IconBolt className="w-8 h-8 text-arena-primary" />
@@ -797,7 +804,7 @@ function DashboardContent() {
                     </div>
 
                     {/* Card */}
-                    <div className="bg-white border border-arena-border-light rounded-xl p-4 shadow-arena-sm flex-1 mb-3 transition-all duration-200 group-hover:shadow-arena group-hover:border-arena-primary/30">
+                    <div className="dash-glass-card rounded-xl p-4 flex-1 mb-3 group-hover:border-arena-primary/20">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <Badge status={match.status} />
