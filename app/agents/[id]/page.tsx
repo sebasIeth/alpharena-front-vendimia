@@ -343,9 +343,7 @@ function AgentDetailContent() {
     e.preventDefault();
     setEditError("");
     setEditLoading(true);
-    const gameTypes: string[] = [];
-    if (editForm.marrakech) gameTypes.push("marrakech");
-    if (editForm.reversi) gameTypes.push("reversi");
+    const gameTypes: string[] = ["chess"];
     try {
       const updatePayload: Record<string, unknown> = { name: editForm.name.trim(), gameTypes };
       if (agent?.type === "openclaw") {
@@ -580,13 +578,10 @@ function AgentDetailContent() {
             ) : (
               <Input label={t.createAgent.endpointUrl} value={editForm.endpointUrl} onChange={(e) => setEditForm({ ...editForm, endpointUrl: e.target.value })} />
             )}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={editForm.marrakech} onChange={(e) => setEditForm({ ...editForm, marrakech: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
-              <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={editForm.reversi} onChange={(e) => setEditForm({ ...editForm, reversi: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
-              <span className="text-sm text-arena-text">{t.createAgent.reversi}</span>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked disabled className="w-4 h-4 accent-arena-primary" />
+              <span className="text-sm text-arena-text">Chess</span>
+              <span className="text-[10px] text-arena-muted">(only available game)</span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>{t.common.save}</Button>

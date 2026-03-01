@@ -174,7 +174,7 @@ function CreateAgentContent() {
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
         type: agentType,
-        gameTypes: ["marrakech"],
+        gameTypes: ["chess"],
         selfclawPublicKey: formData.selfclawPublicKey.trim(),
       };
       if (agentType === "http") {
@@ -659,9 +659,9 @@ function CreateAgentContent() {
                       <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.createAgent.gameTypes}</div>
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded-lg bg-arena-success/10 text-arena-success text-xs font-medium">
-                          {t.createAgent.marrakech}
+                          Chess
                         </span>
-                        <span className="text-xs text-arena-muted">{t.createAgent.marrakechDesc}</span>
+                        <span className="text-xs text-arena-muted">(only available game)</span>
                       </div>
                     </div>
                   </div>

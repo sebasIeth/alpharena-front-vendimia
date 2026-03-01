@@ -651,10 +651,8 @@ function PlayContent() {
                 <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.joinQueue}</h2>
               </div>
               <div className="p-6 space-y-5">
-                <Select label={t.play.gameType} value={gameType} onChange={(e) => setGameType(e.target.value)}>
+                <Select label={t.play.gameType} value="chess" disabled>
                   <option value="chess">Chess</option>
-                  <option value="reversi">Reversi</option>
-                  <option value="marrakech">Marrakech</option>
                 </Select>
                 <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
                   {t.play.joinQueue}
