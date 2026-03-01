@@ -217,7 +217,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       if (!matchId) return;
       try {
         const data = await api.getMatchMoves(matchId);
-        const fetchedMoves = data.moves || [];
+        const fetchedMoves = data?.moves || [];
         setMoves(fetchedMoves);
 
         const initialThoughts: AgentThought[] = [];
@@ -380,83 +380,100 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId, match.status]);
 
-  // Polling fallback: re-fetch match + moves every 3s while active
+  // Polling fallback: re-fetch match + moves while active
+  // Uses 8s interval with backoff on 429 to avoid rate limiting
   useEffect(() => {
     if (match.status !== "active" || !matchId) return;
 
-    pollRef.current = setInterval(async () => {
-      try {
-        const [matchRes, movesRes] = await Promise.allSettled([
-          api.getMatch(matchId),
-          api.getMatchMoves(matchId),
-        ]);
+    let interval = 8000;
+    const schedule = () => {
+      pollRef.current = setTimeout(async () => {
+        try {
+          const [matchRes, movesRes] = await Promise.allSettled([
+            api.getMatch(matchId),
+            api.getMatchMoves(matchId),
+          ]);
 
-        if (matchRes.status === "fulfilled") {
-          const updated = matchRes.value.match;
-          if (updated) {
-            const grid = extractBoard(updated);
-            if (grid) {
-              setCurrentBoard({ grid } as any);
-            } else {
-              const rawBoard = updated.boardState || (updated as any).currentBoard;
-              if (rawBoard) setCurrentBoard(rawBoard);
-            }
-            const assam = extractAssam(updated);
-            if (assam) setCurrentAssam(assam);
-
-            onMatchUpdateRef.current?.({ ...updated, id: updated.id || (updated as any)._id });
+          // Check for 429 — back off if rate limited
+          const got429 = [matchRes, movesRes].some(
+            (r) => r.status === "rejected" && String(r.reason).includes("429")
+          );
+          if (got429) {
+            interval = Math.min(interval * 2, 30000);
+          } else {
+            interval = 8000;
           }
-        }
 
-        if (movesRes.status === "fulfilled") {
-          const newMoves = movesRes.value.moves || [];
-          setMoves((prev) => {
-            if (newMoves.length <= prev.length) return prev;
-
-            const newOnes = newMoves.slice(prev.length);
-            for (const move of newOnes) {
-              const md = move.moveData as any;
-              const thinking = md?.thinking || md?.raw;
-              if (thinking) {
-                const info = agentLookupRef.current.get(move.agentId);
-                setThoughts((prevThoughts) => {
-                  const exists = prevThoughts.some(
-                    (t) => t.turnNumber === move.turnNumber && t.agentId === move.agentId
-                  );
-                  if (exists) return prevThoughts;
-                  return [
-                    ...prevThoughts,
-                    {
-                      agentId: move.agentId,
-                      agentName: info?.name || "Agent",
-                      side: info?.side || "a",
-                      text: thinking,
-                      timestamp: new Date(move.timestamp).getTime() || Date.now(),
-                      turnNumber: move.turnNumber,
-                    },
-                  ];
-                });
+          if (matchRes.status === "fulfilled") {
+            const updated = matchRes.value.match;
+            if (updated) {
+              const grid = extractBoard(updated);
+              if (grid) {
+                setCurrentBoard({ grid } as any);
+              } else {
+                const rawBoard = updated.boardState || (updated as any).currentBoard;
+                if (rawBoard) setCurrentBoard(rawBoard);
               }
-            }
+              const assam = extractAssam(updated);
+              if (assam) setCurrentAssam(assam);
 
-            // Extract assam from latest move
-            const lastMove = newMoves[newMoves.length - 1];
-            if (lastMove) {
-              const assamFromMove = extractAssamFromMove(lastMove.moveData);
-              if (assamFromMove) setCurrentAssam(assamFromMove);
+              onMatchUpdateRef.current?.({ ...updated, id: updated.id || (updated as any)._id });
             }
+          }
 
-            return newMoves;
-          });
+          if (movesRes.status === "fulfilled") {
+            const newMoves = movesRes.value?.moves || [];
+            setMoves((prev) => {
+              if (!newMoves.length || newMoves.length <= prev.length) return prev;
+
+              const newOnes = newMoves.slice(prev.length);
+              for (const move of newOnes) {
+                const md = move.moveData as any;
+                const thinking = md?.thinking || md?.raw;
+                if (thinking) {
+                  const info = agentLookupRef.current.get(move.agentId);
+                  setThoughts((prevThoughts) => {
+                    const exists = prevThoughts.some(
+                      (t) => t.turnNumber === move.turnNumber && t.agentId === move.agentId
+                    );
+                    if (exists) return prevThoughts;
+                    return [
+                      ...prevThoughts,
+                      {
+                        agentId: move.agentId,
+                        agentName: info?.name || "Agent",
+                        side: info?.side || "a",
+                        text: thinking,
+                        timestamp: new Date(move.timestamp).getTime() || Date.now(),
+                        turnNumber: move.turnNumber,
+                      },
+                    ];
+                  });
+                }
+              }
+
+              // Extract assam from latest move
+              const lastMove = newMoves[newMoves.length - 1];
+              if (lastMove) {
+                const assamFromMove = extractAssamFromMove(lastMove.moveData);
+                if (assamFromMove) setCurrentAssam(assamFromMove);
+              }
+
+              return newMoves;
+            });
+          }
+        } catch {
+          // silently fail — next poll will retry
+          interval = Math.min(interval * 2, 30000);
         }
-      } catch {
-        // silently fail
-      }
-    }, 3000);
+        schedule();
+      }, interval);
+    };
+    schedule();
 
     return () => {
       if (pollRef.current) {
-        clearInterval(pollRef.current);
+        clearTimeout(pollRef.current);
         pollRef.current = null;
       }
     };
