@@ -755,8 +755,8 @@ function PlayContent() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-white font-display font-bold text-lg">{t.play.turnExpired ?? "Time's up!"}</p>
-                      <p className="text-white/60 text-sm">{t.play.turnExpiredDesc ?? "Waiting for server to resolve..."}</p>
+                      <p className="text-white font-display font-bold text-lg">{t.play.turnExpired}</p>
+                      <p className="text-white/60 text-sm">{t.play.turnExpiredDesc}</p>
                     </div>
                   </div>
                 )}
@@ -791,7 +791,7 @@ function PlayContent() {
                     </div>
                     {matchClock !== null && (
                       <div className="flex items-center justify-between pt-2 border-t border-arena-border-light/60">
-                        <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.play.matchClock ?? "Match clock"}</span>
+                        <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.play.matchClock}</span>
                         <span className="text-sm font-mono tabular-nums text-arena-muted">
                           {Math.floor(matchClock / 60)}:{(matchClock % 60).toString().padStart(2, "0")}
                         </span>

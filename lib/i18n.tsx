@@ -531,6 +531,9 @@ const translations = {
       abandonMatch: "Abandon Match",
       abandonConfirm: "Are you sure you want to abandon this match?",
       reconnecting: "Reconnecting to match...",
+      matchClock: "Match clock",
+      turnExpired: "Time's up!",
+      turnExpiredDesc: "Waiting for server to resolve...",
     },
   },
 
@@ -1057,6 +1060,9 @@ const translations = {
       abandonMatch: "Abandonar partida",
       abandonConfirm: "\u00BFEst\u00E1s seguro de que quieres abandonar esta partida?",
       reconnecting: "Reconectando a la partida...",
+      matchClock: "Reloj de partida",
+      turnExpired: "Se acab\u00F3 el tiempo!",
+      turnExpiredDesc: "Esperando respuesta del servidor...",
     },
   },
 };
