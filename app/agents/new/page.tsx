@@ -76,6 +76,7 @@ function CreateAgentContent() {
 
   // Form data
   const [agentType, setAgentType] = useState<AgentType>("openclaw");
+  const [selectedGameTypes, setSelectedGameTypes] = useState<string[]>(["marrakech"]);
   const [formData, setFormData] = useState({
     name: "",
     endpointUrl: "",
@@ -174,7 +175,7 @@ function CreateAgentContent() {
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
         type: agentType,
-        gameTypes: ["marrakech"],
+        gameTypes: selectedGameTypes.length > 0 ? selectedGameTypes : ["marrakech"],
         selfclawPublicKey: formData.selfclawPublicKey.trim(),
       };
       if (agentType === "http") {
@@ -653,16 +654,35 @@ function CreateAgentContent() {
                     </button>
                   </div>
 
-                  {/* Game Type */}
-                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.createAgent.gameTypes}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-lg bg-arena-success/10 text-arena-success text-xs font-medium">
-                          {t.createAgent.marrakech}
-                        </span>
-                        <span className="text-xs text-arena-muted">{t.createAgent.marrakechDesc}</span>
-                      </div>
+                  {/* Game Types */}
+                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-2">{t.createAgent.gameTypes}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { key: "marrakech", label: t.createAgent.marrakech },
+                        { key: "chess", label: t.createAgent.chess },
+                        { key: "poker", label: t.createAgent.poker },
+                      ].map(({ key, label }) => {
+                        const selected = selectedGameTypes.includes(key);
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() =>
+                              setSelectedGameTypes((prev) =>
+                                selected ? prev.filter((g) => g !== key) : [...prev, key],
+                              )
+                            }
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                              selected
+                                ? "bg-arena-success/10 text-arena-success border-arena-success/30"
+                                : "bg-arena-bg/30 text-arena-muted border-arena-border-light hover:border-arena-primary/30"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 

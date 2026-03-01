@@ -11,7 +11,8 @@ import Input from "@/components/ui/Input";
 import { Select } from "@/components/ui/Input";
 import ReversiBoard from "@/components/game/ReversiBoard";
 import ChessBoard from "@/components/game/ChessBoard";
-import type { PlayBalance } from "@/lib/types";
+import PokerBoard from "@/components/game/PokerBoard";
+import type { PlayBalance, PokerCard, PokerLegalActions } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
 type Phase = "lobby" | "queue" | "entering" | "playing" | "result";
@@ -91,6 +92,17 @@ function PlayContent() {
   const [playerB, setPlayerB] = useState<string>("");
   const [isCheck, setIsCheck] = useState(false);
   const [agentThinking, setAgentThinking] = useState<string | null>(null);
+
+  // Poker-specific state
+  const [pokerHoleCards, setPokerHoleCards] = useState<PokerCard[]>([]);
+  const [pokerCommunityCards, setPokerCommunityCards] = useState<PokerCard[]>([]);
+  const [pokerPot, setPokerPot] = useState(0);
+  const [pokerStreet, setPokerStreet] = useState("preflop");
+  const [pokerHandNumber, setPokerHandNumber] = useState(0);
+  const [pokerStacks, setPokerStacks] = useState<{ a: number; b: number }>({ a: 0, b: 0 });
+  const [pokerLegalActions, setPokerLegalActions] = useState<PokerLegalActions | null>(null);
+  const [pokerIsDealer, setPokerIsDealer] = useState(false);
+  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerSide: string; street: string }[]>([]);
 
   // Result
   const [resultMessage, setResultMessage] = useState("");
@@ -277,6 +289,19 @@ function PlayContent() {
         setIsCheck(check);
         setPhase("playing");
         if (timeMs) setTurnTimer(Math.ceil(timeMs / 1000));
+        // Poker-specific
+        if (data.pokerHoleCards) setPokerHoleCards(data.pokerHoleCards as PokerCard[]);
+        if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
+        if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
+        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks as { a: number; b: number });
+        if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerIsDealer != null) setPokerIsDealer(data.pokerIsDealer as boolean);
+        if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerSide: string; street: string }[]);
+        // Extract poker legal actions from legalMoves[0]
+        if (data.gameType === "poker" && Array.isArray(moves) && moves.length > 0) {
+          setPokerLegalActions(moves[0] as PokerLegalActions);
+        }
       }
 
       if (type === "match:move") {
@@ -284,14 +309,28 @@ function PlayContent() {
         if (boardData) setBoardState(boardData);
 
         // Only clear turn state if this was MY move.
-        // For opponent moves, don't touch isMyTurn/legalMoves —
-        // match:your_turn is the authoritative source for that.
         const moveAgentId = (data.agentId ?? data.agent) as string | undefined;
         if (moveAgentId && moveAgentId === agentIdRef.current) {
           setIsMyTurn(false);
           setIsCheck(false);
           setGameLegalMoves([]);
+          setPokerLegalActions(null);
           setTurnTimer(null);
+        }
+        // Poker: update shared state from any move
+        if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
+        if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
+        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks as { a: number; b: number });
+        if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerAction) {
+          const action = data.pokerAction as { type: string; amount?: number };
+          setPokerActionHistory((prev) => [...prev, {
+            type: action.type,
+            amount: action.amount,
+            playerSide: (data.side as string) || "a",
+            street: (data.pokerStreet as string) || "preflop",
+          }]);
         }
       }
 
@@ -523,6 +562,10 @@ function PlayContent() {
 
   const handleReversiCellClick = (row: number, col: number) => handleGameMove([row, col]);
   const handleChessMove = (move: string) => handleGameMove(move);
+  const handlePokerAction = (action: { action: string; amount?: number }) => {
+    setPokerLegalActions(null);
+    handleGameMove(action);
+  };
 
   const resetState = () => {
     setPhase("lobby");
@@ -562,6 +605,37 @@ function PlayContent() {
           isMyTurn={interactive ? isMyTurn : false}
           isCheck={interactive ? isCheck : false}
           onMove={interactive ? handleChessMove : undefined}
+        />
+      );
+    }
+    if (gameType === "poker") {
+      return (
+        <PokerBoard
+          communityCards={pokerCommunityCards}
+          pot={pokerPot}
+          street={pokerStreet}
+          handNumber={pokerHandNumber}
+          playerA={{
+            name: playerA || "Player A",
+            stack: pokerStacks.a,
+            currentBet: 0,
+            hasFolded: false,
+            isAllIn: false,
+            isDealer: mySide === "a" ? pokerIsDealer : !pokerIsDealer,
+          }}
+          playerB={{
+            name: playerB || "Player B",
+            stack: pokerStacks.b,
+            currentBet: 0,
+            hasFolded: false,
+            isAllIn: false,
+            isDealer: mySide === "b" ? pokerIsDealer : !pokerIsDealer,
+          }}
+          actionHistory={pokerActionHistory}
+          mySide={mySide}
+          isMyTurn={interactive ? isMyTurn : false}
+          legalActions={interactive ? pokerLegalActions : null}
+          onAction={interactive ? handlePokerAction : undefined}
         />
       );
     }
@@ -643,6 +717,7 @@ function PlayContent() {
                   <option value="chess">Chess</option>
                   <option value="reversi">Reversi</option>
                   <option value="marrakech">Marrakech</option>
+                  <option value="poker">Poker (Heads-Up)</option>
                 </Select>
                 <Input
                   label={t.play.stakeAmount}
@@ -699,7 +774,7 @@ function PlayContent() {
                 <div className="absolute inset-2 rounded-xl bg-arena-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-4xl">
-                    {gameType === "chess" ? "\u265A" : gameType === "reversi" ? "\u25CF" : "\u{1FA79}"}
+                    {gameType === "chess" ? "\u265A" : gameType === "poker" ? "\u{1F0CF}" : gameType === "reversi" ? "\u25CF" : "\u{1FA79}"}
                   </span>
                 </div>
               </div>

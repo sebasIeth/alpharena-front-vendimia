@@ -7,6 +7,8 @@ import type { Match, Move, BoardState, AssamPosition, PlayerState, DiceResult, T
 import MarrakechBoard from "./MarrakechBoard";
 import ChessBoard from "./ChessBoard";
 import ReversiBoard from "./ReversiBoard";
+import PokerBoard from "./PokerBoard";
+import type { PokerCard } from "@/lib/types";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 
@@ -116,6 +118,17 @@ function formatMoveDisplay(
     if (Array.isArray(md)) return { text: md.join("") };
   }
 
+  // Poker: show action + amount
+  if (gameType === "poker") {
+    const action = md.pokerAction || md.action || md.moveData?.pokerAction;
+    if (action) {
+      const type = typeof action === "string" ? action : action.type || action;
+      const amount = typeof action === "object" ? action.amount : md.amount;
+      return { text: amount != null ? `${type} (${amount})` : String(type) };
+    }
+    return { text: "action" };
+  }
+
   // Reversi: show [row, col]
   if (gameType === "reversi") {
     const move = md.move || md;
@@ -182,6 +195,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [tribute, setTribute] = useState<TributeEvent | null>(null);
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [score, setScore] = useState<Record<string, number> | null>(null);
+  // Poker-specific state
+  const [pokerCommunityCards, setPokerCommunityCards] = useState<PokerCard[]>([]);
+  const [pokerPot, setPokerPot] = useState(0);
+  const [pokerStreet, setPokerStreet] = useState("preflop");
+  const [pokerHandNumber, setPokerHandNumber] = useState(0);
+  const [pokerStacks, setPokerStacks] = useState<{ a: number; b: number }>({ a: 0, b: 0 });
+  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerSide: string; street: string }[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const movesEndRef = useRef<HTMLDivElement>(null);
@@ -296,6 +316,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             eliminated: p.eliminated,
           })));
         }
+        // Poker
+        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks);
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber);
       }
 
       if (type === "match:move" || type === "match:state") {
@@ -330,6 +353,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           })));
         }
         if (data.score) setScore(data.score);
+        // Poker-specific
+        if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards);
+        if (data.pokerPot != null) setPokerPot(data.pokerPot);
+        if (data.pokerStreet) setPokerStreet(data.pokerStreet);
+        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks);
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber);
+        if (data.pokerAction) {
+          setPokerActionHistory((prev) => [
+            ...prev,
+            {
+              type: data.pokerAction.type,
+              amount: data.pokerAction.amount,
+              playerSide: data.side,
+              street: data.pokerStreet || pokerStreet,
+            },
+          ]);
+        }
       }
 
       if (type === "agent:thinking") {
@@ -506,6 +546,30 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 legalMoves={[]}
                 mySide={null}
                 isMyTurn={false}
+              />
+            ) : match.gameType === "poker" ? (
+              <PokerBoard
+                communityCards={pokerCommunityCards}
+                pot={pokerPot}
+                street={pokerStreet}
+                handNumber={pokerHandNumber}
+                playerA={{
+                  name: agents[0]?.agentName ?? "Player A",
+                  stack: pokerStacks.a,
+                  currentBet: 0,
+                  hasFolded: false,
+                  isAllIn: false,
+                  isDealer: false,
+                }}
+                playerB={{
+                  name: agents[1]?.agentName ?? "Player B",
+                  stack: pokerStacks.b,
+                  currentBet: 0,
+                  hasFolded: false,
+                  isAllIn: false,
+                  isDealer: false,
+                }}
+                actionHistory={pokerActionHistory}
               />
             ) : (
               <MarrakechBoard

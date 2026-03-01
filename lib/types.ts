@@ -186,6 +186,42 @@ export interface TributeEvent {
 
 export type GamePhase = "roll" | "tribute" | "place";
 
+// ========== Poker ==========
+export interface PokerCard {
+  rank: string;
+  suit: string;
+}
+
+export interface PokerPlayerInfo {
+  stack: number;
+  currentBet: number;
+  hasFolded: boolean;
+  isAllIn: boolean;
+  isDealer: boolean;
+  holeCards?: PokerCard[];
+}
+
+export interface PokerBoardState {
+  handNumber: number;
+  street: string;
+  pot: number;
+  communityCards: PokerCard[];
+  players: { a: PokerPlayerInfo; b: PokerPlayerInfo };
+  actionHistory: { type: string; amount?: number; playerSide: string; street: string }[];
+}
+
+export interface PokerLegalActions {
+  canFold: boolean;
+  canCheck: boolean;
+  canCall: boolean;
+  callAmount: number;
+  canRaise: boolean;
+  minRaise: number;
+  maxRaise: number;
+  canAllIn: boolean;
+  allInAmount: number;
+}
+
 // ========== Matchmaking ==========
 export interface QueueEntry {
   id: string;
