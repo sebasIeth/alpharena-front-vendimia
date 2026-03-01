@@ -193,6 +193,7 @@ function AgentDetailContent() {
   const [balance, setBalance] = useState<AgentBalance | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -316,6 +317,11 @@ function AgentDetailContent() {
     if (withdrawLoading) return;
     setWithdrawError("");
     setWithdrawSuccess("");
+    const addr = withdrawAddress.trim();
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+      setWithdrawError("Enter a valid Ethereum address (0x...).");
+      return;
+    }
     const value = Number(withdrawAmount);
     if (isNaN(value) || value <= 0) {
       setWithdrawError("Amount must be greater than 0.");
@@ -328,7 +334,7 @@ function AgentDetailContent() {
     }
     setWithdrawLoading(true);
     try {
-      const data = await api.withdrawAgent(agentId, value);
+      const data = await api.withdrawAgent(agentId, value, addr);
       setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}`);
       setWithdrawAmount("");
       fetchBalance();
@@ -774,28 +780,41 @@ function AgentDetailContent() {
         {/* Withdraw */}
         <div className="border-t border-arena-border-light/60 pt-4">
           <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw ALPHA</div>
-          <div className="flex items-center gap-2">
+          <div className="space-y-2">
             <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={withdrawAmount}
+              type="text"
+              value={withdrawAddress}
               onChange={(e) => {
-                setWithdrawAmount(e.target.value);
+                setWithdrawAddress(e.target.value);
                 setWithdrawError("");
                 setWithdrawSuccess("");
               }}
-              placeholder="Amount"
-              className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+              placeholder="Destination address (0x...)"
+              className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
-            <Button
-              size="sm"
-              onClick={handleWithdraw}
-              disabled={withdrawLoading || !withdrawAmount}
-              isLoading={withdrawLoading}
-            >
-              Withdraw
-            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={withdrawAmount}
+                onChange={(e) => {
+                  setWithdrawAmount(e.target.value);
+                  setWithdrawError("");
+                  setWithdrawSuccess("");
+                }}
+                placeholder="Amount"
+                className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+              />
+              <Button
+                size="sm"
+                onClick={handleWithdraw}
+                disabled={withdrawLoading || !withdrawAmount || !withdrawAddress}
+                isLoading={withdrawLoading}
+              >
+                Withdraw
+              </Button>
+            </div>
           </div>
           {withdrawError && (
             <p className="text-sm text-arena-danger mt-2">{withdrawError}</p>

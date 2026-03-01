@@ -184,8 +184,8 @@ class ApiClient {
     return normalizeBalance(raw);
   }
 
-  async withdrawAgent(id: string, amount: number): Promise<WithdrawResponse> {
-    return this.post<WithdrawResponse>(`/agents/${id}/withdraw`, { amount });
+  async withdrawAgent(id: string, amount: number, toAddress: string): Promise<WithdrawResponse> {
+    return this.post<WithdrawResponse>(`/agents/${id}/withdraw`, { amount, toAddress });
   }
 
   // ========== SelfClaw ==========
