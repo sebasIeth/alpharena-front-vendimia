@@ -273,7 +273,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
               <div className="text-xl font-extrabold font-mono text-arena-accent tabular-nums">
                 {(agent.stats?.totalEarnings || 0).toFixed(2)}
               </div>
-              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">USDC</div>
+              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">ALPHA</div>
             </div>
           </div>
         </div>
@@ -381,7 +381,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
         <span className="font-mono font-bold text-arena-accent tabular-nums">
-          {(agent.stats?.totalEarnings || 0).toFixed(2)} USDC
+          {(agent.stats?.totalEarnings || 0).toFixed(2)} ALPHA
         </span>
       </div>
     </div>
@@ -599,7 +599,7 @@ function AgentsContent() {
               <DashStat
                 label={t.common.earnings}
                 value={summary.earnings.toFixed(2)}
-                sub="USDC"
+                sub="ALPHA"
                 icon={<IconCoin className="w-4 h-4" />}
                 accentColor="bg-arena-accent"
                 delay={0.18}

@@ -16,7 +16,9 @@ import {
   formatWinRate,
   formatElo,
   normalizeMatchAgents,
+  formatUsdEquivalent,
 } from "@/lib/utils";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, Match } from "@/lib/types";
 
 /* ═══════════════════════════════════════════════════════
@@ -234,6 +236,7 @@ function DashboardContent() {
   const { user } = useAuthStore();
   const router = useRouter();
   const { t } = useLanguage();
+  const { priceUsd } = useAlphaPrice();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,7 +389,7 @@ function DashboardContent() {
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">USDC</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">ALPHA</span>
                 </div>
               </div>
               {stats.active > 0 && (
@@ -457,11 +460,13 @@ function DashboardContent() {
           <DashStat
             label={t.dashboard.totalEarnings}
             value={stats.earnings.toFixed(2)}
-            sub="USDC"
+            sub="ALPHA"
             icon={<IconCoin className="w-4 h-4" />}
             accentColor="bg-arena-accent"
             delay={0.2}
-          />
+          >
+            {(() => { const usd = formatUsdEquivalent(stats.earnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted mt-1">{usd}</div> : null; })()}
+          </DashStat>
         </div>
       )}
 
@@ -832,7 +837,7 @@ function DashboardContent() {
                               {myAgent.eloChange > 0 ? "+" : ""}{myAgent.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} USDC</span>
+                          <span className="font-mono">{match.stakeAmount} ALPHA</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

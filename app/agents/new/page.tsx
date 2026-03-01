@@ -258,8 +258,8 @@ function CreateAgentContent() {
                 <p className="text-sm text-arena-primary font-medium mb-1">Fund your agent to start competing</p>
                 <p className="text-xs text-arena-muted">
                   {createdAgent.walletAddress
-                    ? "Send USDC (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
-                    : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs USDC before it can join matchmaking queues."}
+                    ? "Send ALPHA (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
+                    : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs ALPHA before it can join matchmaking queues."}
                 </p>
               </div>
 

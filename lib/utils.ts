@@ -48,6 +48,13 @@ export function formatStake(amount: number): string {
   return amount.toFixed(2);
 }
 
+export function formatUsdEquivalent(alphaAmount: number, priceUsd: number | null): string | null {
+  if (priceUsd === null || priceUsd <= 0) return null;
+  const usd = alphaAmount * priceUsd;
+  if (usd < 0.01 && usd > 0) return "< $0.01 USD";
+  return `~$${usd.toFixed(2)} USD`;
+}
+
 export function getStatusColor(status: string): string {
   switch (status) {
     case "idle":

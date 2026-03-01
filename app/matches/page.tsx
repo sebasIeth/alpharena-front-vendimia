@@ -285,7 +285,7 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
         {/* Footer */}
         <div className="pt-3 border-t border-arena-border-light/60 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-arena-muted font-mono">
-            <span>{match.stakeAmount} USDC</span>
+            <span>{match.stakeAmount} ALPHA</span>
             <span className="text-arena-border-light/80">·</span>
             <span>{t.common.pot} {pot}</span>
             {match.moveCount > 0 && (

@@ -17,7 +17,9 @@ import {
   formatWinRate,
   formatRelativeTime,
   normalizeMatchAgents,
+  formatUsdEquivalent,
 } from "@/lib/utils";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match } from "@/lib/types";
 
 interface ChatMessage {
@@ -153,6 +155,7 @@ function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
   const { t } = useLanguage();
+  const { priceUsd } = useAlphaPrice();
   const agentId = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -318,9 +321,9 @@ function AgentDetailContent() {
       setWithdrawError("Amount must be greater than 0.");
       return;
     }
-    const usdcBalance = parseFloat(balance?.usdc || "0");
-    if (value > usdcBalance) {
-      setWithdrawError(`Exceeds available balance (${usdcBalance} USDC).`);
+    const alphaBalance = parseFloat(balance?.alpha || "0");
+    if (value > alphaBalance) {
+      setWithdrawError(`Exceeds available balance (${alphaBalance} ALPHA).`);
       return;
     }
     setWithdrawLoading(true);
@@ -684,7 +687,7 @@ function AgentDetailContent() {
               <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
                 {(agent.stats?.totalEarnings || 0).toFixed(2)}
               </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5">USDC</span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPHA</span>
             </div>
           </div>
 
@@ -755,10 +758,11 @@ function AgentDetailContent() {
         {/* Balances */}
         <div className="flex items-end gap-6 mb-3">
           <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">USDC</div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ALPHA</div>
             <span className="text-2xl font-extrabold font-mono tabular-nums text-arena-primary leading-none">
-              {balanceLoading ? "..." : (balance?.usdc ?? "—")}
+              {balanceLoading ? "..." : (balance?.alpha ?? "—")}
             </span>
+            {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
           </div>
           <div>
             <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ETH (gas)</div>
@@ -769,12 +773,12 @@ function AgentDetailContent() {
         </div>
 
         <p className="text-xs text-arena-muted mb-4">
-          Send USDC + ETH (gas) to the wallet address above to fund your agent.
+          Send ALPHA + ETH (gas) to the wallet address above to fund your agent.
         </p>
 
         {/* Withdraw */}
         <div className="border-t border-arena-border-light/60 pt-4">
-          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw USDC</div>
+          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw ALPHA</div>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -1039,7 +1043,7 @@ function AgentDetailContent() {
                               {agentEntry.eloChange > 0 ? "+" : ""}{agentEntry.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} USDC</span>
+                          <span className="font-mono">{match.stakeAmount} ALPHA</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

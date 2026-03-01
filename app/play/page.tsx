@@ -7,14 +7,17 @@ import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { Select } from "@/components/ui/Input";
 import ReversiBoard from "@/components/game/ReversiBoard";
 import ChessBoard from "@/components/game/ChessBoard";
 import type { PlayBalance } from "@/lib/types";
 import type { Socket } from "socket.io-client";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
+import { formatUsdEquivalent } from "@/lib/utils";
 
 type Phase = "lobby" | "queue" | "entering" | "playing" | "result";
+
+const TURN_TIMEOUT_S = 20;
 
 /* ── Parse agent thinking raw text ── */
 function parseAgentThinking(raw: string): { thinking: string; move: string | null } {
@@ -68,6 +71,7 @@ function PulseRing() {
 function PlayContent() {
   const { t } = useLanguage();
   const router = useRouter();
+  const { priceUsd } = useAlphaPrice();
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [error, setError] = useState("");
@@ -75,7 +79,6 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
-  const [stakeAmount, setStakeAmount] = useState("0");
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -87,6 +90,8 @@ function PlayContent() {
   const [mySide, setMySide] = useState<"a" | "b" | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [turnTimer, setTurnTimer] = useState<number | null>(null);
+  const [turnExpired, setTurnExpired] = useState(false);
+  const [matchClock, setMatchClock] = useState<number | null>(null);
   const [playerA, setPlayerA] = useState<string>("");
   const [playerB, setPlayerB] = useState<string>("");
   const [isCheck, setIsCheck] = useState(false);
@@ -274,14 +279,19 @@ function PlayContent() {
         }
         if (side) setMySide(side);
         setIsMyTurn(true);
+        setTurnExpired(false);
         setIsCheck(check);
         setPhase("playing");
-        if (timeMs) setTurnTimer(Math.ceil(timeMs / 1000));
+        setTurnTimer(TURN_TIMEOUT_S);
+        if (timeMs) setMatchClock(Math.ceil(timeMs / 1000));
       }
 
       if (type === "match:move") {
         const boardData = (data.currentBoard ?? data.boardState ?? data.board) as unknown;
         if (boardData) setBoardState(boardData);
+
+        const timeMs = (data.timeRemainingMs ?? data.timeLimit) as number | undefined;
+        if (timeMs) setMatchClock(Math.ceil(timeMs / 1000));
 
         // Only clear turn state if this was MY move.
         // For opponent moves, don't touch isMyTurn/legalMoves —
@@ -332,6 +342,7 @@ function PlayContent() {
         setIsCheck(false);
         setGameLegalMoves([]);
         setTurnTimer(null);
+        setMatchClock(null);
 
         const result = data.result as Record<string, unknown> | undefined;
         const reason = (result?.reason ?? data.reason) as string | undefined;
@@ -454,12 +465,14 @@ function PlayContent() {
   useEffect(() => {
     if (!isMyTurn || turnTimer === null || turnTimer <= 0) {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (isMyTurn && turnTimer === 0) setTurnExpired(true);
       return;
     }
     timerRef.current = setInterval(() => {
       setTurnTimer((prev) => {
         if (prev === null || prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
+          setTurnExpired(true);
           return 0;
         }
         return prev - 1;
@@ -473,15 +486,10 @@ function PlayContent() {
   // ── Handlers ──
   const handleJoinQueue = async () => {
     setError("");
-    const stake = parseFloat(stakeAmount);
-    if (isNaN(stake) || stake < 0) {
-      setError(t.play.invalidStake);
-      return;
-    }
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: stake });
+      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
       setAgentId(result.agentId);
       setPhase("queue");
     } catch (err) {
@@ -534,6 +542,8 @@ function PlayContent() {
     setIsMyTurn(false);
     setIsCheck(false);
     setTurnTimer(null);
+    setTurnExpired(false);
+    setMatchClock(null);
     setResultMessage("");
     setPlayerA("");
     setPlayerB("");
@@ -553,25 +563,26 @@ function PlayContent() {
 
   // ── Board renderer ──
   const renderBoard = (interactive: boolean) => {
+    const canInteract = interactive && !turnExpired;
     if (gameType === "chess") {
       return (
         <ChessBoard
           board={boardState as number[][] | null}
-          legalMoves={interactive ? (gameLegalMoves as string[] || []) : []}
+          legalMoves={canInteract ? (gameLegalMoves as string[] || []) : []}
           mySide={mySide}
-          isMyTurn={interactive ? isMyTurn : false}
-          isCheck={interactive ? isCheck : false}
-          onMove={interactive ? handleChessMove : undefined}
+          isMyTurn={canInteract ? isMyTurn : false}
+          isCheck={canInteract ? isCheck : false}
+          onMove={canInteract ? handleChessMove : undefined}
         />
       );
     }
     return (
       <ReversiBoard
         board={boardState as number[][] | null}
-        legalMoves={interactive ? (gameLegalMoves as [number, number][] || []) : []}
+        legalMoves={canInteract ? (gameLegalMoves as [number, number][] || []) : []}
         mySide={mySide}
-        isMyTurn={interactive ? isMyTurn : false}
-        onCellClick={interactive ? handleReversiCellClick : undefined}
+        isMyTurn={canInteract ? isMyTurn : false}
+        onCellClick={canInteract ? handleReversiCellClick : undefined}
       />
     );
   };
@@ -613,8 +624,9 @@ function PlayContent() {
                   <div className="space-y-3">
                     <div className="flex items-end gap-4">
                       <div>
-                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{balance.usdc}</span>
-                        <span className="text-xs text-arena-muted ml-1">USDC</span>
+                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{balance.alpha}</span>
+                        <span className="text-xs text-arena-muted ml-1">ALPHA</span>
+                        {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
                       </div>
                       <div>
                         <span className="text-sm font-mono tabular-nums text-arena-muted">{balance.eth}</span>
@@ -644,20 +656,6 @@ function PlayContent() {
                   <option value="reversi">Reversi</option>
                   <option value="marrakech">Marrakech</option>
                 </Select>
-                <Input
-                  label={t.play.stakeAmount}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
-                  helperText={t.play.stakeHelper}
-                />
-                {balance && parseFloat(stakeAmount) > 0 && parseFloat(balance.usdc) < parseFloat(stakeAmount) && (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2 text-sm">
-                    Insufficient balance: {balance.usdc} USDC available, need {stakeAmount} USDC.
-                  </div>
-                )}
                 <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
                   {t.play.joinQueue}
                 </Button>
@@ -745,10 +743,23 @@ function PlayContent() {
           <div className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Board */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 relative">
                 <Card>
                   <div className="p-4 sm:p-6">{renderBoard(true)}</div>
                 </Card>
+                {turnExpired && phase === "playing" && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+                    <div className="text-center space-y-3 px-6">
+                      <div className="w-14 h-14 rounded-full bg-arena-danger/20 border-2 border-arena-danger/40 flex items-center justify-center mx-auto">
+                        <svg className="w-7 h-7 text-arena-danger" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-white font-display font-bold text-lg">{t.play.turnExpired ?? "Time's up!"}</p>
+                      <p className="text-white/60 text-sm">{t.play.turnExpiredDesc ?? "Waiting for server to resolve..."}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sidebar */}
@@ -763,7 +774,7 @@ function PlayContent() {
 
                 {/* Turn indicator + Timer */}
                 <Card>
-                  <div className="p-5">
+                  <div className="p-5 space-y-3">
                     <div className={`flex items-center justify-between ${isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
                       <div className="flex items-center gap-2.5">
                         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
@@ -771,13 +782,21 @@ function PlayContent() {
                           {isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
                         </span>
                       </div>
-                      {turnTimer !== null && (
+                      {turnTimer !== null && isMyTurn && (
                         <div className="flex items-baseline gap-0.5">
-                          <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{turnTimer}</span>
+                          <span className={`text-2xl font-bold font-mono tabular-nums ${turnTimer <= 5 ? "text-arena-danger animate-pulse" : turnTimer <= 10 ? "text-arena-accent" : "text-arena-primary"}`}>{turnTimer}</span>
                           <span className="text-[10px] text-arena-muted">s</span>
                         </div>
                       )}
                     </div>
+                    {matchClock !== null && (
+                      <div className="flex items-center justify-between pt-2 border-t border-arena-border-light/60">
+                        <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.play.matchClock ?? "Match clock"}</span>
+                        <span className="text-sm font-mono tabular-nums text-arena-muted">
+                          {Math.floor(matchClock / 60)}:{(matchClock % 60).toString().padStart(2, "0")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </Card>
 

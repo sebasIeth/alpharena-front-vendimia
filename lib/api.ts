@@ -27,6 +27,17 @@ import type {
   PlayBalance,
 } from "./types";
 
+/**
+ * Normalize balance objects from the backend.
+ * The backend may send `alpha` or legacy `usdc` — this maps either to `alpha`.
+ */
+function normalizeBalance<T extends { alpha?: string; usdc?: string }>(raw: T): T & { alpha: string } {
+  const alpha = (raw as any).alpha ?? (raw as any).usdc ?? "0";
+  const out = { ...raw, alpha };
+  delete (out as any).usdc;
+  return out;
+}
+
 // Client-side: use Next.js rewrite proxy to avoid CORS
 // Server-side: call the API directly (no CORS restrictions)
 const API_URL = typeof window !== "undefined"
@@ -169,7 +180,8 @@ class ApiClient {
   }
 
   async getAgentBalance(id: string): Promise<AgentBalance> {
-    return this.get<AgentBalance>(`/agents/${id}/balance`);
+    const raw = await this.get<AgentBalance>(`/agents/${id}/balance`);
+    return normalizeBalance(raw);
   }
 
   async withdrawAgent(id: string, amount: number): Promise<WithdrawResponse> {
@@ -299,7 +311,8 @@ class ApiClient {
   }
 
   async playBalance(): Promise<PlayBalance> {
-    return this.get("/play/balance");
+    const raw = await this.get<PlayBalance>("/play/balance");
+    return normalizeBalance(raw);
   }
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
