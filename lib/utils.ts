@@ -75,6 +75,8 @@ export function getStatusColor(status: string): string {
       return "bg-red-100 text-red-700 border border-red-300";
     case "disabled":
       return "bg-slate-100 text-slate-500 border border-slate-300";
+    case "auto-play":
+      return "bg-indigo-100 text-indigo-700 border border-indigo-300";
     default:
       return "bg-slate-100 text-slate-600 border border-slate-300";
   }

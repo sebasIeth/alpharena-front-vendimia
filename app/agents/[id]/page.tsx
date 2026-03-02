@@ -490,7 +490,7 @@ function AgentDetailContent() {
                   <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright">
                     {agent.name}
                   </h1>
-                  <Badge status={agent.status} />
+                  <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
                   {walletAddress && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-arena-bg text-arena-muted border border-arena-border-light rounded truncate max-w-[120px]" title={walletAddress}>
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}

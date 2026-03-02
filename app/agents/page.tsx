@@ -227,7 +227,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 <h3 className="text-xl font-display font-extrabold text-arena-text-bright truncate group-hover:text-arena-primary transition-colors">
                   {agent.name}
                 </h3>
-                <Badge status={agent.status} />
+                <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
@@ -350,7 +350,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         </div>
 
         <div className="shrink-0 flex flex-col items-end gap-1">
-          <Badge status={agent.status} />
+          <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
         </div>
       </div>
 

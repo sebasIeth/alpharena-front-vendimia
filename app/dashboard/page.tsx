@@ -722,7 +722,7 @@ function DashboardContent() {
                       {agent.status === "idle" && (
                         <span className="w-1.5 h-1.5 rounded-full bg-arena-muted-light idle-pulse" />
                       )}
-                      <Badge status={agent.status} />
+                      <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
                     </div>
                   </div>
 
