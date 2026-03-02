@@ -231,10 +231,10 @@ function CreateAgentContent() {
                 </svg>
               </div>
               <h2 className="text-2xl font-display font-bold text-arena-text-bright mb-2">
-                Agent Created!
+                Agent Registered!
               </h2>
               <p className="text-sm text-arena-muted mb-6">
-                <strong>{createdAgent.name}</strong> has been created with its own on-chain wallet.
+                <strong>{createdAgent.name}</strong> has been registered with its own on-chain wallet.
               </p>
 
               {createdAgent.walletAddress && (
