@@ -200,7 +200,12 @@ export default function MatchDetailPage() {
       try {
         const data = await api.getMatch(matchId);
         const m = data.match;
-        setMatch({ ...m, id: m.id || (m as any)._id });
+        const raw = m as any;
+        setMatch({
+          ...m,
+          id: m.id || raw._id,
+          winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : t.matchDetail.loadFailed
@@ -256,9 +261,11 @@ export default function MatchDetailPage() {
   const pot = match.pot ?? (match as any).potAmount ?? 0;
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
+  const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
   const isDraw = isCompleted && !match.winnerId;
   const winnerAgent = isCompleted && match.winnerId
     ? agents.find((a) => a.agentId === match.winnerId)
+      ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
   const truncatedId = match.id.length > 16
     ? `${match.id.slice(0, 8)}...${match.id.slice(-6)}`
@@ -501,7 +508,8 @@ export default function MatchDetailPage() {
             {/* Agent Result Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {agents.map((agent, idx) => {
-                const isWinner = match.winnerId === agent.agentId;
+                const sides = ["a", "b", "c", "d"];
+                const isWinner = match.winnerId === agent.agentId || match.winnerId === sides[idx];
                 const eloAfter = agent.eloChange !== undefined && agent.eloChange !== null
                   ? agent.eloAtStart + agent.eloChange
                   : null;

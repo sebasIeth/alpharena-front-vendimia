@@ -178,9 +178,11 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
   const agents = normalizeMatchAgents(match.agents);
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
+  const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
   const isDraw = isCompleted && !match.winnerId;
   const winnerAgent = isCompleted && match.winnerId
     ? agents.find((a) => a.agentId === match.winnerId)
+      ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
   const pot = match.pot ?? (match as any).potAmount ?? 0;
 
@@ -366,10 +368,14 @@ export default function MatchesPage() {
         page,
         limit,
       });
-      setMatches((data.matches || []).map((m) => ({
-        ...m,
-        id: m.id || (m as any)._id,
-      })));
+      setMatches((data.matches || []).map((m) => {
+        const raw = m as any;
+        return {
+          ...m,
+          id: m.id || raw._id,
+          winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+        };
+      }));
       setTotalPages(data.pages || 1);
       setTotalCount(data.total || 0);
     } catch (err) {
