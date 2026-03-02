@@ -535,6 +535,8 @@ const translations = {
       matchClock: "Match clock",
       turnExpired: "Time's up!",
       turnExpiredDesc: "Waiting for server to resolve...",
+      entryFee: "Entry Fee",
+      entryFeeDesc: "This amount will be staked from your play wallet. Winner takes the pot.",
     },
   },
 
@@ -1065,6 +1067,8 @@ const translations = {
       matchClock: "Reloj de partida",
       turnExpired: "Se acab\u00F3 el tiempo!",
       turnExpiredDesc: "Esperando respuesta del servidor...",
+      entryFee: "Costo de entrada",
+      entryFeeDesc: "Este monto se apostará desde tu wallet de juego. El ganador se lleva el bote.",
     },
   },
 };

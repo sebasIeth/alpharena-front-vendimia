@@ -654,6 +654,20 @@ function PlayContent() {
                 <Select label={t.play.gameType} value="chess" disabled>
                   <option value="chess">Chess</option>
                 </Select>
+
+                {/* Entry fee */}
+                <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-arena-muted font-medium">{t.play.entryFee}</span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-lg font-bold font-mono tabular-nums text-arena-text">1,000,000</span>
+                      <span className="text-xs text-arena-muted">ALPHA</span>
+                      {(() => { const usd = formatUsdEquivalent(1_000_000, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-1">({usd})</span> : null; })()}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-arena-muted/70 mt-1">{t.play.entryFeeDesc}</p>
+                </div>
+
                 <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
                   {t.play.joinQueue}
                 </Button>
