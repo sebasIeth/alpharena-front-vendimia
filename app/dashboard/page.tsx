@@ -251,10 +251,14 @@ function DashboardContent() {
         if (agentsRes.status === "fulfilled") setAgents(agentsRes.value.agents || []);
         if (matchesRes.status === "fulfilled")
           setRecentMatches(
-            (matchesRes.value.matches || []).map((m) => ({
-              ...m,
-              id: m.id || (m as any)._id,
-            }))
+            (matchesRes.value.matches || []).map((m) => {
+              const raw = m as any;
+              return {
+                ...m,
+                id: m.id || raw._id,
+                winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+              };
+            })
           );
       } catch {
         /* silently handle */
@@ -779,8 +783,10 @@ function DashboardContent() {
             {recentMatches.map((match, i) => {
               const agentsArr = normalizeMatchAgents(match.agents);
               const myAgent = agentsArr.find((a) => agents.some((ag) => ag.id === a.agentId));
-              const isWinner = myAgent && match.winnerId === myAgent.agentId;
-              const isLoss = myAgent && match.status === "completed" && match.winnerId && match.winnerId !== myAgent.agentId;
+              const myAgentIdx = myAgent ? agentsArr.indexOf(myAgent) : -1;
+              const sides = ["a", "b", "c", "d"];
+              const isWinner = myAgent && (match.winnerId === myAgent.agentId || match.winnerId === sides[myAgentIdx]);
+              const isLoss = myAgent && match.status === "completed" && match.winnerId && !isWinner;
               const isLast = i === recentMatches.length - 1;
               const isActive = match.status === "active";
 
