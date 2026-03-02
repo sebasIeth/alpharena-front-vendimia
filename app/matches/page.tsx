@@ -484,7 +484,7 @@ export default function MatchesPage() {
 
       {/* ── Tabs + Sort + Auto-refresh indicator ── */}
       <div
-        className="flex items-center gap-3 mb-6 flex-wrap opacity-0 animate-fade-up"
+        className="flex items-center gap-3 mb-6 flex-wrap opacity-0 animate-fade-up relative z-30"
         style={{ animationDelay: "0.06s", animationFillMode: "both" }}
       >
         <div className="flex items-center gap-1 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border shadow-arena-sm">
