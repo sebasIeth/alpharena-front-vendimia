@@ -498,9 +498,9 @@ function MatchmakingContent() {
     }
   };
 
-  const localQueuedIds = new Set(queuedAgents.map((qa) => qa.agentId));
-  const backendQueuedIds = new Set(queueList.map((ql) => ql.agentId));
-  const allQueuedIds = new Set([...localQueuedIds, ...backendQueuedIds]);
+  const localQueuedIds = queuedAgents.map((qa) => qa.agentId);
+  const backendQueuedIds = queueList.map((ql) => ql.agentId);
+  const allQueuedIds = new Set(localQueuedIds.concat(backendQueuedIds));
   const idleAgents = agents.filter((a) => a.status === "idle");
 
   if (loading) return <PageSpinner />;
