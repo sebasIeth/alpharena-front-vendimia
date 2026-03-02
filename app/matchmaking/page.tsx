@@ -111,6 +111,7 @@ function AgentCard({
   balance,
   balanceLoading,
   priceUsd,
+  disabled,
 }: {
   agent: Agent;
   selected: boolean;
@@ -118,6 +119,7 @@ function AgentCard({
   balance: AgentBalance | null;
   balanceLoading: boolean;
   priceUsd: number | null;
+  disabled?: boolean;
 }) {
   const wins = agent.stats?.wins || 0;
   const losses = agent.stats?.losses || 0;
@@ -128,11 +130,14 @@ function AgentCard({
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={disabled ? undefined : onSelect}
+      disabled={disabled}
       className={`w-full text-left rounded-xl border-2 p-4 transition-all duration-200 ${
-        selected
-          ? "border-arena-primary bg-arena-primary/[0.04] shadow-arena"
-          : "border-arena-border-light bg-white hover:border-arena-primary/30 hover:shadow-arena-sm"
+        disabled
+          ? "border-arena-border-light bg-arena-bg/50 opacity-60 cursor-not-allowed"
+          : selected
+            ? "border-arena-primary bg-arena-primary/[0.04] shadow-arena"
+            : "border-arena-border-light bg-white hover:border-arena-primary/30 hover:shadow-arena-sm"
       }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -147,15 +152,21 @@ function AgentCard({
             <div className="text-[10px] text-arena-muted font-mono">{formatElo(agent.elo)} ELO</div>
           </div>
         </div>
-        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-          selected ? "border-arena-primary bg-arena-primary" : "border-arena-border-light"
-        }`}>
-          {selected && (
-            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          )}
-        </div>
+        {disabled ? (
+          <span className="px-2 py-0.5 rounded-md bg-arena-accent/10 text-arena-accent text-[10px] font-mono uppercase tracking-wider">
+            In Queue
+          </span>
+        ) : (
+          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+            selected ? "border-arena-primary bg-arena-primary" : "border-arena-border-light"
+          }`}>
+            {selected && (
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats row */}
@@ -227,7 +238,7 @@ function MatchmakingContent() {
 
   // Form state
   const [selectedAgentId, setSelectedAgentId] = useState(preselectedAgentId);
-  const [gameType] = useState("marrakech");
+  const [gameType] = useState("chess");
   const [joining, setJoining] = useState(false);
 
   // Agent balance state
@@ -300,10 +311,15 @@ function MatchmakingContent() {
           api.getAutoPlayCount(),
           api.getQueueList(gameType),
         ]);
-        if (sizeRes.status === "fulfilled") setQueueSize(sizeRes.value.size);
         if (playingRes.status === "fulfilled") setPlayingCount(playingRes.value.playingCount);
         if (autoPlayRes.status === "fulfilled") setAutoPlayCount(autoPlayRes.value.autoPlayCount);
-        if (queueListRes.status === "fulfilled") setQueueList(queueListRes.value.queue || []);
+        if (queueListRes.status === "fulfilled") {
+          const list = queueListRes.value.queue || [];
+          setQueueList(list);
+          setQueueSize(queueListRes.value.total ?? list.length);
+        } else if (sizeRes.status === "fulfilled") {
+          setQueueSize(sizeRes.value.size);
+        }
       } catch {
         // silently handle
       }
@@ -482,10 +498,10 @@ function MatchmakingContent() {
     }
   };
 
-  const queuedIds = new Set(queuedAgents.map((qa) => qa.agentId));
-  const availableAgents = agents.filter(
-    (a) => a.status === "idle" && !queuedIds.has(a.id)
-  );
+  const localQueuedIds = new Set(queuedAgents.map((qa) => qa.agentId));
+  const backendQueuedIds = new Set(queueList.map((ql) => ql.agentId));
+  const allQueuedIds = new Set([...localQueuedIds, ...backendQueuedIds]);
+  const idleAgents = agents.filter((a) => a.status === "idle");
 
   if (loading) return <PageSpinner />;
 
@@ -503,7 +519,7 @@ function MatchmakingContent() {
                     {t.matchmaking.title}
                   </h1>
                   <span className="px-2 py-0.5 rounded-md bg-arena-success/10 text-arena-success text-[10px] font-mono uppercase tracking-wider">
-                    Marrakech
+                    Chess
                   </span>
                 </div>
                 <p className="text-arena-muted text-sm leading-relaxed">
@@ -734,7 +750,7 @@ function MatchmakingContent() {
           </div>
 
           <div className="p-6">
-            {availableAgents.length === 0 && queuedAgents.length === 0 ? (
+            {idleAgents.length === 0 && queuedAgents.length === 0 ? (
               <div className="text-center py-10">
                 <div className="w-16 h-16 rounded-2xl bg-arena-primary/10 flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -750,7 +766,7 @@ function MatchmakingContent() {
                   </Button>
                 </a>
               </div>
-            ) : availableAgents.length === 0 ? (
+            ) : idleAgents.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-arena-muted text-sm">
                   {t.matchmaking.noIdleAgents}
@@ -764,7 +780,7 @@ function MatchmakingContent() {
                     {t.matchmaking.selectAgent}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {availableAgents.map((agent) => (
+                    {idleAgents.map((agent) => (
                       <AgentCard
                         key={agent.id}
                         agent={agent}
@@ -773,6 +789,7 @@ function MatchmakingContent() {
                         balance={selectedAgentId === agent.id ? agentBalance : null}
                         balanceLoading={selectedAgentId === agent.id ? balanceLoading : false}
                         priceUsd={priceUsd}
+                        disabled={allQueuedIds.has(agent.id)}
                       />
                     ))}
                   </div>
