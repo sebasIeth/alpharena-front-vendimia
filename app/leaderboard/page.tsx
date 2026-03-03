@@ -5,6 +5,8 @@ import Modal from "@/components/ui/Modal";
 import { formatElo, formatWinRate } from "@/lib/utils";
 import { useLanguage, agentPlural } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
+import { formatUsdEquivalent } from "@/lib/utils";
 import type { LeaderboardAgent, LeaderboardUser } from "@/lib/types";
 
 type Tab = "agents" | "users";
@@ -250,7 +252,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
         <StatRow label={t.common.wins} value={d.wins} accentColor="text-emerald-600" />
         <StatRow label={t.common.losses} value={d.losses} accentColor="text-rose-600" />
         <StatRow label={t.common.draws} value={d.draws} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${agent.totalEarnings.toFixed(2)} USDC`} accentColor="text-arena-accent" />
+        <StatRow label={t.leaderboard.totalEarnings} value={`${agent.totalEarnings.toFixed(2)} ALPHA`} accentColor="text-arena-accent" />
       </div>
 
       <div>
@@ -279,13 +281,13 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
         </div>
         <div className="text-right shrink-0">
           <div className={`text-2xl font-extrabold font-mono tabular-nums ${rc.text}`}>{user.totalEarnings.toFixed(2)}</div>
-          <div className="text-[10px] uppercase tracking-wider text-arena-muted">USDC</div>
+          <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
         </div>
       </div>
 
       <div className="bg-arena-bg-light rounded-xl px-4">
         <StatRow label={t.leaderboard.agentsDeployed} value={user.agentCount} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${user.totalEarnings.toFixed(2)} USDC`} accentColor="text-arena-accent" />
+        <StatRow label={t.leaderboard.totalEarnings} value={`${user.totalEarnings.toFixed(2)} ALPHA`} accentColor="text-arena-accent" />
       </div>
     </div>
   );
@@ -298,6 +300,7 @@ export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("agents");
   const [gameType, setGameType] = useState<string>("");
   const { t } = useLanguage();
+  const { priceUsd } = useAlphaPrice();
   const [selectedAgent, setSelectedAgent] = useState<LeaderboardAgent | null>(null);
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
 
@@ -383,7 +386,8 @@ export default function LeaderboardPage() {
             </div>
             <div className="text-center">
               <div className="text-xl sm:text-2xl font-extrabold text-arena-accent font-mono tabular-nums">{totalEarnings.toFixed(0)}</div>
-              <div className="text-[10px] uppercase tracking-wider text-arena-muted">USDC</div>
+              <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
+              {(() => { const usd = formatUsdEquivalent(totalEarnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
             </div>
           </div>
 
@@ -573,7 +577,7 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-arena-border-light/40">
                       <MiniFormDots form={d.form} />
-                      <span className="text-xs text-arena-accent font-bold tabular-nums">{agent.totalEarnings.toFixed(2)} USDC</span>
+                      <span className="text-xs text-arena-accent font-bold tabular-nums">{agent.totalEarnings.toFixed(2)} ALPHA</span>
                     </div>
                   </div>
                 );
@@ -634,7 +638,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="col-span-2 text-right">
                           <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {agent.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">USDC</span>
+                            {agent.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
                           </span>
                         </div>
                       </div>
@@ -661,7 +665,7 @@ export default function LeaderboardPage() {
                             </div>
                             <div className="flex items-center justify-between mt-1">
                               <span className="text-xs text-arena-muted">{agent.ownerUsername}</span>
-                              <span className="text-xs text-arena-accent font-semibold tabular-nums">{agent.totalEarnings.toFixed(2)} USDC</span>
+                              <span className="text-xs text-arena-accent font-semibold tabular-nums">{agent.totalEarnings.toFixed(2)} ALPHA</span>
                             </div>
                           </div>
                         </div>
@@ -717,7 +721,7 @@ export default function LeaderboardPage() {
                       <div className={`text-3xl font-extrabold font-mono leading-none ${c.accent} tabular-nums`} style={{ letterSpacing: "-0.02em" }}>
                         {user.totalEarnings.toFixed(2)}
                       </div>
-                      <div className="text-[10px] uppercase tracking-widest text-arena-muted mt-1 mb-4">USDC {t.leaderboard.totalEarnings}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-arena-muted mt-1 mb-4">ALPHA {t.leaderboard.totalEarnings}</div>
 
                       <div className="font-bold text-arena-text-bright truncate w-full text-sm">{user.username}</div>
                       <div className="text-xs text-arena-muted mt-0.5">
@@ -752,7 +756,7 @@ export default function LeaderboardPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <div className={`text-xl font-extrabold font-mono ${pc.accent} tabular-nums`}>{user.totalEarnings.toFixed(2)}</div>
-                        <div className="text-[10px] text-arena-muted">USDC</div>
+                        <div className="text-[10px] text-arena-muted">ALPHA</div>
                       </div>
                     </div>
                   </div>
@@ -792,7 +796,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="col-span-4 text-right">
                           <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">USDC</span>
+                            {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
                           </span>
                         </div>
                       </div>
@@ -813,7 +817,7 @@ export default function LeaderboardPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-sm font-bold text-arena-accent tabular-nums">
-                              {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium">USDC</span>
+                              {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium">ALPHA</span>
                             </div>
                           </div>
                         </div>

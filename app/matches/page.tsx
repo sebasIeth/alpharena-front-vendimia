@@ -178,9 +178,11 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
   const agents = normalizeMatchAgents(match.agents);
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
+  const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
   const isDraw = isCompleted && !match.winnerId;
   const winnerAgent = isCompleted && match.winnerId
     ? agents.find((a) => a.agentId === match.winnerId)
+      ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
   const pot = match.pot ?? (match as any).potAmount ?? 0;
 
@@ -285,7 +287,7 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
         {/* Footer */}
         <div className="pt-3 border-t border-arena-border-light/60 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-arena-muted font-mono">
-            <span>{match.stakeAmount} USDC</span>
+            <span>{match.stakeAmount} ALPHA</span>
             <span className="text-arena-border-light/80">·</span>
             <span>{t.common.pot} {pot}</span>
             {match.moveCount > 0 && (
@@ -366,10 +368,14 @@ export default function MatchesPage() {
         page,
         limit,
       });
-      setMatches((data.matches || []).map((m) => ({
-        ...m,
-        id: m.id || (m as any)._id,
-      })));
+      setMatches((data.matches || []).map((m) => {
+        const raw = m as any;
+        return {
+          ...m,
+          id: m.id || raw._id,
+          winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+        };
+      }));
       setTotalPages(data.pages || 1);
       setTotalCount(data.total || 0);
     } catch (err) {
@@ -484,7 +490,7 @@ export default function MatchesPage() {
 
       {/* ── Tabs + Sort + Auto-refresh indicator ── */}
       <div
-        className="flex items-center gap-3 mb-6 flex-wrap opacity-0 animate-fade-up"
+        className="flex items-center gap-3 mb-6 flex-wrap opacity-0 animate-fade-up relative z-30"
         style={{ animationDelay: "0.06s", animationFillMode: "both" }}
       >
         <div className="flex items-center gap-1 bg-arena-card rounded-xl p-1 inline-flex border border-arena-border shadow-arena-sm">

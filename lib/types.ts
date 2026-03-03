@@ -61,7 +61,7 @@ export interface Agent {
 
 export interface AgentBalance {
   walletAddress: string;
-  usdc: string;
+  alpha: string;
   eth: string;
 }
 
@@ -307,7 +307,7 @@ export interface WSMessage {
 // ========== Human Play ==========
 export interface PlayBalance {
   walletAddress: string;
-  usdc: string;
+  alpha: string;
   eth: string;
 }
 

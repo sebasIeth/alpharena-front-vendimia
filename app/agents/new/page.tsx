@@ -165,19 +165,15 @@ function CreateAgentContent() {
       if (!formData.openclawToken.trim()) { setError(t.createAgent.gatewayTokenRequired); setLoading(false); return; }
     }
 
-    if (selfclawCheck.status !== "success") {
-      setError(t.createAgent.selfclawRequired);
-      setLoading(false);
-      return;
-    }
-
     try {
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
         type: agentType,
-        gameTypes: selectedGameTypes.length > 0 ? selectedGameTypes : ["marrakech"],
-        selfclawPublicKey: formData.selfclawPublicKey.trim(),
+        gameTypes: selectedGameTypes.length > 0 ? selectedGameTypes : ["chess"],
       };
+      if (selfclawCheck.status === "success" && formData.selfclawPublicKey.trim()) {
+        payload.selfclawPublicKey = formData.selfclawPublicKey.trim();
+      }
       if (agentType === "http") {
         payload.endpointUrl = formData.endpointUrl.trim();
       } else {
@@ -206,7 +202,7 @@ function CreateAgentContent() {
   };
 
   // Can advance from step 1?
-  const canAdvanceStep1 = formData.name.trim().length > 0 && selfclawCheck.status === "success";
+  const canAdvanceStep1 = formData.name.trim().length > 0;
 
   // Can advance from step 2?
   const canAdvanceStep2 = agentType === "openclaw"
@@ -232,10 +228,10 @@ function CreateAgentContent() {
                 </svg>
               </div>
               <h2 className="text-2xl font-display font-bold text-arena-text-bright mb-2">
-                Agent Created!
+                Agent Registered!
               </h2>
               <p className="text-sm text-arena-muted mb-6">
-                <strong>{createdAgent.name}</strong> has been created with its own on-chain wallet.
+                <strong>{createdAgent.name}</strong> has been registered with its own on-chain wallet.
               </p>
 
               {createdAgent.walletAddress && (
@@ -259,8 +255,8 @@ function CreateAgentContent() {
                 <p className="text-sm text-arena-primary font-medium mb-1">Fund your agent to start competing</p>
                 <p className="text-xs text-arena-muted">
                   {createdAgent.walletAddress
-                    ? "Send USDC (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
-                    : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs USDC before it can join matchmaking queues."}
+                    ? "Send ALPHA (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
+                    : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs ALPHA before it can join matchmaking queues."}
                 </p>
               </div>
 
@@ -336,11 +332,11 @@ function CreateAgentContent() {
                   />
                 </div>
 
-                {/* SelfClaw Verification */}
+                {/* SelfClaw Verification (Optional) */}
                 <div className="space-y-3">
                   <div data-tutorial="selfclaw-key">
                     <Input
-                      label={t.createAgent.selfclawPublicKey}
+                      label={`${t.createAgent.selfclawPublicKey} (Optional)`}
                       type="text"
                       placeholder={t.createAgent.selfclawPublicKeyPlaceholder}
                       value={formData.selfclawPublicKey}
@@ -622,19 +618,21 @@ function CreateAgentContent() {
                     </button>
                   </div>
 
-                  {/* SelfClaw */}
-                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.createAgent.selfclawVerification}</div>
-                      <div className="flex items-center gap-1.5 text-arena-success text-xs font-medium">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {t.createAgent.selfclawVerified}
+                  {/* SelfClaw (only if verified) */}
+                  {selfclawCheck.status === "success" && formData.selfclawPublicKey.trim() && (
+                    <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.createAgent.selfclawVerification}</div>
+                        <div className="flex items-center gap-1.5 text-arena-success text-xs font-medium">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {t.createAgent.selfclawVerified}
+                        </div>
                       </div>
+                      <div className="text-xs font-mono text-arena-muted truncate">{formData.selfclawPublicKey}</div>
                     </div>
-                    <div className="text-xs font-mono text-arena-muted truncate">{formData.selfclawPublicKey}</div>
-                  </div>
+                  )}
 
                   {/* Connection */}
                   <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4 flex items-center justify-between">

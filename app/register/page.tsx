@@ -38,7 +38,7 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
 
-    if (!formData.username.trim() || !formData.password) {
+    if (!formData.username.trim() || !formData.password || !formData.email.trim()) {
       setError(t.register.fillRequired);
       setLoading(false);
       return;
@@ -63,18 +63,11 @@ export default function RegisterPage() {
     }
 
     try {
-      const payload: {
-        username: string;
-        password: string;
-        email?: string;
-      } = {
+      const payload = {
         username: formData.username.trim(),
         password: formData.password,
+        email: formData.email.trim(),
       };
-
-      if (formData.email.trim()) {
-        payload.email = formData.email.trim();
-      }
 
       const data = await api.register(payload);
       login(data.token, data.user);
@@ -136,13 +129,14 @@ export default function RegisterPage() {
         <div className="opacity-0 animate-fade-up auth-stagger-2">
           <div className="auth-input-focus">
             <Input
-              label={t.register.emailOptional}
+              label={t.register.email}
               type="email"
               placeholder="your@email.com"
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
+              required
               autoComplete="email"
             />
           </div>

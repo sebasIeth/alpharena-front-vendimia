@@ -17,7 +17,9 @@ import {
   formatWinRate,
   formatRelativeTime,
   normalizeMatchAgents,
+  formatUsdEquivalent,
 } from "@/lib/utils";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match } from "@/lib/types";
 
 interface ChatMessage {
@@ -153,6 +155,7 @@ function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
   const { t } = useLanguage();
+  const { priceUsd } = useAlphaPrice();
   const agentId = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -190,6 +193,7 @@ function AgentDetailContent() {
   const [balance, setBalance] = useState<AgentBalance | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -313,19 +317,24 @@ function AgentDetailContent() {
     if (withdrawLoading) return;
     setWithdrawError("");
     setWithdrawSuccess("");
+    const addr = withdrawAddress.trim();
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+      setWithdrawError("Enter a valid Ethereum address (0x...).");
+      return;
+    }
     const value = Number(withdrawAmount);
     if (isNaN(value) || value <= 0) {
       setWithdrawError("Amount must be greater than 0.");
       return;
     }
-    const usdcBalance = parseFloat(balance?.usdc || "0");
-    if (value > usdcBalance) {
-      setWithdrawError(`Exceeds available balance (${usdcBalance} USDC).`);
+    const alphaBalance = parseFloat(balance?.alpha || "0");
+    if (value > alphaBalance) {
+      setWithdrawError(`Exceeds available balance (${alphaBalance} ALPHA).`);
       return;
     }
     setWithdrawLoading(true);
     try {
-      const data = await api.withdrawAgent(agentId, value);
+      const data = await api.withdrawAgent(agentId, value, addr);
       setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}`);
       setWithdrawAmount("");
       fetchBalance();
@@ -340,9 +349,7 @@ function AgentDetailContent() {
     e.preventDefault();
     setEditError("");
     setEditLoading(true);
-    const gameTypes: string[] = [];
-    if (editForm.marrakech) gameTypes.push("marrakech");
-    if (editForm.reversi) gameTypes.push("reversi");
+    const gameTypes: string[] = ["chess"];
     try {
       const updatePayload: Record<string, unknown> = { name: editForm.name.trim(), gameTypes };
       if (agent?.type === "openclaw") {
@@ -483,7 +490,7 @@ function AgentDetailContent() {
                   <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright">
                     {agent.name}
                   </h1>
-                  <Badge status={agent.status} />
+                  <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
                   {walletAddress && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-arena-bg text-arena-muted border border-arena-border-light rounded truncate max-w-[120px]" title={walletAddress}>
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
@@ -577,13 +584,10 @@ function AgentDetailContent() {
             ) : (
               <Input label={t.createAgent.endpointUrl} value={editForm.endpointUrl} onChange={(e) => setEditForm({ ...editForm, endpointUrl: e.target.value })} />
             )}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={editForm.marrakech} onChange={(e) => setEditForm({ ...editForm, marrakech: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
-              <span className="text-sm text-arena-text">{t.createAgent.marrakech}</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={editForm.reversi} onChange={(e) => setEditForm({ ...editForm, reversi: e.target.checked })} className="w-4 h-4 accent-arena-primary" />
-              <span className="text-sm text-arena-text">{t.createAgent.reversi}</span>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked disabled className="w-4 h-4 accent-arena-primary" />
+              <span className="text-sm text-arena-text">Chess</span>
+              <span className="text-[10px] text-arena-muted">(only available game)</span>
             </label>
             <div className="flex gap-3">
               <Button type="submit" isLoading={editLoading}>{t.common.save}</Button>
@@ -684,7 +688,7 @@ function AgentDetailContent() {
               <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
                 {(agent.stats?.totalEarnings || 0).toFixed(2)}
               </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5">USDC</span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPHA</span>
             </div>
           </div>
 
@@ -755,10 +759,11 @@ function AgentDetailContent() {
         {/* Balances */}
         <div className="flex items-end gap-6 mb-3">
           <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">USDC</div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ALPHA</div>
             <span className="text-2xl font-extrabold font-mono tabular-nums text-arena-primary leading-none">
-              {balanceLoading ? "..." : (balance?.usdc ?? "—")}
+              {balanceLoading ? "..." : (balance?.alpha ?? "—")}
             </span>
+            {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
           </div>
           <div>
             <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ETH (gas)</div>
@@ -769,34 +774,47 @@ function AgentDetailContent() {
         </div>
 
         <p className="text-xs text-arena-muted mb-4">
-          Send USDC + ETH (gas) to the wallet address above to fund your agent.
+          Send ALPHA + ETH (gas) to the wallet address above to fund your agent.
         </p>
 
         {/* Withdraw */}
         <div className="border-t border-arena-border-light/60 pt-4">
-          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw USDC</div>
-          <div className="flex items-center gap-2">
+          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw ALPHA</div>
+          <div className="space-y-2">
             <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={withdrawAmount}
+              type="text"
+              value={withdrawAddress}
               onChange={(e) => {
-                setWithdrawAmount(e.target.value);
+                setWithdrawAddress(e.target.value);
                 setWithdrawError("");
                 setWithdrawSuccess("");
               }}
-              placeholder="Amount"
-              className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+              placeholder="Destination address (0x...)"
+              className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
-            <Button
-              size="sm"
-              onClick={handleWithdraw}
-              disabled={withdrawLoading || !withdrawAmount}
-              isLoading={withdrawLoading}
-            >
-              Withdraw
-            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={withdrawAmount}
+                onChange={(e) => {
+                  setWithdrawAmount(e.target.value);
+                  setWithdrawError("");
+                  setWithdrawSuccess("");
+                }}
+                placeholder="Amount"
+                className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+              />
+              <Button
+                size="sm"
+                onClick={handleWithdraw}
+                disabled={withdrawLoading || !withdrawAmount || !withdrawAddress}
+                isLoading={withdrawLoading}
+              >
+                Withdraw
+              </Button>
+            </div>
           </div>
           {withdrawError && (
             <p className="text-sm text-arena-danger mt-2">{withdrawError}</p>
@@ -1039,7 +1057,7 @@ function AgentDetailContent() {
                               {agentEntry.eloChange > 0 ? "+" : ""}{agentEntry.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} USDC</span>
+                          <span className="font-mono">{match.stakeAmount} ALPHA</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

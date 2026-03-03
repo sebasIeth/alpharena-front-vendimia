@@ -227,7 +227,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 <h3 className="text-xl font-display font-extrabold text-arena-text-bright truncate group-hover:text-arena-primary transition-colors">
                   {agent.name}
                 </h3>
-                <Badge status={agent.status} />
+                <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
@@ -273,7 +273,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
               <div className="text-xl font-extrabold font-mono text-arena-accent tabular-nums">
                 {(agent.stats?.totalEarnings || 0).toFixed(2)}
               </div>
-              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">USDC</div>
+              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">ALPHA</div>
             </div>
           </div>
         </div>
@@ -350,7 +350,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         </div>
 
         <div className="shrink-0 flex flex-col items-end gap-1">
-          <Badge status={agent.status} />
+          <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
         </div>
       </div>
 
@@ -381,7 +381,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
         <span className="font-mono font-bold text-arena-accent tabular-nums">
-          {(agent.stats?.totalEarnings || 0).toFixed(2)} USDC
+          {(agent.stats?.totalEarnings || 0).toFixed(2)} ALPHA
         </span>
       </div>
     </div>
@@ -599,7 +599,7 @@ function AgentsContent() {
               <DashStat
                 label={t.common.earnings}
                 value={summary.earnings.toFixed(2)}
-                sub="USDC"
+                sub="ALPHA"
                 icon={<IconCoin className="w-4 h-4" />}
                 accentColor="bg-arena-accent"
                 delay={0.18}

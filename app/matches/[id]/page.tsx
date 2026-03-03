@@ -200,7 +200,12 @@ export default function MatchDetailPage() {
       try {
         const data = await api.getMatch(matchId);
         const m = data.match;
-        setMatch({ ...m, id: m.id || (m as any)._id });
+        const raw = m as any;
+        setMatch({
+          ...m,
+          id: m.id || raw._id,
+          winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : t.matchDetail.loadFailed
@@ -256,9 +261,11 @@ export default function MatchDetailPage() {
   const pot = match.pot ?? (match as any).potAmount ?? 0;
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
+  const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
   const isDraw = isCompleted && !match.winnerId;
   const winnerAgent = isCompleted && match.winnerId
     ? agents.find((a) => a.agentId === match.winnerId)
+      ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
   const truncatedId = match.id.length > 16
     ? `${match.id.slice(0, 8)}...${match.id.slice(-6)}`
@@ -431,13 +438,13 @@ export default function MatchDetailPage() {
               <svg className="w-3 h-3 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              {t.common.stake}: {match.stakeAmount} USDC
+              {t.common.stake}: {match.stakeAmount} ALPHA
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
               <svg className="w-3 h-3 text-arena-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
               </svg>
-              {t.common.pot}: {pot} USDC
+              {t.common.pot}: {pot} ALPHA
             </span>
             {match.moveCount > 0 && (
               <span className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
@@ -501,7 +508,8 @@ export default function MatchDetailPage() {
             {/* Agent Result Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {agents.map((agent, idx) => {
-                const isWinner = match.winnerId === agent.agentId;
+                const sides = ["a", "b", "c", "d"];
+                const isWinner = match.winnerId === agent.agentId || match.winnerId === sides[idx];
                 const eloAfter = agent.eloChange !== undefined && agent.eloChange !== null
                   ? agent.eloAtStart + agent.eloChange
                   : null;
