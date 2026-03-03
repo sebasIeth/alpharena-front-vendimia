@@ -49,6 +49,7 @@ const translations = {
       position: "Position",
       turn: "Turn",
       moves: "Moves",
+      hands: "Hands",
       loading: "Loading...",
     },
 
@@ -633,6 +634,7 @@ const translations = {
       position: "Posici\u00F3n",
       turn: "Turno",
       moves: "Movimientos",
+      hands: "Manos",
       loading: "Cargando...",
     },
 

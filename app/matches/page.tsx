@@ -293,7 +293,7 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
             {match.moveCount > 0 && (
               <>
                 <span className="text-arena-border-light/80">·</span>
-                <span>{match.moveCount} {t.common.moves.toLowerCase()}</span>
+                <span>{match.moveCount} {(match.gameType === "poker" ? t.common.hands : t.common.moves).toLowerCase()}</span>
               </>
             )}
           </div>

@@ -673,7 +673,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 )}
               </div>
               <div className="bg-arena-bg rounded-lg p-2 text-center">
-                <div className="text-arena-muted text-xs">Moves</div>
+                <div className="text-arena-muted text-xs">{match.gameType === "poker" ? "Hands" : "Moves"}</div>
                 <div className="text-arena-text font-medium">
                   {moves.length || match.moveCount || 0}
                 </div>
@@ -792,16 +792,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           {/* Move History */}
           <div className="bg-arena-card border border-arena-border rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">
-              Move History
+              {match.gameType === "poker" ? "Hand History" : "Move History"}
             </h3>
             <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
               {loadingMoves ? (
                 <div className="text-center text-sm text-arena-muted py-4">
-                  Loading moves...
+                  {match.gameType === "poker" ? "Loading hands..." : "Loading moves..."}
                 </div>
               ) : moves.length === 0 ? (
                 <div className="text-center text-sm text-arena-muted py-4">
-                  No moves yet
+                  {match.gameType === "poker" ? "No hands yet" : "No moves yet"}
                 </div>
               ) : (
                 moves.map((move, idx) => {
