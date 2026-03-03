@@ -271,7 +271,7 @@ function DashboardContent() {
 
   const stats = useMemo(() => {
     const active = agents.filter((a) => a.status === "in_match").length;
-    const queued = agents.filter((a) => a.status === "queued").length;
+    const queued = agents.filter((a) => a.status === "queued" || (a.autoPlay && a.status === "idle")).length;
     const earnings = agents.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
     const bestElo = agents.length > 0 ? Math.max(...agents.map((a) => a.elo || 0)) : 0;
     const wins = agents.reduce((s, a) => s + (a.stats?.wins || 0), 0);
