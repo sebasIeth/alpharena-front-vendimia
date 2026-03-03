@@ -14,8 +14,9 @@ import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions } from "@/lib/types";
 import type { Socket } from "socket.io-client";
+import { useLocalPoker } from "@/lib/poker/useLocalPoker";
 
-type Phase = "lobby" | "queue" | "entering" | "playing" | "result";
+type Phase = "lobby" | "queue" | "entering" | "playing" | "result" | "local-poker";
 
 /* ── Parse agent thinking raw text ── */
 function parseAgentThinking(raw: string): { thinking: string; move: string | null } {
@@ -92,6 +93,9 @@ function PlayContent() {
   const [playerB, setPlayerB] = useState<string>("");
   const [isCheck, setIsCheck] = useState(false);
   const [agentThinking, setAgentThinking] = useState<string | null>(null);
+
+  // Local poker (vs AI)
+  const [localPokerState, localPokerControls] = useLocalPoker();
 
   // Poker-specific state
   const [pokerHoleCards, setPokerHoleCards] = useState<PokerCard[]>([]);
@@ -433,7 +437,7 @@ function PlayContent() {
 
   // ── WebSocket effect ──
   useEffect(() => {
-    if (phase !== "queue" && phase !== "entering" && phase !== "playing") {
+    if (phase === "local-poker" || (phase !== "queue" && phase !== "entering" && phase !== "playing")) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -736,6 +740,19 @@ function PlayContent() {
                 <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
                   {t.play.joinQueue}
                 </Button>
+
+                {/* Local poker vs AI */}
+                {gameType === "poker" && (
+                  <button
+                    onClick={() => {
+                      setPhase("local-poker");
+                      localPokerControls.startGame();
+                    }}
+                    className="w-full mt-3 px-5 py-3 rounded-xl border-2 border-arena-primary/30 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/50 transition-all active:scale-[0.98]"
+                  >
+                    Practice vs AI (Free)
+                  </button>
+                )}
               </div>
             </Card>
           </div>
@@ -979,6 +996,152 @@ function PlayContent() {
               <Button variant="secondary" size="lg" onClick={() => router.push("/dashboard")}>
                 {t.play.backToDashboard}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ════════ LOCAL POKER (vs AI) ════════ */}
+        {phase === "local-poker" && (
+          <div className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            {/* Game Over overlay */}
+            {localPokerState.gameOver && (
+              <div className={`rounded-2xl border-2 p-8 text-center ${
+                localPokerState.gameWinner === "human"
+                  ? "border-arena-success/40 bg-arena-success/5"
+                  : "border-arena-danger/40 bg-arena-danger/5"
+              }`}>
+                <div className={`text-3xl font-display font-bold mb-2 ${
+                  localPokerState.gameWinner === "human" ? "text-arena-success" : "text-arena-danger"
+                }`}>
+                  {localPokerState.gameWinner === "human" ? t.play.youWin : t.play.youLose}
+                </div>
+                <p className="text-arena-muted text-sm mt-1">
+                  {localPokerState.gameWinner === "human"
+                    ? "The AI has run out of chips!"
+                    : "You have run out of chips."}
+                </p>
+                <div className="flex gap-3 justify-center mt-4">
+                  <Button onClick={() => {
+                    localPokerControls.resetGame();
+                    localPokerControls.startGame();
+                  }} size="lg">
+                    Play Again
+                  </Button>
+                  <Button variant="secondary" size="lg" onClick={() => {
+                    localPokerControls.resetGame();
+                    setPhase("lobby");
+                  }}>
+                    Back to Lobby
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Board */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <div className="p-4 sm:p-6">
+                    <PokerBoard
+                      communityCards={localPokerState.communityCards}
+                      pot={localPokerState.pot}
+                      street={localPokerState.street}
+                      handNumber={localPokerState.handNumber}
+                      playerA={localPokerState.playerA}
+                      playerB={localPokerState.playerB}
+                      actionHistory={localPokerState.actionHistory}
+                      mySide={localPokerState.mySide}
+                      isMyTurn={localPokerState.isMyTurn && !localPokerState.gameOver}
+                      legalActions={localPokerState.legalActions}
+                      onAction={localPokerControls.performAction}
+                      showdownResult={localPokerState.showdownResult}
+                    />
+                  </div>
+                </Card>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-3">
+                {/* Turn indicator */}
+                <Card>
+                  <div className="p-5 space-y-3">
+                    <div className={`flex items-center gap-2.5 ${localPokerState.isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${localPokerState.isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
+                      <span className="text-base font-display font-bold">
+                        {localPokerState.isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-arena-border-light/60">
+                      <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Blinds</span>
+                      <span className="text-sm font-mono tabular-nums text-arena-muted">10 / 20</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Mode</span>
+                      <span className="text-xs font-mono text-arena-primary">Practice vs AI</span>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Players */}
+                <Card>
+                  <div className="p-4">
+                    <div className="space-y-2.5">
+                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                        localPokerState.isMyTurn ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                      }`}>
+                        <div className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0 bg-emerald-100" />
+                        <span className="text-sm text-arena-text font-medium truncate">{localPokerState.playerA.name}</span>
+                        <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+                          {t.play.you}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 px-3">
+                        <div className="flex-1 border-t border-arena-border-light/60" />
+                        <span className="text-[10px] text-arena-muted font-mono">VS</span>
+                        <div className="flex-1 border-t border-arena-border-light/60" />
+                      </div>
+                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                        !localPokerState.isMyTurn && localPokerState.isActive ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                      }`}>
+                        <div className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0 bg-violet-100" />
+                        <span className="text-sm text-arena-text font-medium truncate">{localPokerState.playerB.name}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Agent thinking */}
+                {localPokerState.agentThinking && (
+                  <Card>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-arena-primary/15 to-arena-accent/15 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-arena-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-display font-semibold text-arena-text">AI Thinking</span>
+                      </div>
+                      <p className="text-xs text-arena-text/70 leading-relaxed pl-7">
+                        {localPokerState.agentThinking}
+                      </p>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Actions */}
+                <div className="pt-1">
+                  <button
+                    onClick={() => {
+                      localPokerControls.resetGame();
+                      setPhase("lobby");
+                    }}
+                    className="w-full text-xs text-arena-danger/70 hover:text-arena-danger hover:bg-arena-danger/5 rounded-lg py-2 transition-colors font-medium"
+                  >
+                    {t.play.abandonMatch}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

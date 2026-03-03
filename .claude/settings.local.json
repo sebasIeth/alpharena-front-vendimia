@@ -14,7 +14,18 @@
       "Bash(npm run build:*)",
       "Bash(node:*)",
       "Bash(npx next build:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(git rebase:*)",
+      "Bash(GIT_EDITOR=true git rebase:*)",
+      "Bash(git -c core.editor=true rebase:*)",
+      "Bash(git log:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout 15 npx next dev:*)",
+      "Bash(npx tsx -e:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

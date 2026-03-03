@@ -422,6 +422,55 @@
     @apply h-full rounded-full;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* ---- Poker animations ---- */
+  @keyframes pokerDealIn {
+    0% { opacity: 0; transform: translateY(-30px) scale(0.8); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .poker-deal-in {
+    animation: pokerDealIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes pokerFlipIn {
+    0% { opacity: 0; transform: rotateY(90deg) scale(0.9); }
+    50% { opacity: 1; transform: rotateY(-5deg) scale(1.02); }
+    100% { opacity: 1; transform: rotateY(0deg) scale(1); }
+  }
+  .poker-flip-in {
+    animation: pokerFlipIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    perspective: 400px;
+  }
+
+  @keyframes pokerChipPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
+    50% { transform: scale(1.05); box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.2); }
+  }
+  .poker-pot-pulse {
+    animation: pokerChipPulse 1.5s ease-in-out;
+  }
+
+  @keyframes pokerWinnerGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+    50% { box-shadow: 0 0 20px 6px rgba(251, 191, 36, 0.3); }
+  }
+  .poker-winner-glow {
+    animation: pokerWinnerGlow 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pokerSlideUp {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .poker-slide-up {
+    animation: pokerSlideUp 0.3s ease-out both;
+  }
+
+  .poker-card-highlight {
+    box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.5);
+    border: 2px solid rgba(251, 191, 36, 0.6);
+    border-radius: 0.5rem;
+  }
 }
 
 @layer utilities {
