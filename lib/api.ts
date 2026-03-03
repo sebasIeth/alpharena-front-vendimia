@@ -315,6 +315,10 @@ class ApiClient {
     return normalizeBalance(raw);
   }
 
+  async playWithdraw(amount: number, toAddress: string): Promise<WithdrawResponse> {
+    return this.post<WithdrawResponse>("/play/withdraw", { amount, toAddress });
+  }
+
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
     return this.post("/play/move", { matchId, move });
   }

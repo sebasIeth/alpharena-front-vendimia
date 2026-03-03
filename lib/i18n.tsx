@@ -211,6 +211,12 @@ const translations = {
       recentMatches: "Recent Matches",
       noMatchesYet: "No matches yet.",
       startFirst: "Start Your First Match",
+      playWallet: "Play Wallet",
+      withdrawTo: "Withdraw to",
+      withdrawAmount: "Amount",
+      withdrawBtn: "Withdraw",
+      withdrawing: "Withdrawing...",
+      withdrawSuccess: "Withdrawal sent!",
     },
 
     /* ── Agents List ──────────────────────────────────────── */
@@ -789,6 +795,12 @@ const translations = {
       recentMatches: "Partidas Recientes",
       noMatchesYet: "A\u00FAn no hay partidas.",
       startFirst: "Empieza tu Primera Partida",
+      playWallet: "Wallet de Juego",
+      withdrawTo: "Retirar a",
+      withdrawAmount: "Monto",
+      withdrawBtn: "Retirar",
+      withdrawing: "Retirando...",
+      withdrawSuccess: "\u00A1Retiro enviado!",
     },
 
     /* ── Agents List ──────────────────────────────────────── */
