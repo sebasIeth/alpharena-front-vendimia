@@ -1,6 +1,6 @@
-import type { PokerCard } from "@/lib/types";
+import type { PokerCard, AIProfileType, SidePot } from "@/lib/types";
 import { createDeck, shuffle, draw } from "./deck";
-import { determineWinner, type EvalResult } from "./evaluator";
+import { determineWinnerMulti, type EvalResult } from "./evaluator";
 
 /* ───────────────────────────────────────────────────────
    Types
@@ -10,27 +10,31 @@ export type Street = "preflop" | "flop" | "turn" | "river" | "showdown";
 export interface Player {
   id: string;
   name: string;
+  seatIndex: number;
   stack: number;
   holeCards: PokerCard[];
-  currentBet: number;      // amount wagered THIS street
-  totalBetThisHand: number; // total wagered across all streets of current hand
+  currentBet: number;
+  totalBetThisHand: number;
   hasFolded: boolean;
   isAllIn: boolean;
-  hasActed: boolean;        // acted this betting round?
+  hasActed: boolean;
+  isEliminated: boolean;
+  isHuman: boolean;
+  aiProfile?: AIProfileType;
 }
 
 export interface ActionRecord {
   type: string;
   amount?: number;
-  playerSide: string; // "a" or "b"
+  playerIndex: number;
+  playerId: string;
   street: string;
 }
 
 export interface ShowdownResult {
-  winner: number; // 0, 1, or -1 (split)
-  hand0: EvalResult;
-  hand1: EvalResult;
-  pots: { amount: number; winner: number }[]; // main pot + side pots
+  winners: { playerIndex: number; handEval: EvalResult }[];
+  pots: { amount: number; winnerIndices: number[]; splitAmounts?: number[] }[];
+  playerHands: Map<number, EvalResult>;
 }
 
 export interface GameState {
@@ -39,41 +43,103 @@ export interface GameState {
   communityCards: PokerCard[];
   burnCards: PokerCard[];
   pot: number;
-  players: [Player, Player];
-  currentPlayerIndex: number; // 0 or 1
-  dealerIndex: number;        // 0 or 1 — the dealer/button (also SB in heads‑up)
+  players: Player[];
+  currentPlayerIndex: number;
+  dealerIndex: number;
   smallBlind: number;
   bigBlind: number;
   handNumber: number;
-  lastRaiseSize: number;      // size of the last raise (for min‑raise calculation)
+  lastRaiseSize: number;
   actionHistory: ActionRecord[];
   showdownResult: ShowdownResult | null;
   handOver: boolean;
-  gameOver: boolean;           // true when a player is busted
+  gameOver: boolean;
+  sidePots: SidePot[];
+  isHeadsUp: boolean;
+}
+
+/* ───────────────────────────────────────────────────────
+   Circular seat helpers
+   ─────────────────────────────────────────────────────── */
+function nextActivePlayer(
+  players: Player[],
+  fromIndex: number,
+  includeAllIn = false,
+): number {
+  const n = players.length;
+  for (let i = 1; i <= n; i++) {
+    const idx = (fromIndex + i) % n;
+    const p = players[idx];
+    if (p.isEliminated || p.hasFolded) continue;
+    if (!includeAllIn && p.isAllIn) continue;
+    return idx;
+  }
+  return -1;
+}
+
+function nextInHandPlayer(
+  players: Player[],
+  fromIndex: number,
+): number {
+  const n = players.length;
+  for (let i = 1; i <= n; i++) {
+    const idx = (fromIndex + i) % n;
+    const p = players[idx];
+    if (!p.isEliminated && !p.hasFolded) return idx;
+  }
+  return -1;
+}
+
+function activePlayerCount(players: Player[]): number {
+  return players.filter(p => !p.hasFolded && !p.isEliminated).length;
+}
+
+function actingPlayerCount(players: Player[]): number {
+  return players.filter(p => !p.hasFolded && !p.isAllIn && !p.isEliminated).length;
 }
 
 /* ───────────────────────────────────────────────────────
    Engine
    ─────────────────────────────────────────────────────── */
+export interface PlayerConfig {
+  id: string;
+  name: string;
+  stack: number;
+  isHuman: boolean;
+  aiProfile?: AIProfileType;
+  seatIndex: number;
+}
+
 export function createInitialState(
-  playerName: string,
-  opponentName: string,
-  startingStack: number,
+  playerConfigs: PlayerConfig[],
   smallBlind: number,
   bigBlind: number,
 ): GameState {
+  const players: Player[] = playerConfigs.map(cfg => ({
+    id: cfg.id,
+    name: cfg.name,
+    seatIndex: cfg.seatIndex,
+    stack: cfg.stack,
+    holeCards: [],
+    currentBet: 0,
+    totalBetThisHand: 0,
+    hasFolded: false,
+    isAllIn: false,
+    hasActed: false,
+    isEliminated: false,
+    isHuman: cfg.isHuman,
+    aiProfile: cfg.aiProfile,
+  }));
+
   return {
     street: "preflop",
     deck: [],
     communityCards: [],
     burnCards: [],
     pot: 0,
-    players: [
-      { id: "human", name: playerName, stack: startingStack, holeCards: [], currentBet: 0, totalBetThisHand: 0, hasFolded: false, isAllIn: false, hasActed: false },
-      { id: "ai", name: opponentName, stack: startingStack, holeCards: [], currentBet: 0, totalBetThisHand: 0, hasFolded: false, isAllIn: false, hasActed: false },
-    ],
+    players,
     currentPlayerIndex: 0,
-    dealerIndex: 0, // human starts as dealer
+    dealerIndex: 0,
     smallBlind,
     bigBlind,
     handNumber: 0,
@@ -82,12 +148,17 @@ export function createInitialState(
     showdownResult: null,
     handOver: false,
     gameOver: false,
+    sidePots: [],
+    isHeadsUp: players.length === 2,
   };
 }
 
 /** Start a new hand: shuffle, post blinds, deal hole cards. */
 export function startHand(state: GameState): GameState {
-  const s = { ...state };
+  const s: GameState = {
+    ...state,
+    players: state.players.map(p => ({ ...p })),
+  };
   s.handNumber += 1;
   s.street = "preflop";
   s.deck = shuffle(createDeck());
@@ -98,6 +169,20 @@ export function startHand(state: GameState): GameState {
   s.showdownResult = null;
   s.handOver = false;
   s.lastRaiseSize = s.bigBlind;
+  s.sidePots = [];
+
+  // Check eliminations from previous hand
+  for (const p of s.players) {
+    if (p.stack <= 0 && !p.isEliminated) p.isEliminated = true;
+  }
+
+  const remaining = s.players.filter(p => !p.isEliminated);
+  if (remaining.length <= 1) {
+    s.gameOver = true;
+    s.handOver = true;
+    return s;
+  }
+  s.isHeadsUp = remaining.length === 2;
 
   // Reset players
   for (const p of s.players) {
@@ -109,30 +194,57 @@ export function startHand(state: GameState): GameState {
     p.hasActed = false;
   }
 
-  // Rotate dealer
+  // Rotate dealer (among non-eliminated players)
   if (s.handNumber > 1) {
-    s.dealerIndex = s.dealerIndex === 0 ? 1 : 0;
+    s.dealerIndex = nextInHandPlayer(s.players, s.dealerIndex);
+  } else {
+    // First hand: find first non-eliminated player
+    const first = s.players.findIndex(p => !p.isEliminated);
+    s.dealerIndex = first >= 0 ? first : 0;
   }
 
-  // Post blinds — in heads‑up the dealer is SB
-  const sbIdx = s.dealerIndex;
-  const bbIdx = sbIdx === 0 ? 1 : 0;
-  postBlind(s, sbIdx, s.smallBlind);
-  postBlind(s, bbIdx, s.bigBlind);
+  // Post blinds
+  let sbIdx: number;
+  let bbIdx: number;
 
-  // Deal 2 hole cards to each player
-  s.players[0].holeCards = draw(s.deck, 2);
-  s.players[1].holeCards = draw(s.deck, 2);
+  if (s.isHeadsUp) {
+    // Heads-up: dealer = SB, other = BB
+    sbIdx = s.dealerIndex;
+    bbIdx = nextInHandPlayer(s.players, sbIdx);
+  } else {
+    // Multi-player: SB = left of dealer, BB = left of SB
+    sbIdx = nextInHandPlayer(s.players, s.dealerIndex);
+    bbIdx = nextInHandPlayer(s.players, sbIdx);
+  }
 
-  // Pre‑flop: dealer (SB) acts first in heads‑up
-  s.currentPlayerIndex = sbIdx;
-  s.players[0].hasActed = false;
-  s.players[1].hasActed = false;
+  postBlind(s, sbIdx, s.smallBlind, "sb");
+  postBlind(s, bbIdx, s.bigBlind, "bb");
+
+  // Deal 2 hole cards to each non-eliminated player
+  for (const p of s.players) {
+    if (!p.isEliminated) {
+      p.holeCards = draw(s.deck, 2);
+    }
+  }
+
+  // Pre-flop first actor
+  if (s.isHeadsUp) {
+    // Heads-up: dealer (SB) acts first pre-flop
+    s.currentPlayerIndex = sbIdx;
+  } else {
+    // Multi-player: UTG (left of BB) acts first pre-flop
+    s.currentPlayerIndex = nextActivePlayer(s.players, bbIdx);
+  }
+
+  // Reset hasActed for all
+  for (const p of s.players) {
+    p.hasActed = false;
+  }
 
   return s;
 }
 
-function postBlind(s: GameState, playerIdx: number, amount: number) {
+function postBlind(s: GameState, playerIdx: number, amount: number, blindType: "sb" | "bb") {
   const p = s.players[playerIdx];
   const actual = Math.min(amount, p.stack);
   p.stack -= actual;
@@ -142,9 +254,10 @@ function postBlind(s: GameState, playerIdx: number, amount: number) {
   if (p.stack === 0) p.isAllIn = true;
 
   s.actionHistory.push({
-    type: playerIdx === s.dealerIndex ? "sb" : "bb",
+    type: blindType,
     amount: actual,
-    playerSide: playerIdx === 0 ? "a" : "b",
+    playerIndex: playerIdx,
+    playerId: p.id,
     street: "preflop",
   });
 }
@@ -166,8 +279,16 @@ export interface LegalActions {
 
 export function getLegalActions(state: GameState): LegalActions {
   const p = state.players[state.currentPlayerIndex];
-  const opp = state.players[state.currentPlayerIndex === 0 ? 1 : 0];
-  const toCall = Math.max(0, opp.currentBet - p.currentBet);
+
+  // Find highest current bet among all non-folded, non-eliminated players
+  const maxBet = Math.max(
+    0,
+    ...state.players
+      .filter(pl => !pl.hasFolded && !pl.isEliminated)
+      .map(pl => pl.currentBet),
+  );
+
+  const toCall = Math.max(0, maxBet - p.currentBet);
   const canAffordCall = p.stack >= toCall;
 
   const result: LegalActions = {
@@ -184,17 +305,14 @@ export function getLegalActions(state: GameState): LegalActions {
 
   // Raise: must be at least the size of the last raise on top of the call
   if (p.stack > toCall && !p.isAllIn) {
-    const minRaiseTotal = opp.currentBet + Math.max(state.lastRaiseSize, state.bigBlind);
-    const minRaiseAmount = minRaiseTotal - p.currentBet; // what the player needs to put in
+    const minRaiseTotal = maxBet + Math.max(state.lastRaiseSize, state.bigBlind);
+    const minRaiseAmount = minRaiseTotal - p.currentBet;
     if (p.stack >= minRaiseAmount) {
       result.canRaise = true;
       result.minRaise = minRaiseAmount;
-      result.maxRaise = p.stack; // no‑limit
+      result.maxRaise = p.stack; // no-limit
     }
   }
-
-  // Can't fold if can check (optional but good UX — disable fold when check available)
-  // Actually in poker you can always fold, but we'll keep it available
 
   return result;
 }
@@ -210,43 +328,57 @@ export type Action =
   | { type: "all_in" };
 
 export function applyAction(state: GameState, action: Action): GameState {
-  const s = { ...state, players: [{ ...state.players[0] }, { ...state.players[1] }] as [Player, Player] };
+  const s: GameState = {
+    ...state,
+    players: state.players.map(p => ({ ...p })),
+    actionHistory: [...state.actionHistory],
+  };
   const p = s.players[s.currentPlayerIndex];
-  const oppIdx = s.currentPlayerIndex === 0 ? 1 : 0;
-  const opp = s.players[oppIdx];
-  const side = s.currentPlayerIndex === 0 ? "a" : "b";
+  const pIdx = s.currentPlayerIndex;
+
+  // Find highest current bet
+  const maxBet = Math.max(
+    0,
+    ...s.players
+      .filter(pl => !pl.hasFolded && !pl.isEliminated)
+      .map(pl => pl.currentBet),
+  );
 
   switch (action.type) {
     case "fold": {
       p.hasFolded = true;
       p.hasActed = true;
-      s.actionHistory = [...s.actionHistory, { type: "fold", playerSide: side, street: s.street }];
-      // Hand is over — opponent wins
-      return resolveHandEnd(s);
+      s.actionHistory.push({ type: "fold", playerIndex: pIdx, playerId: p.id, street: s.street });
+
+      // Check if only 1 player remains
+      if (activePlayerCount(s.players) <= 1) {
+        return resolveHandEnd(s);
+      }
+      break;
     }
 
     case "check": {
       p.hasActed = true;
-      s.actionHistory = [...s.actionHistory, { type: "check", playerSide: side, street: s.street }];
+      s.actionHistory.push({ type: "check", playerIndex: pIdx, playerId: p.id, street: s.street });
       break;
     }
 
     case "call": {
-      const toCall = Math.min(opp.currentBet - p.currentBet, p.stack);
+      const toCall = Math.min(maxBet - p.currentBet, p.stack);
       p.stack -= toCall;
       p.currentBet += toCall;
       p.totalBetThisHand += toCall;
       s.pot += toCall;
       if (p.stack === 0) p.isAllIn = true;
       p.hasActed = true;
-      s.actionHistory = [...s.actionHistory, { type: "call", amount: toCall, playerSide: side, street: s.street }];
+      s.actionHistory.push({ type: "call", amount: toCall, playerIndex: pIdx, playerId: p.id, street: s.street });
       break;
     }
 
     case "raise": {
-      const totalPutIn = action.amount; // total chips the player puts in this street
+      const totalPutIn = action.amount;
       const additional = totalPutIn - p.currentBet;
-      const raiseSize = totalPutIn - opp.currentBet; // the raise above opponent's bet
+      const raiseSize = totalPutIn - maxBet;
       p.stack -= additional;
       s.pot += additional;
       p.totalBetThisHand += additional;
@@ -254,9 +386,13 @@ export function applyAction(state: GameState, action: Action): GameState {
       p.currentBet = totalPutIn;
       if (p.stack === 0) p.isAllIn = true;
       p.hasActed = true;
-      // Opponent must act again
-      opp.hasActed = false;
-      s.actionHistory = [...s.actionHistory, { type: "raise", amount: totalPutIn, playerSide: side, street: s.street }];
+      // All other non-folded, non-all-in players must act again
+      for (const other of s.players) {
+        if (other.id !== p.id && !other.hasFolded && !other.isAllIn && !other.isEliminated) {
+          other.hasActed = false;
+        }
+      }
+      s.actionHistory.push({ type: "raise", amount: totalPutIn, playerIndex: pIdx, playerId: p.id, street: s.street });
       break;
     }
 
@@ -269,15 +405,19 @@ export function applyAction(state: GameState, action: Action): GameState {
       p.stack = 0;
       p.isAllIn = true;
       p.hasActed = true;
-      // If this is a raise (putting in more than opponent), opponent must act again
-      if (p.currentBet > opp.currentBet) {
-        const raiseSize = p.currentBet - opp.currentBet;
-        if (prevBet < opp.currentBet || raiseSize >= s.lastRaiseSize) {
-          opp.hasActed = false;
+      // If this raises above max bet, others must act again
+      if (p.currentBet > maxBet) {
+        const raiseSize = p.currentBet - maxBet;
+        if (prevBet < maxBet || raiseSize >= s.lastRaiseSize) {
+          for (const other of s.players) {
+            if (other.id !== p.id && !other.hasFolded && !other.isAllIn && !other.isEliminated) {
+              other.hasActed = false;
+            }
+          }
           s.lastRaiseSize = Math.max(raiseSize, s.lastRaiseSize);
         }
       }
-      s.actionHistory = [...s.actionHistory, { type: "all_in", amount: allInAmt, playerSide: side, street: s.street }];
+      s.actionHistory.push({ type: "all_in", amount: allInAmt, playerIndex: pIdx, playerId: p.id, street: s.street });
       break;
     }
   }
@@ -287,49 +427,50 @@ export function applyAction(state: GameState, action: Action): GameState {
     return advanceStreet(s);
   }
 
-  // Switch to next player
-  s.currentPlayerIndex = oppIdx;
+  // Advance to next active player
+  const nextIdx = nextActivePlayer(s.players, s.currentPlayerIndex);
+  if (nextIdx === -1) {
+    // No one can act - advance street
+    return advanceStreet(s);
+  }
+  s.currentPlayerIndex = nextIdx;
   return s;
 }
 
 function isBettingRoundComplete(s: GameState): boolean {
-  const [p0, p1] = s.players;
+  const active = s.players.filter(p => !p.hasFolded && !p.isEliminated);
 
-  // If someone folded, hand is over (handled in fold case already)
-  if (p0.hasFolded || p1.hasFolded) return true;
+  // Only one player left
+  if (active.length <= 1) return true;
 
-  // Both all‑in → advance immediately
-  if (p0.isAllIn && p1.isAllIn) return true;
+  // All remaining are all-in
+  if (active.every(p => p.isAllIn)) return true;
 
-  // One all‑in, the other has acted → done
-  if ((p0.isAllIn && p1.hasActed) || (p1.isAllIn && p0.hasActed)) return true;
+  // All non-all-in active players have acted and bets match
+  const acting = active.filter(p => !p.isAllIn);
+  if (acting.length === 0) return true;
 
-  // Both have acted and bets match
-  if (p0.hasActed && p1.hasActed && p0.currentBet === p1.currentBet) return true;
-
-  return false;
+  const targetBet = Math.max(...active.map(p => p.currentBet));
+  return acting.every(p => p.hasActed && p.currentBet === targetBet);
 }
 
 function advanceStreet(s: GameState): GameState {
-  // If someone folded, resolve
-  if (s.players[0].hasFolded || s.players[1].hasFolded) {
+  // If only 1 non-folded player, resolve
+  if (activePlayerCount(s.players) <= 1) {
     return resolveHandEnd(s);
   }
 
-  // If both all‑in, run out remaining streets automatically
-  const bothAllIn = s.players[0].isAllIn && s.players[1].isAllIn;
+  // Check if all non-folded are all-in (or only 1 can still bet)
+  const allInOrFolded = actingPlayerCount(s.players) <= 1;
 
-  // Reset per‑street state
+  // Reset per-street state
   for (const p of s.players) {
     p.currentBet = 0;
     p.hasActed = false;
   }
   s.lastRaiseSize = s.bigBlind;
 
-  // Post‑flop: BB (non‑dealer) acts first in heads‑up
-  const bbIdx = s.dealerIndex === 0 ? 1 : 0;
-  s.currentPlayerIndex = bbIdx;
-
+  // Determine next street
   const nextStreet = (): Street => {
     switch (s.street) {
       case "preflop": return "flop";
@@ -355,13 +496,19 @@ function advanceStreet(s: GameState): GameState {
     return resolveShowdown(s);
   }
 
-  // If both all‑in, skip betting and advance again
-  if (bothAllIn) {
-    return advanceStreet(s);
+  // Post-flop first actor
+  if (s.isHeadsUp) {
+    // Heads-up: non-dealer acts first post-flop
+    const firstActor = nextActivePlayer(s.players, s.dealerIndex);
+    s.currentPlayerIndex = firstActor !== -1 ? firstActor : s.dealerIndex;
+  } else {
+    // Multi-player: first active player left of dealer
+    const firstActor = nextActivePlayer(s.players, s.dealerIndex);
+    s.currentPlayerIndex = firstActor !== -1 ? firstActor : s.dealerIndex;
   }
 
-  // If one player is all‑in, the other doesn't need to bet, advance
-  if (s.players[0].isAllIn || s.players[1].isAllIn) {
+  // If everyone is all-in or only 1 can act, skip betting and advance
+  if (allInOrFolded) {
     return advanceStreet(s);
   }
 
@@ -369,68 +516,166 @@ function advanceStreet(s: GameState): GameState {
 }
 
 function resolveHandEnd(s: GameState): GameState {
-  if (s.players[0].hasFolded) {
-    // Player 1 wins
-    s.players[1].stack += s.pot;
-    s.showdownResult = null; // no showdown
-    s.pot = 0;
-  } else if (s.players[1].hasFolded) {
-    // Player 0 wins
-    s.players[0].stack += s.pot;
-    s.showdownResult = null;
-    s.pot = 0;
+  // Find the single remaining non-folded player
+  const remaining = s.players.filter(p => !p.hasFolded && !p.isEliminated);
+  if (remaining.length === 1) {
+    remaining[0].stack += s.pot;
   }
+  s.showdownResult = null;
+  s.pot = 0;
   s.handOver = true;
   s.street = "showdown";
 
-  // Check if game over
-  if (s.players[0].stack <= 0 || s.players[1].stack <= 0) {
-    s.gameOver = true;
-  }
-
-  return s;
-}
-
-function resolveShowdown(s: GameState): GameState {
-  const result = determineWinner(
-    s.players[0].holeCards,
-    s.players[1].holeCards,
-    s.communityCards,
-  );
-
-  if (result.winner === -1) {
-    // Split pot
-    const half = Math.floor(s.pot / 2);
-    s.players[0].stack += half;
-    s.players[1].stack += s.pot - half; // handle odd chip
-  } else {
-    s.players[result.winner].stack += s.pot;
-  }
-
-  s.showdownResult = {
-    winner: result.winner,
-    hand0: result.hand0,
-    hand1: result.hand1,
-    pots: [{ amount: s.pot, winner: result.winner }],
-  };
-
-  s.pot = 0;
-  s.handOver = true;
-
-  if (s.players[0].stack <= 0 || s.players[1].stack <= 0) {
-    s.gameOver = true;
-  }
+  // Check eliminations
+  checkEliminations(s);
 
   return s;
 }
 
 /* ───────────────────────────────────────────────────────
-   Utility: check who is the active player (human or AI)
+   Side pots & showdown
+   ─────────────────────────────────────────────────────── */
+export function calculateSidePots(players: Player[]): SidePot[] {
+  // Get all players who contributed (including folded - they contributed but can't win)
+  const contributors = players.filter(p => !p.isEliminated && p.totalBetThisHand > 0);
+  if (contributors.length === 0) return [];
+
+  // Get unique bet levels from non-folded players (sorted ascending)
+  const nonFolded = players.filter(p => !p.hasFolded && !p.isEliminated);
+  const betLevels = Array.from(new Set(nonFolded.map(p => p.totalBetThisHand))).sort((a, b) => a - b);
+
+  const pots: SidePot[] = [];
+  let previousLevel = 0;
+
+  for (const level of betLevels) {
+    if (level <= previousLevel) continue;
+
+    const segmentPerPlayer = level - previousLevel;
+    let potAmount = 0;
+
+    // All contributors pay into this segment (up to segmentPerPlayer)
+    for (const p of contributors) {
+      const contribution = Math.min(
+        Math.max(0, p.totalBetThisHand - previousLevel),
+        segmentPerPlayer,
+      );
+      potAmount += contribution;
+    }
+
+    // Only non-folded players with totalBet >= level are eligible
+    const eligible = nonFolded
+      .filter(p => p.totalBetThisHand >= level)
+      .map(p => p.id);
+
+    if (potAmount > 0 && eligible.length > 0) {
+      pots.push({ amount: potAmount, eligiblePlayerIds: eligible });
+    }
+
+    previousLevel = level;
+  }
+
+  return pots;
+}
+
+function resolveShowdown(s: GameState): GameState {
+  const sidePots = calculateSidePots(s.players);
+  s.sidePots = sidePots;
+
+  const allHands = new Map<number, EvalResult>();
+  const potResults: ShowdownResult["pots"] = [];
+
+  // Resolve each pot
+  for (const pot of sidePots) {
+    // Find eligible player indices and their hands
+    const eligible = pot.eligiblePlayerIds
+      .map(id => s.players.findIndex(p => p.id === id))
+      .filter(idx => idx !== -1 && !s.players[idx].hasFolded);
+
+    const playerHands = eligible.map(idx => ({
+      playerIndex: idx,
+      holeCards: s.players[idx].holeCards,
+    }));
+
+    const result = determineWinnerMulti(playerHands, s.communityCards);
+
+    // Store all evaluated hands
+    for (const [idx, ev] of Array.from(result.hands.entries())) {
+      allHands.set(idx, ev);
+    }
+
+    // Distribute pot
+    if (result.winnerIndices.length === 1) {
+      s.players[result.winnerIndices[0]].stack += pot.amount;
+      potResults.push({
+        amount: pot.amount,
+        winnerIndices: result.winnerIndices,
+      });
+    } else if (result.winnerIndices.length > 1) {
+      // Split pot
+      const share = Math.floor(pot.amount / result.winnerIndices.length);
+      const remainder = pot.amount - share * result.winnerIndices.length;
+      const splitAmounts: number[] = [];
+      result.winnerIndices.forEach((idx, i) => {
+        const amt = share + (i === 0 ? remainder : 0); // odd chips to first position
+        s.players[idx].stack += amt;
+        splitAmounts.push(amt);
+      });
+      potResults.push({
+        amount: pot.amount,
+        winnerIndices: result.winnerIndices,
+        splitAmounts,
+      });
+    }
+  }
+
+  // Build winners list (unique winners across all pots)
+  const winnerSet = new Set<number>();
+  for (const pr of potResults) {
+    for (const idx of pr.winnerIndices) winnerSet.add(idx);
+  }
+  const winners = Array.from(winnerSet).map(idx => ({
+    playerIndex: idx,
+    handEval: allHands.get(idx)!,
+  }));
+
+  s.showdownResult = {
+    winners,
+    pots: potResults,
+    playerHands: allHands,
+  };
+
+  s.pot = 0;
+  s.handOver = true;
+
+  checkEliminations(s);
+
+  return s;
+}
+
+function checkEliminations(s: GameState): void {
+  for (const p of s.players) {
+    if (p.stack <= 0 && !p.isEliminated) {
+      p.isEliminated = true;
+    }
+  }
+  const remaining = s.players.filter(p => !p.isEliminated);
+  if (remaining.length <= 1) {
+    s.gameOver = true;
+  }
+  s.isHeadsUp = remaining.length === 2;
+}
+
+/* ───────────────────────────────────────────────────────
+   Utility: check who is the active player
    ─────────────────────────────────────────────────────── */
 export function isHumanTurn(state: GameState): boolean {
-  return state.currentPlayerIndex === 0 && !state.handOver;
+  return state.players[state.currentPlayerIndex]?.isHuman === true && !state.handOver;
 }
 
 export function isAITurn(state: GameState): boolean {
-  return state.currentPlayerIndex === 1 && !state.handOver;
+  return state.players[state.currentPlayerIndex]?.isHuman === false && !state.handOver;
+}
+
+export function getCurrentPlayer(state: GameState): Player | undefined {
+  return state.players[state.currentPlayerIndex];
 }

@@ -1,64 +1,134 @@
+import type { AIProfileType } from "@/lib/types";
 import type { GameState, Action, LegalActions } from "./engine";
 import { getLegalActions } from "./engine";
 import { handStrengthScore } from "./evaluator";
 
-/**
- * AI opponent for Texas Hold'em.
- *
- * Strategy:
- * - Evaluates hand strength (0‑1)
- * - Considers pot odds
- * - Adds randomness to avoid predictability
- * - Bluffs ~15% of the time
- */
-export function getAIAction(state: GameState): Action {
-  const legal = getLegalActions(state);
-  const aiPlayer = state.players[1]; // AI is always index 1
-  const opponent = state.players[0];
+/* ───────────────────────────────────────────────────────
+   AI Profiles
+   ─────────────────────────────────────────────────────── */
+export interface AIProfile {
+  type: AIProfileType;
+  displayName: string;
+  vpip: number;
+  pfr: number;
+  aggressionFactor: number;
+  bluffFrequency: number;
+  foldToRaise: number;
+  strongHandThreshold: number;
+  mediumHandThreshold: number;
+}
 
-  // Hand strength (0‑1)
+export const AI_PROFILES: Record<AIProfileType, AIProfile> = {
+  TAG: {
+    type: "TAG",
+    displayName: "Tight-Aggressive",
+    vpip: 0.22,
+    pfr: 0.18,
+    aggressionFactor: 1.8,
+    bluffFrequency: 0.12,
+    foldToRaise: 0.55,
+    strongHandThreshold: 0.65,
+    mediumHandThreshold: 0.45,
+  },
+  LAG: {
+    type: "LAG",
+    displayName: "Loose-Aggressive",
+    vpip: 0.35,
+    pfr: 0.28,
+    aggressionFactor: 2.2,
+    bluffFrequency: 0.22,
+    foldToRaise: 0.35,
+    strongHandThreshold: 0.55,
+    mediumHandThreshold: 0.30,
+  },
+  Rock: {
+    type: "Rock",
+    displayName: "Tight-Passive",
+    vpip: 0.15,
+    pfr: 0.08,
+    aggressionFactor: 0.5,
+    bluffFrequency: 0.03,
+    foldToRaise: 0.70,
+    strongHandThreshold: 0.75,
+    mediumHandThreshold: 0.55,
+  },
+  CallingStation: {
+    type: "CallingStation",
+    displayName: "Loose-Passive",
+    vpip: 0.45,
+    pfr: 0.10,
+    aggressionFactor: 0.4,
+    bluffFrequency: 0.05,
+    foldToRaise: 0.20,
+    strongHandThreshold: 0.70,
+    mediumHandThreshold: 0.25,
+  },
+};
+
+/* ───────────────────────────────────────────────────────
+   AI Decision Logic
+   ─────────────────────────────────────────────────────── */
+export function getAIAction(state: GameState, playerIndex?: number): Action {
+  const pIdx = playerIndex ?? state.currentPlayerIndex;
+  const aiPlayer = state.players[pIdx];
+  const profile = AI_PROFILES[aiPlayer.aiProfile ?? "TAG"];
+  const legal = getLegalActions(state);
+
+  // Hand strength (0-1)
   const strength = handStrengthScore(aiPlayer.holeCards, state.communityCards);
 
-  // Pot odds: how much to call vs total pot after calling
+  // Pot odds
   const potOdds = legal.callAmount > 0
     ? legal.callAmount / (state.pot + legal.callAmount)
     : 0;
 
-  // Random factor for unpredictability
+  // Adjust thresholds by number of active opponents
+  const numOpponents = state.players.filter(p =>
+    !p.hasFolded && !p.isEliminated && p.id !== aiPlayer.id,
+  ).length;
+  const oppAdjust = Math.min(0.15, (numOpponents - 1) * 0.03);
+  const strongThreshold = profile.strongHandThreshold + oppAdjust;
+  const mediumThreshold = profile.mediumHandThreshold + oppAdjust;
+
   const rng = Math.random();
+  const isBluffing = rng < profile.bluffFrequency;
 
-  // Bluff probability (~15%)
-  const isBluffing = rng < 0.15;
-
-  // === Decision logic ===
-
-  // Very strong hand (> 0.75) or bluffing with bad hand
-  if (strength > 0.75 || (isBluffing && strength < 0.3)) {
-    return aggressivePlay(legal, strength, state, isBluffing);
+  // Pre-flop VPIP gating
+  if (state.street === "preflop" && aiPlayer.currentBet <= state.bigBlind) {
+    if (strength < (1 - profile.vpip)) {
+      if (legal.canCheck) return { type: "check" };
+      return { type: "fold" };
+    }
   }
 
-  // Medium hand (0.4‑0.75) — play cautiously
-  if (strength > 0.4) {
-    return mediumPlay(legal, potOdds, rng);
+  // Strong hand or bluff
+  if (strength > strongThreshold || (isBluffing && strength < 0.3)) {
+    return aggressivePlay(legal, strength, state, profile, isBluffing);
   }
 
-  // Weak hand (< 0.4)
-  return weakPlay(legal, potOdds, rng, opponent);
+  // Medium hand
+  if (strength > mediumThreshold) {
+    return mediumPlay(legal, potOdds, profile, rng);
+  }
+
+  // Weak hand
+  return weakPlay(legal, potOdds, profile, rng);
 }
 
 function aggressivePlay(
   legal: LegalActions,
   strength: number,
   state: GameState,
+  profile: AIProfile,
   isBluffing: boolean,
 ): Action {
   const rng = Math.random();
+  const aggMult = profile.aggressionFactor / 2; // normalize to ~0-1 range
 
-  // Monster hand (> 0.9): all-in sometimes, big raise otherwise
+  // Monster hand (> 0.9): all-in sometimes
   if (strength > 0.9 && !isBluffing) {
-    if (rng < 0.3 && legal.canAllIn) return { type: "all_in" };
+    if (rng < 0.3 * aggMult && legal.canAllIn) return { type: "all_in" };
     if (legal.canRaise) {
-      // Raise ~70‑100% of max
       const amount = Math.round(legal.minRaise + (legal.maxRaise - legal.minRaise) * (0.7 + rng * 0.3));
       return { type: "raise", amount: Math.min(amount, legal.maxRaise) };
     }
@@ -66,9 +136,10 @@ function aggressivePlay(
 
   // Strong hand or bluff: raise
   if (legal.canRaise) {
-    // Raise 40‑70% of range
-    const fraction = isBluffing ? 0.3 + rng * 0.2 : 0.4 + rng * 0.3;
-    const amount = Math.round(legal.minRaise + (legal.maxRaise - legal.minRaise) * fraction);
+    const fraction = isBluffing
+      ? 0.2 + rng * 0.2
+      : 0.3 * aggMult + rng * 0.3;
+    const amount = Math.round(legal.minRaise + (legal.maxRaise - legal.minRaise) * Math.min(fraction, 1));
     return { type: "raise", amount: Math.min(Math.max(amount, legal.minRaise), legal.maxRaise) };
   }
 
@@ -77,21 +148,26 @@ function aggressivePlay(
   return { type: "fold" };
 }
 
-function mediumPlay(legal: LegalActions, potOdds: number, rng: number): Action {
-  // If can check, check most of the time
+function mediumPlay(
+  legal: LegalActions,
+  potOdds: number,
+  profile: AIProfile,
+  rng: number,
+): Action {
   if (legal.canCheck) {
-    if (rng < 0.3 && legal.canRaise) {
-      // Occasionally raise (value bet / semi-bluff)
-      const amount = legal.minRaise;
-      return { type: "raise", amount };
+    // Occasionally raise with aggressive profiles
+    if (rng < 0.15 * profile.aggressionFactor && legal.canRaise) {
+      return { type: "raise", amount: legal.minRaise };
     }
     return { type: "check" };
   }
 
-  // Facing a bet: call if pot odds are favorable
+  // Facing a bet
   if (legal.canCall) {
-    if (potOdds < 0.4) return { type: "call" }; // good odds
-    if (rng < 0.5) return { type: "call" }; // coin flip on marginal
+    // Passive profiles call more; aggressive fold to bad odds
+    const foldThreshold = profile.foldToRaise * 0.6;
+    if (potOdds < 0.4) return { type: "call" };
+    if (rng > foldThreshold) return { type: "call" };
     return { type: "fold" };
   }
 
@@ -101,26 +177,30 @@ function mediumPlay(legal: LegalActions, potOdds: number, rng: number): Action {
 function weakPlay(
   legal: LegalActions,
   potOdds: number,
+  profile: AIProfile,
   rng: number,
-  _opponent: { currentBet: number },
 ): Action {
-  // Check if free
   if (legal.canCheck) return { type: "check" };
 
-  // Fold most of the time when facing a bet
   if (legal.canCall) {
-    // Call only with very good pot odds or random luck
+    // Calling stations call with weak hands; rocks fold
+    const callFreq = 1 - profile.foldToRaise;
     if (potOdds < 0.2 && rng < 0.5) return { type: "call" };
-    if (rng < 0.15) return { type: "call" }; // stubborn call ~15%
+    if (rng < callFreq * 0.3) return { type: "call" };
   }
 
   return { type: "fold" };
 }
 
-/** Returns a human-readable description of AI thinking. */
-export function getAIThinking(state: GameState, action: Action): string {
-  const strength = handStrengthScore(state.players[1].holeCards, state.communityCards);
+/* ───────────────────────────────────────────────────────
+   AI Thinking text
+   ─────────────────────────────────────────────────────── */
+export function getAIThinking(state: GameState, action: Action, playerIndex?: number): string {
+  const pIdx = playerIndex ?? state.currentPlayerIndex;
+  const aiPlayer = state.players[pIdx];
+  const strength = handStrengthScore(aiPlayer.holeCards, state.communityCards);
   const streetName = state.street.charAt(0).toUpperCase() + state.street.slice(1);
+  const profileName = aiPlayer.aiProfile ?? "TAG";
 
   const handDesc = strength > 0.75 ? "a strong hand"
     : strength > 0.5 ? "a decent hand"
@@ -133,5 +213,5 @@ export function getAIThinking(state: GameState, action: Action): string {
     : action.type === "raise" ? `raising to ${(action as { amount: number }).amount}`
     : "going all-in";
 
-  return `[${streetName}] I have ${handDesc}. ${actionDesc} here seems optimal. Pot is ${state.pot} chips.`;
+  return `[${streetName}] ${aiPlayer.name} (${profileName}): I have ${handDesc}. ${actionDesc}. Pot: ${state.pot}`;
 }

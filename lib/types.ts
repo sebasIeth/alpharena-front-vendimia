@@ -192,13 +192,26 @@ export interface PokerCard {
   suit: string;
 }
 
+export type AIProfileType = "TAG" | "LAG" | "Rock" | "CallingStation";
+
 export interface PokerPlayerInfo {
+  id: string;
+  name: string;
+  seatIndex: number;
   stack: number;
   currentBet: number;
   hasFolded: boolean;
   isAllIn: boolean;
+  isEliminated: boolean;
   isDealer: boolean;
+  isHuman: boolean;
+  aiProfile?: AIProfileType;
   holeCards?: PokerCard[];
+}
+
+export interface SidePot {
+  amount: number;
+  eligiblePlayerIds: string[];
 }
 
 export interface PokerBoardState {
@@ -206,8 +219,11 @@ export interface PokerBoardState {
   street: string;
   pot: number;
   communityCards: PokerCard[];
-  players: { a: PokerPlayerInfo; b: PokerPlayerInfo };
-  actionHistory: { type: string; amount?: number; playerSide: string; street: string }[];
+  players: PokerPlayerInfo[];
+  sidePots: SidePot[];
+  currentPlayerIndex: number;
+  dealerIndex: number;
+  actionHistory: { type: string; amount?: number; playerIndex: number; street: string }[];
 }
 
 export interface PokerLegalActions {

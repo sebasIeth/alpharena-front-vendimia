@@ -471,6 +471,22 @@
     border: 2px solid rgba(251, 191, 36, 0.6);
     border-radius: 0.5rem;
   }
+
+  @keyframes seatActivePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0); }
+  }
+  .poker-seat-active {
+    animation: seatActivePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes playerEliminated {
+    0% { filter: grayscale(0); opacity: 1; }
+    100% { filter: grayscale(1); opacity: 0.25; }
+  }
+  .poker-eliminated {
+    animation: playerEliminated 0.8s ease-out forwards;
+  }
 }
 
 @layer utilities {

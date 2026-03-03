@@ -194,6 +194,35 @@ export function determineWinner(
 }
 
 /**
+ * Determine winner(s) among N players given their hole cards and community cards.
+ * Returns winner indices (length > 1 means split) and all evaluated hands.
+ */
+export function determineWinnerMulti(
+  playerHoleCards: { playerIndex: number; holeCards: PokerCard[] }[],
+  community: PokerCard[],
+): { winnerIndices: number[]; hands: Map<number, EvalResult> } {
+  const hands = new Map<number, EvalResult>();
+  for (const { playerIndex, holeCards } of playerHoleCards) {
+    hands.set(playerIndex, evaluateHand([...holeCards, ...community]));
+  }
+
+  if (playerHoleCards.length === 0) return { winnerIndices: [], hands };
+
+  // Find best hand
+  let bestEval: EvalResult | null = null;
+  for (const ev of Array.from(hands.values())) {
+    if (!bestEval || compareEval(ev, bestEval) > 0) bestEval = ev;
+  }
+
+  const winnerIndices: number[] = [];
+  for (const [idx, ev] of Array.from(hands.entries())) {
+    if (compareEval(ev, bestEval!) === 0) winnerIndices.push(idx);
+  }
+
+  return { winnerIndices, hands };
+}
+
+/**
  * Quick hand‑strength score (0‑1) for AI usage.
  * Evaluates current best hand relative to all possible hands.
  */
