@@ -11,14 +11,30 @@ const SUIT_SYM: Record<string, string> = { hearts: "\u2665", diamonds: "\u2666",
 const SUIT_CLR: Record<string, string> = { hearts: "text-red-500", diamonds: "text-red-500", clubs: "text-gray-900", spades: "text-gray-900" };
 
 /* ── Card components ──────────────────────────────── */
-function CardFace({ card, size = "md", highlight = false }: { card: PokerCard; size?: "sm" | "md" | "lg"; highlight?: boolean }) {
-  const dim = { sm: "w-9 h-[52px]", md: "w-[52px] h-[74px]", lg: "w-16 h-[92px]" }[size];
-  const rankSz = { sm: "text-[8px]", md: "text-[11px]", lg: "text-sm" }[size];
-  const suitSz = { sm: "text-sm", md: "text-xl", lg: "text-3xl" }[size];
+function CardFace({ card, size = "md", highlight = false }: { card: PokerCard; size?: "sm" | "md" | "lg" | "cc"; highlight?: boolean }) {
+  // cc = community card: 50x70 fixed, fits center without overlap
+  const dim = {
+    sm: "w-9 h-[52px]",
+    md: "w-[52px] h-[74px]",
+    lg: "w-16 h-[92px]",
+    cc: "w-[50px] h-[70px]",
+  }[size] ?? "w-[52px] h-[74px]";
+  const rankSz = {
+    sm: "text-[8px]",
+    md: "text-[11px]",
+    lg: "text-sm",
+    cc: "text-[9px]",
+  }[size] ?? "text-[11px]";
+  const suitSz = {
+    sm: "text-sm",
+    md: "text-xl",
+    lg: "text-3xl",
+    cc: "text-base",
+  }[size] ?? "text-xl";
   const clr = SUIT_CLR[card.suit] ?? "text-gray-900";
 
   return (
-    <div className={`${dim} rounded-lg bg-white shadow-lg select-none relative flex items-center justify-center ring-1 ring-black/5 ${highlight ? "poker-card-highlight" : ""}`}>
+    <div className={`${dim} rounded-md bg-white shadow-lg select-none relative flex items-center justify-center ring-1 ring-black/5 ${highlight ? "poker-card-highlight" : ""}`}>
       <div className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none">
         <span className={`${rankSz} font-bold ${clr}`}>{card.rank}</span>
         <span className={`${rankSz} ${clr}`}>{SUIT_SYM[card.suit]}</span>
@@ -41,10 +57,6 @@ function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   );
 }
 
-function EmptySlot() {
-  return <div className="w-[52px] h-[74px] rounded-lg border-2 border-dashed border-white/10" />;
-}
-
 /* ── Badges ───────────────────────────────────────── */
 function StreetBadge({ street }: { street: string }) {
   const { t } = useLanguage();
@@ -65,33 +77,51 @@ function StreetBadge({ street }: { street: string }) {
 
 function DealerChip() {
   return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-400 text-black text-[9px] font-extrabold shadow-md ring-2 ring-yellow-500/50">
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-black text-[8px] font-extrabold shadow-md ring-1 ring-yellow-500/50">
       D
     </span>
   );
 }
 
-/* ── Seat positioning ─────────────────────────────── */
-function getSeatPosition(
-  seatIndex: number,
-  totalPlayers: number,
-  tableWidth: number,
-  tableHeight: number,
-): { x: number; y: number } {
-  // Start at bottom center (PI/2 in screen coords) and go clockwise
-  const startAngle = Math.PI / 2;
-  const angleStep = (2 * Math.PI) / totalPlayers;
-  const angle = startAngle + seatIndex * angleStep;
+/* ── Seat positioning (9-max) ─────────────────────── */
+// Positions are % of the table container.
+// Players sit at the EDGE of the oval — pushed further out so they
+// never overlap with community cards in the center.
+// Symmetric around center (50, 50). Top/bottom mirrors are equidistant.
+const SEAT_POSITIONS_9 = [
+  { x: 50, y: 85 },   // Seat 0: bottom center (YOU)      — 35 from center
+  { x: 18, y: 72 },   // Seat 1: bottom-left               — mirrors seat 8
+  { x: 8,  y: 48 },   // Seat 2: left                      — mirrors seat 7
+  { x: 16, y: 22 },   // Seat 3: top-left                  — mirrors seat 1 (y: 50-28=22, 50+22=72)
+  { x: 35, y: 12 },   // Seat 4: top-left-center
+  { x: 50, y: 10 },   // Seat 5: top-center                — 40 from center, heads-up opponent
+  { x: 65, y: 12 },   // Seat 6: top-right-center          — mirrors seat 4
+  { x: 92, y: 48 },   // Seat 7: right                     — mirrors seat 2
+  { x: 82, y: 72 },   // Seat 8: bottom-right              — mirrors seat 1
+];
 
-  const cx = tableWidth / 2;
-  const cy = tableHeight / 2;
-  const rx = (tableWidth / 2) * 0.82;
-  const ry = (tableHeight / 2) * 0.78;
+const SEAT_CONFIGS: Record<number, number[]> = {
+  2: [0, 5],                          // face to face, both x:50
+  3: [0, 3, 6],                       // triangle
+  4: [0, 2, 5, 7],                    // diamond
+  5: [0, 2, 4, 6, 7],                 // pentagon
+  6: [0, 1, 3, 5, 6, 8],             // hexagon
+  7: [0, 1, 3, 4, 6, 7, 8],          // 7 spread
+  8: [0, 1, 2, 3, 4, 6, 7, 8],       // 8 seats
+  9: [0, 1, 2, 3, 4, 5, 6, 7, 8],    // full table
+};
 
-  return {
-    x: cx + rx * Math.cos(angle),
-    y: cy + ry * Math.sin(angle),
-  };
+function getSeatsForPlayerCount(count: number) {
+  const clamped = Math.max(2, Math.min(9, count));
+  return SEAT_CONFIGS[clamped].map(i => SEAT_POSITIONS_9[i]);
+}
+
+// Card size scales with player count so seats stay compact with many players
+function getCardSize(playerCount: number) {
+  if (playerCount <= 2) return { w: 40, h: 56, text: "text-[11px]" as const, gap: 3, infoMin: 72 };
+  if (playerCount <= 4) return { w: 36, h: 50, text: "text-[10px]" as const, gap: 2, infoMin: 64 };
+  if (playerCount <= 6) return { w: 30, h: 42, text: "text-[9px]" as const, gap: 2, infoMin: 56 };
+  return { w: 26, h: 36, text: "text-[8px]" as const, gap: 2, infoMin: 48 };
 }
 
 /* ── Props ────────────────────────────────────────── */
@@ -194,66 +224,108 @@ function ActionBar({
 function PlayerSeat({
   player,
   position,
+  cardSize,
   isActive,
   showCards,
   isShowdown,
   isWinner,
+  hideCards,
 }: {
   player: PlayerViewInfo;
   position: { x: number; y: number };
+  cardSize: ReturnType<typeof getCardSize>;
   isActive: boolean;
   showCards: boolean;
   isShowdown: boolean;
   isWinner: boolean;
+  hideCards?: boolean;
 }) {
-  return (
+  const isTop = position.y < 45;
+
+  const cardsEl = !hideCards ? (
+    <div className="flex justify-center" style={{ gap: cardSize.gap }}>
+      {showCards && player.holeCards && player.holeCards.length === 2
+        ? player.holeCards.map((c, i) => {
+            const clr = SUIT_CLR[c.suit] ?? "text-gray-900";
+            return (
+              <div
+                key={i}
+                style={{ width: cardSize.w, height: cardSize.h }}
+                className="rounded-md bg-white shadow-md ring-1 ring-black/5 relative flex items-center justify-center select-none"
+              >
+                <div className="absolute top-[1px] left-[2px] flex flex-col items-center leading-none">
+                  <span className={`text-[7px] font-bold ${clr}`}>{c.rank}</span>
+                  <span className={`text-[7px] ${clr}`}>{SUIT_SYM[c.suit]}</span>
+                </div>
+                <span className={`text-sm ${clr}`}>{SUIT_SYM[c.suit]}</span>
+              </div>
+            );
+          })
+        : !player.hasFolded && !player.isEliminated
+        ? [0, 1].map(i => (
+            <div
+              key={i}
+              style={{ width: cardSize.w, height: cardSize.h }}
+              className="rounded-md bg-gradient-to-br from-indigo-600 via-blue-800 to-indigo-950 shadow-md ring-1 ring-white/10 flex items-center justify-center"
+            >
+              <div className="w-[55%] h-[60%] rounded-sm border border-indigo-400/15 bg-[repeating-conic-gradient(rgba(99,102,241,0.12)_0%_25%,transparent_0%_50%)] bg-[length:5px_5px]" />
+            </div>
+          ))
+        : null}
+    </div>
+  ) : null;
+
+  const infoEl = (
     <div
-      className="absolute -translate-x-1/2 -translate-y-1/2 z-10"
-      style={{ left: position.x, top: position.y }}
-    >
-      <div className={`
-        rounded-xl px-2.5 py-2 min-w-[90px] text-center transition-all
-        ${player.isEliminated ? "opacity-25 grayscale" : ""}
+      className={`
+        px-2 py-1 rounded-lg backdrop-blur-sm text-center transition-all
+        ${isShowdown && isWinner ? "bg-amber-400/15 poker-winner-glow ring-2 ring-amber-400/60" : ""}
+        ${isActive && !isShowdown ? "bg-black/60 ring-2 ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)] poker-seat-active" : ""}
+        ${!isActive && !(isShowdown && isWinner) ? "bg-black/50" : ""}
         ${player.hasFolded && !player.isEliminated ? "opacity-40" : ""}
-        ${isShowdown && isWinner ? "poker-winner-glow ring-2 ring-amber-400/60 bg-amber-400/10" : ""}
-        ${isActive && !isShowdown ? "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] poker-seat-active" : ""}
-        ${!isActive && !isShowdown && !isWinner ? (player.isHuman ? "bg-black/40" : "bg-black/25") : ""}
-      `}>
-        {/* Cards */}
-        <div className="flex justify-center gap-1 mb-1">
-          {showCards && player.holeCards && player.holeCards.length === 2
-            ? player.holeCards.map((c, i) => <CardFace key={i} card={c} size={player.isHuman ? "md" : "sm"} />)
-            : !player.hasFolded && !player.isEliminated
-            ? <><CardBack size="sm" /><CardBack size="sm" /></>
-            : null}
-        </div>
-
-        {/* Name + badges */}
-        <div className="flex items-center justify-center gap-1 flex-wrap">
-          <span className="text-xs text-white font-semibold truncate max-w-[70px]">{player.name}</span>
-          {player.isDealer && <DealerChip />}
-          {player.isHuman && (
-            <span className="text-[7px] bg-amber-400/20 text-amber-300 px-1 py-0.5 rounded uppercase font-bold tracking-wider">YOU</span>
-          )}
-        </div>
-
-        {/* Stack */}
-        <div className="text-[10px] text-white/60 font-mono">{player.stack}</div>
-
-        {/* Status */}
-        {player.isAllIn && <span className="text-[8px] text-red-300 font-bold">ALL-IN</span>}
-        {player.hasFolded && !player.isEliminated && <span className="text-[8px] text-white/40">FOLDED</span>}
-        {player.isEliminated && <span className="text-[8px] text-red-400 font-bold">OUT</span>}
-
-        {/* AI profile */}
-        {player.aiProfile && !player.isEliminated && (
-          <div className="text-[7px] text-white/30 font-mono">{player.aiProfile}</div>
+        ${player.isEliminated ? "opacity-20 grayscale" : ""}
+      `}
+      style={{ minWidth: cardSize.infoMin }}
+    >
+      <div className={`${cardSize.text} font-bold text-white truncate flex items-center justify-center gap-1`}
+        style={{ maxWidth: cardSize.infoMin + 16 }}
+      >
+        {player.name}
+        {player.isDealer && <DealerChip />}
+        {player.isHuman && (
+          <span className="inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
         )}
       </div>
+      <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack}</div>
+      {player.isAllIn && <div className="text-[7px] text-red-300 font-bold">ALL-IN</div>}
+      {player.hasFolded && !player.isEliminated && <div className="text-[7px] text-white/40 uppercase">Fold</div>}
+      {player.isEliminated && <div className="text-[7px] text-red-400 font-bold uppercase">Out</div>}
+    </div>
+  );
 
-      {/* Bet chip */}
+  return (
+    <div
+      className="absolute -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center"
+      style={{ left: `${position.x}%`, top: `${position.y}%` }}
+    >
+      {isTop ? (
+        <>
+          {infoEl}
+          <div className="mt-0.5">{cardsEl}</div>
+        </>
+      ) : (
+        <>
+          <div className="mb-0.5">{cardsEl}</div>
+          {infoEl}
+        </>
+      )}
+
       {player.currentBet > 0 && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] text-yellow-300 font-mono font-bold bg-black/40 rounded-full px-2 py-0.5">
+        <div className={`absolute left-1/2 -translate-x-1/2 z-30
+          bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5
+          text-[9px] text-yellow-300 font-mono font-bold shadow-md
+          ${isTop ? "-bottom-4" : "-top-4"}
+        `}>
           {player.currentBet}
         </div>
       )}
@@ -298,7 +370,7 @@ function ShowdownBanner({
         <div className="text-[10px] text-white/40 mt-1">
           {result.pots.map((p, i) => (
             <span key={i} className="mr-2">
-              Pot {i + 1}: {p.amount} → {p.winnerIndices.map(idx => players[idx]?.name).join("/")}
+              Pot {i + 1}: {p.amount} &rarr; {p.winnerIndices.map(idx => players[idx]?.name).join("/")}
             </span>
           ))}
         </div>
@@ -329,50 +401,70 @@ export default function PokerBoard({
   const isShowdown = !!showdownResult;
   const winnerIndices = new Set(showdownResult?.winners.map(w => w.playerIndex) ?? []);
 
-  // Fill community cards to 5 slots
   const filled: (PokerCard | null)[] = [];
   for (let i = 0; i < 5; i++) filled.push(communityCards[i] ?? null);
 
-  // Table dimensions (responsive)
-  const TABLE_W = 600;
-  const TABLE_H = 400;
+  const seats = getSeatsForPlayerCount(players.length);
+  const cardSize = getCardSize(players.length);
 
   return (
-    <div className="rounded-2xl bg-gradient-to-b from-green-800 via-green-900 to-green-950 border border-green-700/50 shadow-2xl overflow-hidden">
-      <div className="relative px-3 py-4 sm:px-4 sm:py-5">
-        {/* Subtle radial glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)] pointer-events-none" />
-
-        {/* Header */}
-        <div className="relative flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/40 font-mono">{t.poker.hand} #{handNumber}</span>
-            <StreetBadge street={street} />
-          </div>
-          <span className="text-xs text-white/30 font-mono">{players.filter(p => !p.isEliminated).length} players</span>
+    <div className="rounded-2xl bg-gradient-to-b from-[#0f2818] to-[#0a1f12] shadow-2xl">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/40 font-mono">{t.poker.hand} #{handNumber}</span>
+          <StreetBadge street={street} />
         </div>
+        <span className="text-xs text-white/30 font-mono">{players.filter(p => !p.isEliminated).length} players</span>
+      </div>
 
-        {/* ── Oval Table ── */}
-        <div className="relative mx-auto" style={{ width: TABLE_W, maxWidth: "100%", aspectRatio: `${TABLE_W}/${TABLE_H}` }}>
-          {/* Felt ellipse */}
-          <div className="absolute inset-[8%] rounded-[50%] bg-gradient-to-b from-green-700/40 via-green-800/30 to-green-900/40 border-2 border-green-600/20" />
+      {/* ── ZONE 1: Table ── */}
+      <div className="px-3 sm:px-4">
+        {/* 
+          aspect-[5/3] gives the oval more height than 16/10 so players 
+          on top/bottom have room. On larger screens we can go wider.
+        */}
+        <div className="relative w-full mx-auto aspect-[5/3] max-w-[700px]">
 
-          {/* Community cards + Pot in center */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-20">
-            <div className="flex items-center gap-1.5">
+          {/* Outer rail */}
+          <div
+            className="absolute inset-0 rounded-[50%] shadow-2xl"
+            style={{ background: "linear-gradient(180deg, #1a3a20 0%, #0f2815 100%)" }}
+          />
+
+          {/* Inner rail */}
+          <div
+            className="absolute inset-[3%] rounded-[50%] shadow-inner"
+            style={{ background: "linear-gradient(180deg, #153218 0%, #0d2412 100%)" }}
+          />
+
+          {/* Felt */}
+          <div
+            className="absolute inset-[5%] rounded-[50%] shadow-inner"
+            style={{ background: "radial-gradient(ellipse at center, #1e7a3f, #196b35, #0f4d25)" }}
+          />
+
+          {/* Betting line */}
+          <div className="absolute inset-[20%] rounded-[50%] border border-white/[0.06]" />
+
+          {/* ── Community cards + Pot ── */}
+          {/* NO scale transform — fixed sizes, always centered */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-10">
+            <div className="flex items-center justify-center gap-1">
               {filled.map((c, i) =>
-                c ? <CardFace key={`cc-${i}`} card={c} size="sm" /> : <EmptySlot key={`empty-${i}`} />,
+                c
+                  ? <CardFace key={`cc-${i}`} card={c} size="cc" />
+                  : <div key={`empty-${i}`} className="w-[50px] h-[70px] rounded-md border border-dashed border-white/15 flex-shrink-0" />
               )}
             </div>
-            <div className={`flex items-center gap-2 bg-black/30 rounded-full px-3 py-1 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
-              <span className="text-[9px] text-white/40 uppercase tracking-widest font-mono">{t.poker.pot}</span>
-              <span className="text-base font-bold text-yellow-300 font-mono tabular-nums">{pot}</span>
+            <div className={`flex items-center gap-1.5 bg-black/40 rounded-full px-2.5 py-0.5 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
+              <span className="text-[8px] text-white/50 uppercase tracking-widest font-mono">{t.poker.pot}</span>
+              <span className="text-xs font-bold text-yellow-300 font-mono tabular-nums">{pot}</span>
             </div>
-            {/* Side pots */}
             {sidePots && sidePots.length > 1 && (
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 flex-wrap justify-center">
                 {sidePots.map((sp, i) => (
-                  <span key={i} className="text-[8px] text-white/30 font-mono bg-black/20 rounded-full px-2 py-0.5">
+                  <span key={i} className="text-[7px] text-white/30 font-mono bg-black/20 rounded-full px-1.5 py-0.5">
                     Pot {i + 1}: {sp.amount}
                   </span>
                 ))}
@@ -380,11 +472,10 @@ export default function PokerBoard({
             )}
           </div>
 
-          {/* Player seats */}
+          {/* ── Player seats ── */}
           {players.map((player, idx) => {
-            // Remap so human is always at visual seat 0 (bottom)
             const visualIndex = (idx - humanPlayerIndex + players.length) % players.length;
-            const pos = getSeatPosition(visualIndex, players.length, TABLE_W, TABLE_H);
+            const pos = seats[visualIndex % seats.length];
             const showCards = player.isHuman || (isShowdown && !player.hasFolded);
 
             return (
@@ -392,50 +483,70 @@ export default function PokerBoard({
                 key={player.id}
                 player={player}
                 position={pos}
+                cardSize={cardSize}
                 isActive={idx === currentPlayerIndex && !isShowdown}
                 showCards={showCards}
                 isShowdown={isShowdown}
                 isWinner={winnerIndices.has(idx)}
+                hideCards={player.isHuman}
               />
             );
           })}
         </div>
-
-        {/* Showdown banner */}
-        {isShowdown && showdownResult && (
-          <div className="mt-3">
-            <ShowdownBanner
-              result={showdownResult}
-              players={players}
-              humanPlayerIndex={humanPlayerIndex}
-            />
-          </div>
-        )}
-
-        {/* Action bar */}
-        {isMyTurn && legalActions && onAction && (
-          <div className="relative mt-3">
-            <ActionBar legalActions={legalActions} onAction={onAction} />
-          </div>
-        )}
-
-        {/* Action log */}
-        {actionHistory && actionHistory.length > 0 && (
-          <div className="relative space-y-0.5 pt-2 mt-2 border-t border-white/5">
-            {actionHistory.slice(-6).map((a, i) => (
-              <div key={i} className="text-[10px] font-mono flex items-center gap-1.5">
-                <span className={a.playerIndex === humanPlayerIndex ? "text-blue-300" : "text-red-300"}>
-                  {players[a.playerIndex]?.name ?? `P${a.playerIndex}`}
-                </span>
-                <span className="text-white/70">
-                  {a.type}{a.amount != null ? ` (${a.amount})` : ""}
-                </span>
-                <span className="text-white/20">{a.street}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* ── ZONE 2 + 3: Your cards, showdown, actions, log ── */}
+      {(() => {
+        const humanPlayer = players[humanPlayerIndex];
+        if (!humanPlayer) return null;
+        const humanShowCards = !humanPlayer.hasFolded && !humanPlayer.isEliminated;
+        const humanIsWinner = winnerIndices.has(humanPlayerIndex);
+
+        return (
+          <div className="flex flex-col gap-3 px-4 py-4">
+            {/* Your hole cards — large and clear */}
+            {humanShowCards && (
+              <div className="flex justify-center gap-2">
+                {humanPlayer.holeCards && humanPlayer.holeCards.length === 2
+                  ? humanPlayer.holeCards.map((c, i) => (
+                      <CardFace key={i} card={c} size="md" highlight={isShowdown && humanIsWinner} />
+                    ))
+                  : <><CardBack size="md" /><CardBack size="md" /></>
+                }
+              </div>
+            )}
+
+            {/* Showdown */}
+            {isShowdown && showdownResult && (
+              <ShowdownBanner result={showdownResult} players={players} humanPlayerIndex={humanPlayerIndex} />
+            )}
+
+            {/* Actions */}
+            {isMyTurn && legalActions && onAction && (
+              <div className="relative z-10">
+                <ActionBar legalActions={legalActions} onAction={onAction} />
+              </div>
+            )}
+
+            {/* Log */}
+            {actionHistory && actionHistory.length > 0 && (
+              <div className="space-y-0.5 pt-2 border-t border-white/5">
+                {actionHistory.slice(-6).map((a, i) => (
+                  <div key={i} className="text-[10px] font-mono flex items-center gap-1.5">
+                    <span className={a.playerIndex === humanPlayerIndex ? "text-blue-300" : "text-red-300"}>
+                      {players[a.playerIndex]?.name ?? `P${a.playerIndex}`}
+                    </span>
+                    <span className="text-white/70">
+                      {a.type}{a.amount != null ? ` (${a.amount})` : ""}
+                    </span>
+                    <span className="text-white/20">{a.street}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
