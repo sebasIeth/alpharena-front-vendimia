@@ -139,12 +139,12 @@ function PlayContent() {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const data = await api.playBalance();
+      const data = await api.playBalance(selectedChain);
       setBalance(data);
     } catch {
       /* no play wallet yet */
     }
-  }, []);
+  }, [selectedChain]);
 
   // Fetch match state via HTTP — used on restore and after socket switch
   const fetchMatchState = useCallback(async (mid: string, myAgentId?: string | null) => {
@@ -208,8 +208,12 @@ function PlayContent() {
       }
     }
     restore();
+  }, [fetchMatchState]);
+
+  // ── Fetch balance on mount & when chain changes ──
+  useEffect(() => {
     fetchBalance();
-  }, [fetchBalance, fetchMatchState]);
+  }, [fetchBalance]);
 
   // ── Fallback: if playing with no board data, re-check status ──
   useEffect(() => {
@@ -730,8 +734,15 @@ function PlayContent() {
         {phase === "lobby" && (
           <div className="space-y-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
             <Card>
-              <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
+              <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30 flex items-center justify-between">
                 <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.balance}</h2>
+                <span className={`px-2 py-0.5 text-[10px] font-mono font-medium rounded-full ${
+                  selectedChain === "celo"
+                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}>
+                  {selectedChain === "celo" ? "Celo" : "Base"}
+                </span>
               </div>
               <div className="p-6">
                 {balance ? (
@@ -744,12 +755,14 @@ function PlayContent() {
                       </div>
                       <div>
                         <span className="text-sm font-mono tabular-nums text-arena-muted">{balance.eth}</span>
-                        <span className="text-xs text-arena-muted ml-1">ETH</span>
+                        <span className="text-xs text-arena-muted ml-1">{selectedChain === "celo" ? "CELO" : "ETH"}</span>
                       </div>
                     </div>
                     {balance.walletAddress && (
                       <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
-                        <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.play.depositAddress}</div>
+                        <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
+                          {t.play.depositAddress} ({selectedChain === "celo" ? "Celo" : "Base"})
+                        </div>
                         <div className="text-xs font-mono text-arena-text break-all">{balance.walletAddress}</div>
                       </div>
                     )}

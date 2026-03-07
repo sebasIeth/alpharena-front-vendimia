@@ -315,8 +315,9 @@ class ApiClient {
     return this.get("/play/status");
   }
 
-  async playBalance(): Promise<PlayBalance> {
-    const raw = await this.get<PlayBalance>("/play/balance");
+  async playBalance(chain?: Chain): Promise<PlayBalance> {
+    const query = chain ? `?chain=${chain}` : "";
+    const raw = await this.get<PlayBalance>(`/play/balance${query}`);
     return normalizeBalance(raw);
   }
 
