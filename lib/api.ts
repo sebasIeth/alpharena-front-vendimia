@@ -131,6 +131,10 @@ class ApiClient {
     return this.post<AuthResponse>("/auth/register", payload, false);
   }
 
+  async sendVerificationCode(email: string): Promise<{ message: string }> {
+    return this.post<{ message: string }>("/auth/send-verification-code", { email }, false);
+  }
+
   async getMe(): Promise<{ user: User }> {
     return this.get<{ user: User }>("/auth/me");
   }

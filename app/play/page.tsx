@@ -765,8 +765,6 @@ function PlayContent() {
               <div className="p-6 space-y-5">
                 <Select label={t.play.gameType} value={gameType} onChange={(e) => setGameType(e.target.value)}>
                   <option value="chess">Chess</option>
-                  <option value="reversi">Reversi</option>
-                  <option value="marrakech">Marrakech</option>
                   <option value="poker">Poker (Texas Hold&apos;em)</option>
                 </Select>
 
