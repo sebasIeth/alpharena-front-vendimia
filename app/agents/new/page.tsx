@@ -6,7 +6,8 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
-import type { Agent } from "@/lib/types";
+import type { Agent, Chain } from "@/lib/types";
+import { SUPPORTED_CHAINS } from "@/lib/types";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -76,6 +77,7 @@ function CreateAgentContent() {
 
   // Form data
   const [selectedGameTypes, setSelectedGameTypes] = useState<string[]>(["chess"]);
+  const [selectedChain, setSelectedChain] = useState<Chain>("base");
   const [formData, setFormData] = useState({
     name: "",
     openclawUrl: "",
@@ -159,6 +161,7 @@ function CreateAgentContent() {
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
         type: "openclaw",
+        chain: selectedChain,
         gameTypes: selectedGameTypes.length > 0 ? selectedGameTypes : ["chess"],
         openclawUrl: formData.openclawUrl.trim(),
         openclawToken: formData.openclawToken.trim(),
@@ -214,9 +217,16 @@ function CreateAgentContent() {
               <h2 className="text-2xl font-display font-bold text-arena-text-bright mb-2">
                 Agent Registered!
               </h2>
-              <p className="text-sm text-arena-muted mb-6">
+              <p className="text-sm text-arena-muted mb-2">
                 <strong>{createdAgent.name}</strong> has been registered with its own on-chain wallet.
               </p>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-full mb-6 ${
+                createdAgent.chain === "celo"
+                  ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                  : "bg-blue-50 text-blue-700 border border-blue-200"
+              }`}>
+                {createdAgent.chain === "celo" ? "Celo" : "Base"}
+              </span>
 
               {createdAgent.walletAddress && (
                 <div className="bg-arena-bg border border-arena-border-light rounded-xl p-4 mb-4 text-left">
@@ -239,7 +249,7 @@ function CreateAgentContent() {
                 <p className="text-sm text-arena-primary font-medium mb-1">Fund your agent to start competing</p>
                 <p className="text-xs text-arena-muted">
                   {createdAgent.walletAddress
-                    ? "Send ALPHA (stake) + a small amount of ETH (gas) to the wallet address above. Your agent needs funds before it can join matchmaking queues."
+                    ? `Send ALPHA (stake) + a small amount of ${createdAgent.chain === "celo" ? "CELO" : "ETH"} (gas) on ${createdAgent.chain === "celo" ? "Celo" : "Base"} network to the wallet address above. Your agent needs funds before it can join matchmaking queues.`
                     : "Visit your agent's detail page to see its wallet address and deposit funds. Your agent needs ALPHA before it can join matchmaking queues."}
                 </p>
               </div>
@@ -580,6 +590,39 @@ function CreateAgentContent() {
                     <button type="button" onClick={() => setStep(2)} className="text-xs text-arena-primary hover:text-arena-primary-dark transition-colors shrink-0">
                       {t.common.edit}
                     </button>
+                  </div>
+
+                  {/* Chain */}
+                  <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl p-4">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.createAgent.chain}</div>
+                    <p className="text-xs text-arena-muted mb-2">{t.createAgent.chainHelper}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {SUPPORTED_CHAINS.map((chain) => {
+                        const isSelected = selectedChain === chain;
+                        const label = chain === "celo" ? t.createAgent.chainCelo : t.createAgent.chainBase;
+                        return (
+                          <button
+                            key={chain}
+                            type="button"
+                            onClick={() => setSelectedChain(chain)}
+                            className={`px-3.5 py-2 rounded-lg text-xs font-medium transition-all border flex items-center gap-2 ${
+                              isSelected
+                                ? chain === "celo"
+                                  ? "bg-yellow-50 text-yellow-700 border-yellow-300 ring-1 ring-yellow-200"
+                                  : "bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200"
+                                : "bg-arena-bg/30 text-arena-muted border-arena-border-light hover:border-arena-primary/30"
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${
+                              isSelected
+                                ? chain === "celo" ? "bg-yellow-500" : "bg-blue-500"
+                                : "bg-arena-muted/30"
+                            }`} />
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Game Types */}

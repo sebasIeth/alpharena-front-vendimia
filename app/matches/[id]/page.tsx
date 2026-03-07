@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import type { Match } from "@/lib/types";
+import type { Match, Chain } from "@/lib/types";
 import { normalizeMatchAgents, formatRelativeTime } from "@/lib/utils";
 
 const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
@@ -297,6 +297,15 @@ export default function MatchDetailPage() {
               <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2.5 py-1 rounded">
                 {match.gameType}
               </span>
+              {match.chain && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                  match.chain === "celo"
+                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}>
+                  {match.chain === "celo" ? "Celo" : "Base"}
+                </span>
+              )}
               <Badge status={match.status} />
               {isActive && (
                 <span className="flex items-center gap-1.5 text-[11px] text-arena-success font-semibold uppercase tracking-wider">

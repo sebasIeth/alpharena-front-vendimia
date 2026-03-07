@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
-import type { Match, MatchAgent } from "@/lib/types";
+import type { Match, MatchAgent, Chain } from "@/lib/types";
 
 type Tab = "all" | "active" | "completed";
 type SortKey = "newest" | "oldest" | "highestStake";
@@ -200,6 +200,15 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
             <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2 py-0.5 rounded">
               {match.gameType}
             </span>
+            {match.chain && (
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                match.chain === "celo"
+                  ? "bg-yellow-50 text-yellow-600 border border-yellow-200"
+                  : "bg-blue-50 text-blue-600 border border-blue-200"
+              }`}>
+                {match.chain === "celo" ? "Celo" : "Base"}
+              </span>
+            )}
             {isActive && (
               <span className="flex items-center gap-1.5 text-[10px] text-arena-success font-semibold uppercase tracking-wider">
                 <span className="relative w-2 h-2">

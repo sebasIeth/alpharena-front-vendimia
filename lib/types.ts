@@ -26,6 +26,10 @@ export interface RegisterPayload {
   verificationCode: string;
 }
 
+// ========== Chain ==========
+export const SUPPORTED_CHAINS = ['base', 'celo'] as const;
+export type Chain = (typeof SUPPORTED_CHAINS)[number];
+
 // ========== Agent ==========
 export interface AgentStats {
   wins: number;
@@ -49,6 +53,7 @@ export interface Agent {
   openclawAgentId?: string;
   selfclawPublicKey?: string;
   walletAddress?: string;
+  chain: Chain;
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
@@ -64,17 +69,20 @@ export interface AgentBalance {
   walletAddress: string;
   alpha: string;
   eth: string;
+  chain: Chain;
 }
 
 export interface WithdrawResponse {
   txHash: string;
   amount: number;
   to: string;
+  chain: Chain;
 }
 
 export interface CreateAgentPayload {
   name: string;
   type?: AgentType;
+  chain?: Chain;
   endpointUrl?: string;
   openclawUrl?: string;
   openclawToken?: string;
@@ -116,6 +124,7 @@ export interface MatchAgent {
 export interface Match {
   id: string;
   gameType: string;
+  chain?: Chain;
   status: "pending" | "active" | "completed" | "cancelled" | "error";
   agents: MatchAgent[];
   stakeAmount: number;

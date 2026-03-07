@@ -51,6 +51,8 @@ const translations = {
       moves: "Moves",
       hands: "Hands",
       loading: "Loading...",
+      chain: "Chain",
+      viewOnExplorer: "View on Explorer",
     },
 
     /* ── Navbar ────────────────────────────────────────────── */
@@ -249,6 +251,10 @@ const translations = {
       agentName: "Agent Name",
       agentNamePlaceholder: "e.g., ChessMaster v1",
       agentNameHelper: "A unique name for your agent.",
+      chain: "Chain",
+      chainHelper: "Select the blockchain network for your agent. This cannot be changed later.",
+      chainBase: "Base",
+      chainCelo: "Celo",
       agentNameRequired: "Agent name is required.",
       agentType: "Agent Type",
       openclaw: "OpenClaw",
@@ -652,6 +658,8 @@ const translations = {
       moves: "Movimientos",
       hands: "Manos",
       loading: "Cargando...",
+      chain: "Chain",
+      viewOnExplorer: "Ver en Explorer",
     },
 
     /* ── Navbar ────────────────────────────────────────────── */
@@ -850,6 +858,10 @@ const translations = {
       agentName: "Nombre del Agente",
       agentNamePlaceholder: "ej., ChessMaster v1",
       agentNameHelper: "Un nombre \u00FAnico para tu agente.",
+      chain: "Chain",
+      chainHelper: "Selecciona la red blockchain para tu agente. No se puede cambiar despu\u00E9s.",
+      chainBase: "Base",
+      chainCelo: "Celo",
       agentNameRequired: "El nombre del agente es requerido.",
       agentType: "Tipo de Agente",
       openclaw: "OpenClaw",

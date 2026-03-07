@@ -20,7 +20,25 @@ import {
   formatUsdEquivalent,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
-import type { Agent, AgentBalance, Match } from "@/lib/types";
+import type { Agent, AgentBalance, Match, Chain } from "@/lib/types";
+import { getExplorerTxUrl } from "@/lib/api";
+
+/* ── Chain Badge ── */
+function ChainBadge({ chain, size = "sm" }: { chain?: Chain; size?: "sm" | "md" }) {
+  if (!chain) return null;
+  const isCelo = chain === "celo";
+  const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]";
+  return (
+    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} ${
+      isCelo
+        ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+        : "bg-blue-50 text-blue-700 border border-blue-200"
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${isCelo ? "bg-yellow-500" : "bg-blue-500"}`} />
+      {isCelo ? "Celo" : "Base"}
+    </span>
+  );
+}
 
 interface ChatMessage {
   role: "user" | "agent";
@@ -335,7 +353,8 @@ function AgentDetailContent() {
     setWithdrawLoading(true);
     try {
       const data = await api.withdrawAgent(agentId, value, addr);
-      setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}`);
+      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "base");
+      setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmount("");
       fetchBalance();
     } catch (err) {
@@ -491,6 +510,7 @@ function AgentDetailContent() {
                     {agent.name}
                   </h1>
                   <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+                  <ChainBadge chain={agent.chain} />
                   {walletAddress && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-arena-bg text-arena-muted border border-arena-border-light rounded truncate max-w-[120px]" title={walletAddress}>
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
@@ -727,7 +747,10 @@ function AgentDetailContent() {
         style={{ animationDelay: "0.25s", animationFillMode: "both" }}
       >
         <div className="flex items-center justify-between mb-4">
-          <CardTitle>Wallet & Balance</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Wallet & Balance</CardTitle>
+            <ChainBadge chain={balance?.chain || agent?.chain} size="md" />
+          </div>
           <button
             onClick={fetchBalance}
             disabled={balanceLoading}
@@ -774,7 +797,7 @@ function AgentDetailContent() {
         </div>
 
         <p className="text-xs text-arena-muted mb-4">
-          Send ALPHA + ETH (gas) to the wallet address above to fund your agent.
+          Send ALPHA + {agent?.chain === "celo" ? "CELO" : "ETH"} (gas) on <strong>{agent?.chain === "celo" ? "Celo" : "Base"}</strong> network to the wallet address above to fund your agent.
         </p>
 
         {/* Withdraw */}
@@ -820,7 +843,16 @@ function AgentDetailContent() {
             <p className="text-sm text-arena-danger mt-2">{withdrawError}</p>
           )}
           {withdrawSuccess && (
-            <p className="text-sm text-arena-success mt-2">{withdrawSuccess}</p>
+            <p className="text-sm text-arena-success mt-2">
+              {withdrawSuccess.includes("|") ? (
+                <>
+                  {withdrawSuccess.split("|")[0]}{" "}
+                  <a href={withdrawSuccess.split("|")[1]} target="_blank" rel="noopener noreferrer" className="underline hover:text-arena-success/80">
+                    {t.common.viewOnExplorer}
+                  </a>
+                </>
+              ) : withdrawSuccess}
+            </p>
           )}
         </div>
       </div>
