@@ -350,6 +350,7 @@ export interface PlayStatus {
 export interface PlayJoinPayload {
   gameType: string;
   stakeAmount: number;
+  chain?: Chain;
 }
 
 // ========== API Error ==========

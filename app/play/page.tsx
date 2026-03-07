@@ -11,7 +11,8 @@ import { Select } from "@/components/ui/Input";
 import ReversiBoard from "@/components/game/ReversiBoard";
 import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
-import type { PlayBalance, PokerCard, PokerLegalActions } from "@/lib/types";
+import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
+import { SUPPORTED_CHAINS } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
@@ -81,6 +82,7 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
+  const [selectedChain, setSelectedChain] = useState<Chain>("base");
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -554,7 +556,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
+      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000, chain: selectedChain });
       setAgentId(result.agentId);
       setPhase("queue");
     } catch (err) {
@@ -767,6 +769,39 @@ function PlayContent() {
                   <option value="chess">Chess</option>
                   <option value="poker">Poker (Texas Hold&apos;em)</option>
                 </Select>
+
+                {/* Chain selector */}
+                <div>
+                  <label className="block text-sm font-medium text-arena-text mb-1.5">{t.common.chain}</label>
+                  <div className="flex gap-2">
+                    {SUPPORTED_CHAINS.map((chain) => {
+                      const isSelected = selectedChain === chain;
+                      const label = chain === "celo" ? "Celo" : "Base";
+                      return (
+                        <button
+                          key={chain}
+                          type="button"
+                          onClick={() => setSelectedChain(chain)}
+                          className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
+                            isSelected
+                              ? chain === "celo"
+                                ? "bg-yellow-50 text-yellow-700 border-yellow-300 ring-1 ring-yellow-200"
+                                : "bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200"
+                              : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/30"
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${
+                            isSelected
+                              ? chain === "celo" ? "bg-yellow-500" : "bg-blue-500"
+                              : "bg-arena-muted/30"
+                          }`} />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-arena-muted/70 mt-1">{t.play.chainMatchNote}</p>
+                </div>
 
                 {/* Entry fee */}
                 <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl px-4 py-3">
