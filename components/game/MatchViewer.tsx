@@ -570,23 +570,27 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 pot={pokerPot}
                 street={pokerStreet}
                 handNumber={pokerHandNumber}
-                playerA={{
-                  name: agents[0]?.agentName ?? "Player A",
-                  stack: pokerStacks.a,
-                  currentBet: 0,
-                  hasFolded: false,
-                  isAllIn: false,
-                  isDealer: false,
-                }}
-                playerB={{
-                  name: agents[1]?.agentName ?? "Player B",
-                  stack: pokerStacks.b,
-                  currentBet: 0,
-                  hasFolded: false,
-                  isAllIn: false,
-                  isDealer: false,
-                }}
-                actionHistory={pokerActionHistory}
+                players={[
+                  {
+                    id: "a", name: agents[0]?.agentName ?? "Player A", seatIndex: 0,
+                    stack: pokerStacks.a, currentBet: 0, hasFolded: false, isAllIn: false,
+                    isEliminated: false, isDealer: false, isHuman: false,
+                  },
+                  {
+                    id: "b", name: agents[1]?.agentName ?? "Player B", seatIndex: 1,
+                    stack: pokerStacks.b, currentBet: 0, hasFolded: false, isAllIn: false,
+                    isEliminated: false, isDealer: false, isHuman: false,
+                  },
+                ]}
+                humanPlayerIndex={0}
+                currentPlayerIndex={0}
+                dealerIndex={0}
+                actionHistory={pokerActionHistory.map(a => ({
+                  type: a.type,
+                  amount: a.amount,
+                  playerIndex: a.playerSide === "a" ? 0 : 1,
+                  street: a.street,
+                }))}
               />
             ) : (
               <MarrakechBoard

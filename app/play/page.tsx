@@ -102,16 +102,22 @@ function PlayContent() {
   // Local poker (vs AI)
   const [localPokerState, localPokerControls] = useLocalPoker();
 
-  // Poker-specific state
+  // Poker-specific state (N-player)
   const [pokerHoleCards, setPokerHoleCards] = useState<PokerCard[]>([]);
   const [pokerCommunityCards, setPokerCommunityCards] = useState<PokerCard[]>([]);
   const [pokerPot, setPokerPot] = useState(0);
   const [pokerStreet, setPokerStreet] = useState("preflop");
   const [pokerHandNumber, setPokerHandNumber] = useState(0);
-  const [pokerStacks, setPokerStacks] = useState<{ a: number; b: number }>({ a: 0, b: 0 });
   const [pokerLegalActions, setPokerLegalActions] = useState<PokerLegalActions | null>(null);
-  const [pokerIsDealer, setPokerIsDealer] = useState(false);
-  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerSide: string; street: string }[]>([]);
+  const [pokerSeatIndex, setPokerSeatIndex] = useState(0);
+  const [pokerPlayers, setPokerPlayers] = useState<{
+    seatIndex: number; stack: number; currentBet: number;
+    hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean;
+    playerId?: string; name?: string;
+  }[]>([]);
+  const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(0);
+  const [pokerDealerIndex, setPokerDealerIndex] = useState(0);
+  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
 
   // Result
   const [resultMessage, setResultMessage] = useState("");
@@ -280,6 +286,11 @@ function PlayContent() {
         if (pA) setPlayerA(pA);
         if (pB) setPlayerB(pB);
         if (gt) setGameType(gt);
+        // N-player poker: capture initial player data
+        if (data.pokerPlayers) {
+          setPokerPlayers(data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[]);
+        }
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
       }
 
       if (type === "match:your_turn") {
@@ -300,15 +311,20 @@ function PlayContent() {
         setPhase("playing");
         setTurnTimer(TURN_TIMEOUT_S);
         if (timeMs) setMatchClock(Math.ceil(timeMs / 1000));
-        // Poker-specific
+        // Poker-specific (N-player)
         if (data.pokerHoleCards) setPokerHoleCards(data.pokerHoleCards as PokerCard[]);
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
-        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks as { a: number; b: number });
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
-        if (data.pokerIsDealer != null) setPokerIsDealer(data.pokerIsDealer as boolean);
-        if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerSide: string; street: string }[]);
+        if (data.pokerSeatIndex != null) setPokerSeatIndex(data.pokerSeatIndex as number);
+        if (data.pokerPlayers) {
+          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean }[];
+          setPokerPlayers(players);
+          const dealer = players.findIndex(p => p.isDealer);
+          if (dealer !== -1) setPokerDealerIndex(dealer);
+        }
+        if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
         // Extract poker legal actions from legalMoves[0]
         if (data.gameType === "poker" && Array.isArray(moves) && moves.length > 0) {
           setPokerLegalActions(moves[0] as PokerLegalActions);
@@ -331,18 +347,24 @@ function PlayContent() {
           setPokerLegalActions(null);
           setTurnTimer(null);
         }
-        // Poker: update shared state from any move
+        // Poker: update shared state from any move (N-player)
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
-        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks as { a: number; b: number });
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerPlayers) {
+          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean }[];
+          setPokerPlayers(players);
+          const dealer = players.findIndex(p => p.isDealer);
+          if (dealer !== -1) setPokerDealerIndex(dealer);
+        }
+        if (data.pokerPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerPlayerIndex as number);
         if (data.pokerAction) {
           const action = data.pokerAction as { type: string; amount?: number };
           setPokerActionHistory((prev) => [...prev, {
             type: action.type,
             amount: action.amount,
-            playerSide: (data.side as string) || "a",
+            playerIndex: (data.pokerPlayerIndex as number) ?? 0,
             street: (data.pokerStreet as string) || "preflop",
           }]);
         }
@@ -595,6 +617,11 @@ function PlayContent() {
     setPlayerA("");
     setPlayerB("");
     setAgentThinking(null);
+    setPokerPlayers([]);
+    setPokerActionHistory([]);
+    setPokerSeatIndex(0);
+    setPokerCurrentPlayerIndex(0);
+    setPokerDealerIndex(0);
     fetchBalance();
   };
 
@@ -624,30 +651,37 @@ function PlayContent() {
       );
     }
     if (gameType === "poker") {
+      // Build players array from backend N-player data
+      const onlinePlayers = pokerPlayers.length > 0
+        ? pokerPlayers.map((p, i) => ({
+            id: p.playerId ?? `p${i}`,
+            name: p.name ?? (i === pokerSeatIndex ? "YOU" : `Player ${i + 1}`),
+            seatIndex: p.seatIndex,
+            stack: p.stack,
+            currentBet: p.currentBet,
+            hasFolded: p.hasFolded,
+            isAllIn: p.isAllIn,
+            isEliminated: p.isEliminated,
+            isDealer: p.isDealer,
+            isHuman: p.seatIndex === pokerSeatIndex,
+            holeCards: p.seatIndex === pokerSeatIndex ? pokerHoleCards : undefined,
+          }))
+        : [
+            { id: "a", name: playerA || "Player A", seatIndex: 0, stack: 0, currentBet: 0, hasFolded: false, isAllIn: false, isEliminated: false, isDealer: false, isHuman: true },
+            { id: "b", name: playerB || "Player B", seatIndex: 1, stack: 0, currentBet: 0, hasFolded: false, isAllIn: false, isEliminated: false, isDealer: false, isHuman: false },
+          ];
+      const humanIdx = onlinePlayers.findIndex(p => p.isHuman);
       return (
         <PokerBoard
           communityCards={pokerCommunityCards}
           pot={pokerPot}
           street={pokerStreet}
           handNumber={pokerHandNumber}
-          playerA={{
-            name: playerA || "Player A",
-            stack: pokerStacks.a,
-            currentBet: 0,
-            hasFolded: false,
-            isAllIn: false,
-            isDealer: mySide === "a" ? pokerIsDealer : !pokerIsDealer,
-          }}
-          playerB={{
-            name: playerB || "Player B",
-            stack: pokerStacks.b,
-            currentBet: 0,
-            hasFolded: false,
-            isAllIn: false,
-            isDealer: mySide === "b" ? pokerIsDealer : !pokerIsDealer,
-          }}
+          players={onlinePlayers}
+          humanPlayerIndex={humanIdx >= 0 ? humanIdx : 0}
+          currentPlayerIndex={pokerCurrentPlayerIndex}
+          dealerIndex={pokerDealerIndex}
           actionHistory={pokerActionHistory}
-          mySide={mySide}
           isMyTurn={interactive ? isMyTurn : false}
           legalActions={interactive ? pokerLegalActions : null}
           onAction={interactive ? handlePokerAction : undefined}
@@ -731,9 +765,7 @@ function PlayContent() {
               <div className="p-6 space-y-5">
                 <Select label={t.play.gameType} value={gameType} onChange={(e) => setGameType(e.target.value)}>
                   <option value="chess">Chess</option>
-                  <option value="reversi">Reversi</option>
-                  <option value="marrakech">Marrakech</option>
-                  <option value="poker">Poker (Heads-Up)</option>
+                  <option value="poker">Poker (Texas Hold&apos;em)</option>
                 </Select>
 
                 {/* Entry fee */}
@@ -758,7 +790,7 @@ function PlayContent() {
                   <button
                     onClick={() => {
                       setPhase("local-poker");
-                      localPokerControls.startGame();
+                      localPokerControls.startMatchmaking();
                     }}
                     className="w-full mt-3 px-5 py-3 rounded-xl border-2 border-arena-primary/30 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/50 transition-all active:scale-[0.98]"
                   >
@@ -1036,27 +1068,76 @@ function PlayContent() {
         {/* ════════ LOCAL POKER (vs AI) ════════ */}
         {phase === "local-poker" && (
           <div className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            {/* Game Over overlay */}
+
+            {/* ── Matchmaking Countdown ── */}
+            {localPokerState.matchmakingPhase === "countdown" && (
+              <div className="rounded-2xl border-2 border-arena-primary/20 p-8 text-center space-y-5">
+                <h2 className="text-xl font-display font-bold text-arena-text">Finding Opponents...</h2>
+                <div className="text-4xl font-mono font-bold text-arena-primary">{localPokerState.countdown}s</div>
+
+                {/* Player slots grid */}
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+                  {localPokerState.playerSlots.map((slot, i) => (
+                    <div key={i} className={`rounded-lg p-3 transition-all ${
+                      slot.filled
+                        ? "bg-emerald-400/10 border border-emerald-400/30"
+                        : "bg-white/5 border border-dashed border-arena-border-light"
+                    }`}>
+                      {slot.filled ? (
+                        <>
+                          <div className="text-sm font-semibold text-arena-text truncate">{slot.name}</div>
+                          <div className="text-[10px] text-arena-muted">{slot.isHuman ? "Human" : slot.aiProfile ?? "AI"}</div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-arena-muted/40 py-1">Empty</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-sm text-arena-muted">
+                  {localPokerState.playerSlots.filter(s => s.filled).length}/9 players
+                </div>
+
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={localPokerControls.startNow}
+                    size="lg"
+                    disabled={localPokerState.playerSlots.filter(s => s.filled).length < 2}
+                  >
+                    Start Now ({localPokerState.playerSlots.filter(s => s.filled).length} players)
+                  </Button>
+                  <Button variant="secondary" size="lg" onClick={() => {
+                    localPokerControls.resetGame();
+                    setPhase("lobby");
+                  }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Game Over ── */}
             {localPokerState.gameOver && (
               <div className={`rounded-2xl border-2 p-8 text-center ${
-                localPokerState.gameWinner === "human"
+                localPokerState.gameWinner === "YOU"
                   ? "border-arena-success/40 bg-arena-success/5"
                   : "border-arena-danger/40 bg-arena-danger/5"
               }`}>
                 <div className={`text-3xl font-display font-bold mb-2 ${
-                  localPokerState.gameWinner === "human" ? "text-arena-success" : "text-arena-danger"
+                  localPokerState.gameWinner === "YOU" ? "text-arena-success" : "text-arena-danger"
                 }`}>
-                  {localPokerState.gameWinner === "human" ? t.play.youWin : t.play.youLose}
+                  {localPokerState.gameWinner === "YOU" ? t.play.youWin : t.play.youLose}
                 </div>
                 <p className="text-arena-muted text-sm mt-1">
-                  {localPokerState.gameWinner === "human"
-                    ? "The AI has run out of chips!"
-                    : "You have run out of chips."}
+                  {localPokerState.gameWinner === "YOU"
+                    ? "All opponents have been eliminated!"
+                    : `${localPokerState.gameWinner ?? "An opponent"} wins the tournament.`}
                 </p>
                 <div className="flex gap-3 justify-center mt-4">
                   <Button onClick={() => {
                     localPokerControls.resetGame();
-                    localPokerControls.startGame();
+                    localPokerControls.startMatchmaking();
                   }} size="lg">
                     Play Again
                   </Button>
@@ -1070,112 +1151,127 @@ function PlayContent() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Board */}
-              <div className="lg:col-span-2">
-                <Card>
-                  <div className="p-4 sm:p-6">
-                    <PokerBoard
-                      communityCards={localPokerState.communityCards}
-                      pot={localPokerState.pot}
-                      street={localPokerState.street}
-                      handNumber={localPokerState.handNumber}
-                      playerA={localPokerState.playerA}
-                      playerB={localPokerState.playerB}
-                      actionHistory={localPokerState.actionHistory}
-                      mySide={localPokerState.mySide}
-                      isMyTurn={localPokerState.isMyTurn && !localPokerState.gameOver}
-                      legalActions={localPokerState.legalActions}
-                      onAction={localPokerControls.performAction}
-                      showdownResult={localPokerState.showdownResult}
-                    />
-                  </div>
-                </Card>
-              </div>
-
-              {/* Sidebar */}
-              <div className="space-y-3">
-                {/* Turn indicator */}
-                <Card>
-                  <div className="p-5 space-y-3">
-                    <div className={`flex items-center gap-2.5 ${localPokerState.isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
-                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${localPokerState.isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
-                      <span className="text-base font-display font-bold">
-                        {localPokerState.isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-arena-border-light/60">
-                      <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Blinds</span>
-                      <span className="text-sm font-mono tabular-nums text-arena-muted">10 / 20</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Mode</span>
-                      <span className="text-xs font-mono text-arena-primary">Practice vs AI</span>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Players */}
-                <Card>
-                  <div className="p-4">
-                    <div className="space-y-2.5">
-                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
-                        localPokerState.isMyTurn ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
-                      }`}>
-                        <div className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0 bg-emerald-100" />
-                        <span className="text-sm text-arena-text font-medium truncate">{localPokerState.playerA.name}</span>
-                        <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
-                          {t.play.you}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3">
-                        <div className="flex-1 border-t border-arena-border-light/60" />
-                        <span className="text-[10px] text-arena-muted font-mono">VS</span>
-                        <div className="flex-1 border-t border-arena-border-light/60" />
-                      </div>
-                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
-                        !localPokerState.isMyTurn && localPokerState.isActive ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
-                      }`}>
-                        <div className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0 bg-violet-100" />
-                        <span className="text-sm text-arena-text font-medium truncate">{localPokerState.playerB.name}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Agent thinking */}
-                {localPokerState.agentThinking && (
+            {/* ── Playing ── */}
+            {localPokerState.matchmakingPhase === "playing" && !localPokerState.gameOver && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Board */}
+                <div className="lg:col-span-2">
                   <Card>
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-arena-primary/15 to-arena-accent/15 flex items-center justify-center">
-                          <svg className="w-3 h-3 text-arena-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-display font-semibold text-arena-text">AI Thinking</span>
-                      </div>
-                      <p className="text-xs text-arena-text/70 leading-relaxed pl-7">
-                        {localPokerState.agentThinking}
-                      </p>
+                    <div className="p-4 sm:p-6">
+                      <PokerBoard
+                        communityCards={localPokerState.communityCards}
+                        pot={localPokerState.pot}
+                        street={localPokerState.street}
+                        handNumber={localPokerState.handNumber}
+                        players={localPokerState.players}
+                        humanPlayerIndex={localPokerState.humanPlayerIndex}
+                        currentPlayerIndex={localPokerState.currentPlayerIndex}
+                        dealerIndex={localPokerState.dealerIndex}
+                        sidePots={localPokerState.sidePots}
+                        actionHistory={localPokerState.actionHistory}
+                        isMyTurn={localPokerState.isMyTurn}
+                        legalActions={localPokerState.legalActions}
+                        onAction={localPokerControls.performAction}
+                        showdownResult={localPokerState.showdownResult}
+                      />
                     </div>
                   </Card>
-                )}
+                </div>
 
-                {/* Actions */}
-                <div className="pt-1">
-                  <button
-                    onClick={() => {
-                      localPokerControls.resetGame();
-                      setPhase("lobby");
-                    }}
-                    className="w-full text-xs text-arena-danger/70 hover:text-arena-danger hover:bg-arena-danger/5 rounded-lg py-2 transition-colors font-medium"
-                  >
-                    {t.play.abandonMatch}
-                  </button>
+                {/* Sidebar */}
+                <div className="space-y-3">
+                  {/* Turn indicator */}
+                  <Card>
+                    <div className="p-5 space-y-3">
+                      <div className={`flex items-center gap-2.5 ${localPokerState.isMyTurn ? "text-arena-primary" : "text-arena-muted"}`}>
+                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${localPokerState.isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
+                        <span className="text-base font-display font-bold">
+                          {localPokerState.isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-arena-border-light/60">
+                        <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Blinds</span>
+                        <span className="text-sm font-mono tabular-nums text-arena-muted">10 / 20</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Mode</span>
+                        <span className="text-xs font-mono text-arena-primary">Practice vs AI</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Players list */}
+                  <Card>
+                    <div className="p-4">
+                      <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-3">
+                        Players ({localPokerState.players.filter(p => !p.isEliminated).length} active)
+                      </h3>
+                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                        {localPokerState.players.map((player, idx) => (
+                          <div key={player.id} className={`
+                            flex items-center gap-2 rounded-lg px-3 py-2 transition-colors text-sm
+                            ${idx === localPokerState.currentPlayerIndex && !localPokerState.showdownResult ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""}
+                            ${player.isEliminated ? "opacity-30" : ""}
+                            ${player.hasFolded && !player.isEliminated ? "opacity-50" : ""}
+                          `}>
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{
+                              backgroundColor: player.isEliminated ? "#666" :
+                                player.hasFolded ? "#999" :
+                                player.isHuman ? "#10B981" : "#8B5CF6"
+                            }} />
+                            <span className={`truncate flex-1 ${player.isEliminated ? "line-through" : ""}`}>
+                              {player.name}
+                            </span>
+                            {player.isHuman && (
+                              <span className="text-[8px] bg-arena-primary/10 text-arena-primary px-1 py-0.5 rounded-full uppercase tracking-wider font-bold">YOU</span>
+                            )}
+                            {player.isDealer && (
+                              <span className="w-4 h-4 rounded-full bg-yellow-400 text-black text-[7px] font-extrabold flex items-center justify-center">D</span>
+                            )}
+                            {player.aiProfile && !player.isEliminated && (
+                              <span className="text-[7px] text-arena-muted font-mono">{player.aiProfile}</span>
+                            )}
+                            <span className="text-xs font-mono text-arena-muted/60 tabular-nums">{player.stack}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Agent thinking */}
+                  {localPokerState.agentThinking && (
+                    <Card>
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-arena-primary/15 to-arena-accent/15 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-arena-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                            </svg>
+                          </div>
+                          <span className="text-xs font-display font-semibold text-arena-text">AI Thinking</span>
+                        </div>
+                        <p className="text-xs text-arena-text/70 leading-relaxed pl-7">
+                          {localPokerState.agentThinking}
+                        </p>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Abandon */}
+                  <div className="pt-1">
+                    <button
+                      onClick={() => {
+                        localPokerControls.resetGame();
+                        setPhase("lobby");
+                      }}
+                      className="w-full text-xs text-arena-danger/70 hover:text-arena-danger hover:bg-arena-danger/5 rounded-lg py-2 transition-colors font-medium"
+                    >
+                      {t.play.abandonMatch}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
