@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import type { Match, Chain, BettingInfo, BettingPool, UserBets } from "@/lib/types";
+import type { Match, Chain, BettingInfo, BettingPoolResponse, UserBets } from "@/lib/types";
 import { normalizeMatchAgents, formatRelativeTime } from "@/lib/utils";
 
 const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
@@ -182,11 +182,11 @@ function EloComparisonBar({
 /* ── Betting Panel ── */
 function BettingPanel({ match }: { match: Match }) {
   const { t } = useLanguage();
-  const agents = normalizeMatchAgents(match.agents);
+  const matchAgents = normalizeMatchAgents(match.agents);
   const chain = match.chain || "base";
 
   const [info, setInfo] = useState<BettingInfo | null>(null);
-  const [pool, setPool] = useState<BettingPool | null>(null);
+  const [poolResp, setPoolResp] = useState<BettingPoolResponse | null>(null);
   const [myBets, setMyBets] = useState<UserBets | null>(null);
   const [betAmount, setBetAmount] = useState("");
   const [betOnA, setBetOnA] = useState(true);
@@ -198,24 +198,35 @@ function BettingPanel({ match }: { match: Match }) {
 
   const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_token");
 
-  // Fetch initial info
-  useEffect(() => {
+  const fetchInfo = useCallback(() => {
     api.getBettingInfo(match.id).then(setInfo).catch(() => {});
-    api.getBettingPool(match.id).then(setPool).catch(() => {});
-    if (isLoggedIn) {
-      api.getMyBets(match.id).then(setMyBets).catch(() => {});
-    }
+  }, [match.id]);
+  const fetchPool = useCallback(() => {
+    api.getBettingPool(match.id).then(setPoolResp).catch(() => {});
+  }, [match.id]);
+  const fetchMyBets = useCallback(() => {
+    if (isLoggedIn) api.getMyBets(match.id).then(setMyBets).catch(() => {});
   }, [match.id, isLoggedIn]);
 
-  // Poll pool every 10s while on-chain state is Escrowed (1 = betting open)
+  // Initial fetch
   useEffect(() => {
-    const state = info?.onChain?.state;
-    if (state !== 1) return;
+    fetchInfo();
+    fetchPool();
+    fetchMyBets();
+  }, [fetchInfo, fetchPool, fetchMyBets]);
+
+  // Derive open state from either /info or /pool response
+  const bettingOpen = info?.betting?.open ?? poolResp?.bettingOpen ?? false;
+  const onChainState = info?.betting?.onChainState ?? "none";
+
+  // Poll pool every 10s while betting is open
+  useEffect(() => {
+    if (!bettingOpen) return;
     pollRef.current = setInterval(() => {
-      api.getBettingPool(match.id).then(setPool).catch(() => {});
+      fetchPool();
     }, 10000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [match.id, info?.onChain?.state]);
+  }, [bettingOpen, fetchPool]);
 
   const handlePlaceBet = async () => {
     const amount = parseFloat(betAmount);
@@ -228,10 +239,9 @@ function BettingPanel({ match }: { match: Match }) {
       setTxHash(res.txHash);
       setMsg({ type: "success", text: t.betting.betPlaced });
       setBetAmount("");
-      // Refresh pool & bets
-      api.getBettingPool(match.id).then(setPool).catch(() => {});
-      api.getMyBets(match.id).then(setMyBets).catch(() => {});
-      api.getBettingInfo(match.id).then(setInfo).catch(() => {});
+      fetchPool();
+      fetchMyBets();
+      fetchInfo();
     } catch (err) {
       setMsg({ type: "error", text: err instanceof Error ? err.message : t.betting.betFailed });
     } finally {
@@ -247,8 +257,8 @@ function BettingPanel({ match }: { match: Match }) {
       const res = await api.claimBet(match.id);
       setTxHash(res.txHash);
       setMsg({ type: "success", text: t.betting.claimSuccess });
-      api.getMyBets(match.id).then(setMyBets).catch(() => {});
-      api.getBettingInfo(match.id).then(setInfo).catch(() => {});
+      fetchMyBets();
+      fetchInfo();
     } catch (err) {
       setMsg({ type: "error", text: err instanceof Error ? err.message : t.betting.claimFailed });
     } finally {
@@ -256,27 +266,34 @@ function BettingPanel({ match }: { match: Match }) {
     }
   };
 
-  // Don't render if no info fetched yet, or on-chain state is None (0)
-  if (!info && !pool) return null;
-  const onChainState = info?.onChain?.state ?? 0;
-  if (onChainState === 0) return null;
+  // Don't render if no data or on-chain state is none
+  if (!info && !poolResp) return null;
+  if (onChainState === "none" && !poolResp) return null;
 
-  // Betting is open when on-chain state is Escrowed (1)
-  const isOpen = onChainState === 1;
-  // Settled (2) = winner decided, can claim winnings
-  const isSettled = onChainState === 2;
-  // Refunded (3) = match cancelled, can claim refund
-  const isRefunded = onChainState === 3;
+  // Pool data: prefer lightweight /pool response, fall back to /info
+  const pool = poolResp?.pool ?? info?.betting?.pool;
+  const totalPool = pool?.totalPool ?? 0;
+  const poolA = pool?.totalBetsA ?? 0;
+  const poolB = pool?.totalBetsB ?? 0;
+  const pctA = pool?.percentA ?? (totalPool > 0 ? Math.round((poolA / totalPool) * 100) : 50);
+  const pctB = pool?.percentB ?? (100 - pctA);
 
-  const totalPool = pool?.totalPool ?? info?.onChain?.totalPool ?? 0;
-  const poolA = pool?.agentAPool ?? info?.onChain?.totalBetsA ?? 0;
-  const poolB = pool?.agentBPool ?? info?.onChain?.totalBetsB ?? 0;
-  const pctA = totalPool > 0 ? Math.round((poolA / totalPool) * 100) : 50;
-  const pctB = 100 - pctA;
-  const canClaim = myBets?.claimable && !myBets?.claimed;
+  const isSettled = onChainState === "settled";
+  const isRefunded = onChainState === "refunded";
 
-  const nameA = agents[0]?.agentName ?? "Agent A";
-  const nameB = agents[1]?.agentName ?? "Agent B";
+  // Odds from /info
+  const oddsA = info?.betting?.odds?.a;
+  const oddsB = info?.betting?.odds?.b;
+  const feePercent = info?.betting?.feePercent;
+
+  // Names from /info agents or from match agents
+  const nameA = info?.agents?.a?.name ?? matchAgents[0]?.agentName ?? "Agent A";
+  const nameB = info?.agents?.b?.name ?? matchAgents[1]?.agentName ?? "Agent B";
+
+  // User bets
+  const userOnA = parseFloat(myBets?.bets?.onA ?? "0");
+  const userOnB = parseFloat(myBets?.bets?.onB ?? "0");
+  const hasUserBets = userOnA > 0 || userOnB > 0;
 
   return (
     <div className="mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
@@ -292,12 +309,12 @@ function BettingPanel({ match }: { match: Match }) {
             </h3>
           </div>
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${
-            isOpen ? "bg-arena-success/10 text-arena-success" :
+            bettingOpen ? "bg-arena-success/10 text-arena-success" :
             isSettled ? "bg-arena-accent/10 text-arena-accent" :
             isRefunded ? "bg-arena-muted/10 text-arena-muted" :
             "bg-arena-muted/10 text-arena-muted"
           }`}>
-            {isOpen ? t.betting.open : isSettled ? t.betting.settled : isRefunded ? t.betting.refunded : t.betting.bettingClosed}
+            {bettingOpen ? t.betting.open : isSettled ? t.betting.settled : isRefunded ? t.betting.refunded : t.betting.bettingClosed}
           </span>
         </div>
 
@@ -323,18 +340,36 @@ function BettingPanel({ match }: { match: Match }) {
               <div className="w-px bg-white/80 shrink-0" />
               <div className="elo-bar-fill" style={{ width: `${pctB}%`, backgroundColor: PLAYER_COLORS[1] }} />
             </div>
+            {/* Pool total + percentages */}
             <div className="flex items-center justify-between mt-1">
-              <span className="text-[10px] font-mono text-arena-muted">{pctA}%</span>
+              <span className="text-[10px] font-mono text-arena-muted">{pctA.toFixed(1)}%</span>
               <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {totalPool.toFixed(2)} ALPHA</span>
-              <span className="text-[10px] font-mono text-arena-muted">{pctB}%</span>
+              <span className="text-[10px] font-mono text-arena-muted">{pctB.toFixed(1)}%</span>
             </div>
+
+            {/* Odds row */}
+            {oddsA != null && oddsB != null && (
+              <div className="flex items-center justify-between mt-2 px-1">
+                <span className="text-[10px] font-mono text-arena-muted">
+                  {t.betting.odds}: <span className="text-arena-text-bright font-semibold">{oddsA.toFixed(2)}x</span>
+                </span>
+                {feePercent != null && (
+                  <span className="text-[10px] font-mono text-arena-muted">
+                    Fee: {feePercent}%
+                  </span>
+                )}
+                <span className="text-[10px] font-mono text-arena-muted">
+                  {t.betting.odds}: <span className="text-arena-text-bright font-semibold">{oddsB.toFixed(2)}x</span>
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-arena-muted text-center py-4 mb-4">{t.betting.poolEmpty}</p>
         )}
 
         {/* Place Bet Form */}
-        {isOpen && (
+        {bettingOpen && (
           <div className="border-t border-arena-border-light/40 pt-5">
             {!isLoggedIn ? (
               <p className="text-sm text-arena-muted text-center py-2">{t.betting.loginToBet}</p>
@@ -350,7 +385,8 @@ function BettingPanel({ match }: { match: Match }) {
                         : "bg-white/50 border-arena-border-light/60 text-arena-muted hover:border-red-300"
                     }`}
                   >
-                    {nameA}
+                    <div>{nameA}</div>
+                    {oddsA != null && <div className="text-[10px] font-mono opacity-70">{oddsA.toFixed(2)}x</div>}
                   </button>
                   <button
                     onClick={() => setBetOnA(false)}
@@ -360,7 +396,8 @@ function BettingPanel({ match }: { match: Match }) {
                         : "bg-white/50 border-arena-border-light/60 text-arena-muted hover:border-blue-300"
                     }`}
                   >
-                    {nameB}
+                    <div>{nameB}</div>
+                    {oddsB != null && <div className="text-[10px] font-mono opacity-70">{oddsB.toFixed(2)}x</div>}
                   </button>
                 </div>
 
@@ -392,8 +429,13 @@ function BettingPanel({ match }: { match: Match }) {
         )}
 
         {/* Claim Button */}
-        {canClaim && (isSettled || isRefunded) && (
-          <div className="border-t border-arena-border-light/40 pt-5">
+        {myBets?.canClaim && (isSettled || isRefunded) && (
+          <div className="border-t border-arena-border-light/40 pt-5 mt-4">
+            {myBets.winnings > 0 && (
+              <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
+                {t.betting.payout}: {myBets.winnings.toFixed(2)} ALPHA
+              </p>
+            )}
             <Button onClick={handleClaim} disabled={claiming} className="w-full">
               {claiming ? t.betting.claiming : isRefunded ? t.betting.claimRefund : t.betting.claimWinnings}
             </Button>
@@ -401,26 +443,60 @@ function BettingPanel({ match }: { match: Match }) {
         )}
 
         {/* User's Bets */}
-        {myBets && (myBets.totalOnA > 0 || myBets.totalOnB > 0) && (
+        {hasUserBets && (
           <div className="border-t border-arena-border-light/40 pt-5 mt-5">
             <h4 className="text-[11px] text-arena-muted font-semibold uppercase tracking-wider font-mono mb-3">{t.betting.yourBets}</h4>
-            <div className="flex gap-4">
-              {myBets.totalOnA > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
-                  <span className="text-xs text-arena-text">{myBets.totalOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
+            <div className="space-y-2">
+              {userOnA > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
+                    <span className="text-xs text-arena-text">{userOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
+                  </div>
+                  {myBets?.potential?.winIfA != null && myBets.potential.winIfA > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfA.toFixed(2)}</span>
+                  )}
                 </div>
               )}
-              {myBets.totalOnB > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
-                  <span className="text-xs text-arena-text">{myBets.totalOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
+              {userOnB > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
+                    <span className="text-xs text-arena-text">{userOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
+                  </div>
+                  {myBets?.potential?.winIfB != null && myBets.potential.winIfB > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfB.toFixed(2)}</span>
+                  )}
                 </div>
               )}
             </div>
-            {myBets.claimed && (
+            {/* Outcome badge */}
+            {myBets?.outcome && myBets.outcome !== "pending" && myBets.outcome !== "no_bet" && (
+              <div className={`mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                myBets.outcome === "won" ? "bg-arena-success/10 text-arena-success" :
+                myBets.outcome === "lost" ? "bg-arena-danger/10 text-arena-danger" :
+                "bg-arena-muted/10 text-arena-muted"
+              }`}>
+                {myBets.outcome === "won" ? t.common.won : myBets.outcome === "lost" ? t.common.lost : t.betting.refunded}
+                {myBets.outcome === "won" && myBets.winnings > 0 && (
+                  <span className="font-mono ml-1">+{myBets.winnings.toFixed(2)}</span>
+                )}
+              </div>
+            )}
+            {myBets?.bets?.claimed && (
               <p className="text-[10px] text-arena-success font-semibold mt-2">{t.betting.claimed}</p>
             )}
+          </div>
+        )}
+
+        {/* Winner info from /info */}
+        {info?.winner && (isSettled) && (
+          <div className="border-t border-arena-border-light/40 pt-4 mt-4">
+            <div className="flex items-center gap-2 text-xs text-arena-text">
+              <IconCrown className="w-4 h-4 text-arena-accent" />
+              <span className="font-semibold">{t.common.winner}:</span>
+              <span className="text-arena-text-bright font-bold">{info.winner.agentName}</span>
+            </div>
           </div>
         )}
 

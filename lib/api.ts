@@ -28,7 +28,7 @@ import type {
   Chain,
   BettingContracts,
   BettingInfo,
-  BettingPool,
+  BettingPoolResponse,
   UserBets,
   PlaceBetResponse,
   ClaimBetResponse,
@@ -345,8 +345,8 @@ class ApiClient {
     return this.get<BettingInfo>(`/betting/${matchId}/info`, false);
   }
 
-  async getBettingPool(matchId: string): Promise<BettingPool> {
-    return this.get<BettingPool>(`/betting/${matchId}/pool`, false);
+  async getBettingPool(matchId: string): Promise<BettingPoolResponse> {
+    return this.get<BettingPoolResponse>(`/betting/${matchId}/pool`, false);
   }
 
   async getMyBets(matchId: string): Promise<UserBets> {
