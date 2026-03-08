@@ -229,6 +229,10 @@ const translations = {
       withdrawBtn: "Withdraw",
       withdrawing: "Withdrawing...",
       withdrawSuccess: "Withdrawal sent!",
+      getAlpha: "Get ALPHA",
+      getAlphaDesc: "Buy ALPHA tokens on Uniswap to stake and bet",
+      buyOnBase: "Buy ALPHA on Base",
+      buyOnCelo: "Buy ALPHA on Celo",
     },
 
     /* ── Agents List ──────────────────────────────────────── */
@@ -870,6 +874,10 @@ const translations = {
       withdrawBtn: "Retirar",
       withdrawing: "Retirando...",
       withdrawSuccess: "\u00A1Retiro enviado!",
+      getAlpha: "Obtener ALPHA",
+      getAlphaDesc: "Compra tokens ALPHA en Uniswap para apostar",
+      buyOnBase: "Comprar ALPHA en Base",
+      buyOnCelo: "Comprar ALPHA en Celo",
     },
 
     /* ── Agents List ──────────────────────────────────────── */

@@ -791,6 +791,58 @@ function DashboardContent() {
       )}
 
       {/* ═══════════════════════════════════════════════════
+          GET ALPHA
+          ═══════════════════════════════════════════════════ */}
+      <div
+        className="dash-glass-card rounded-2xl p-6 mb-8 opacity-0 animate-fade-up"
+        style={{ animationDelay: "0.23s", animationFillMode: "both" }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
+            <IconCoin className="w-5 h-5 text-arena-accent" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">
+              {t.dashboard.getAlpha}
+            </h3>
+            <p className="text-xs text-arena-muted">{t.dashboard.getAlphaDesc}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <a
+            href="https://app.uniswap.org/explore/tokens/base/0x324f2bd09e908f28217cc19bb9599b199c736ba3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3.5 bg-white/50 border border-blue-200/60 rounded-xl hover:border-blue-400/60 hover:bg-blue-50/30 transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-blue-600">B</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-arena-text-bright">{t.dashboard.buyOnBase}</div>
+              <div className="text-[10px] text-arena-muted font-mono">Uniswap</div>
+            </div>
+            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+          </a>
+          <a
+            href="https://app.uniswap.org/explore/tokens/celo/0x3b825bed44d0daa21a7e960b913848baebb9c869"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3.5 bg-white/50 border border-yellow-200/60 rounded-xl hover:border-yellow-400/60 hover:bg-yellow-50/30 transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-yellow-600">C</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-arena-text-bright">{t.dashboard.buyOnCelo}</div>
+              <div className="text-[10px] text-arena-muted font-mono">Uniswap</div>
+            </div>
+            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-yellow-500 group-hover:translate-x-0.5 transition-all" />
+          </a>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
           PENDING CLAIMS
           ═══════════════════════════════════════════════════ */}
       {pendingClaims.length > 0 && (
