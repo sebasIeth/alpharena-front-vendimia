@@ -488,7 +488,7 @@ export default function PokerBoard({
                 showCards={showCards}
                 isShowdown={isShowdown}
                 isWinner={winnerIndices.has(idx)}
-                hideCards={player.isHuman}
+                hideCards={false}
               />
             );
           })}
