@@ -26,6 +26,12 @@ import type {
   PlayStatus,
   PlayBalance,
   Chain,
+  BettingContracts,
+  BettingInfo,
+  BettingPool,
+  UserBets,
+  PlaceBetResponse,
+  ClaimBetResponse,
 } from "./types";
 
 /**
@@ -327,6 +333,32 @@ class ApiClient {
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
     return this.post("/play/move", { matchId, move });
+  }
+
+  // ========== Betting ==========
+  async getBettingContracts(chain?: Chain): Promise<BettingContracts> {
+    const query = chain ? `?chain=${chain}` : "";
+    return this.get<BettingContracts>(`/betting/contracts${query}`, false);
+  }
+
+  async getBettingInfo(matchId: string): Promise<BettingInfo> {
+    return this.get<BettingInfo>(`/betting/${matchId}/info`, false);
+  }
+
+  async getBettingPool(matchId: string): Promise<BettingPool> {
+    return this.get<BettingPool>(`/betting/${matchId}/pool`, false);
+  }
+
+  async getMyBets(matchId: string): Promise<UserBets> {
+    return this.get<UserBets>(`/betting/my-bets/${matchId}`);
+  }
+
+  async placeBet(matchId: string, onAgentA: boolean, amount: number): Promise<PlaceBetResponse> {
+    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentA, amount });
+  }
+
+  async claimBet(matchId: string): Promise<ClaimBetResponse> {
+    return this.post<ClaimBetResponse>("/betting/claim", { matchId });
   }
 
   // ========== Socket.IO ==========

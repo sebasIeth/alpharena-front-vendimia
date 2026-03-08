@@ -248,6 +248,67 @@ export interface PokerLegalActions {
   allInAmount: number;
 }
 
+// ========== Betting ==========
+export interface BettingContracts {
+  bettingAddress: string;
+  tokenAddress: string;
+  chain: Chain;
+}
+
+/**
+ * On-chain betting state enum:
+ *  0 = None (no pool created)
+ *  1 = Escrowed (betting open)
+ *  2 = Settled (winner decided, claim available)
+ *  3 = Refunded (match cancelled, refund available)
+ */
+export type OnChainBettingState = 0 | 1 | 2 | 3;
+
+export interface BettingInfo {
+  matchId: string;
+  onChain?: {
+    state: OnChainBettingState;
+    totalBetsA?: number;
+    totalBetsB?: number;
+    totalPool?: number;
+    winner?: number;
+  };
+  agentAName?: string;
+  agentBName?: string;
+  [key: string]: unknown;
+}
+
+export interface BettingPool {
+  totalPool: number;
+  agentAPool: number;
+  agentBPool: number;
+}
+
+export interface UserBet {
+  amount: number;
+  onAgentA: boolean;
+  timestamp: string;
+}
+
+export interface UserBets {
+  bets: UserBet[];
+  totalOnA: number;
+  totalOnB: number;
+  claimable: boolean;
+  claimed: boolean;
+}
+
+export interface PlaceBetResponse {
+  txHash: string;
+  amount: number;
+  onAgentA: boolean;
+}
+
+export interface ClaimBetResponse {
+  txHash: string;
+  payout: number;
+}
+
 // ========== Matchmaking ==========
 export interface QueueEntry {
   id: string;
