@@ -317,7 +317,8 @@ export interface PlaceBetResponse {
 
 export interface ClaimBetResponse {
   txHash: string;
-  payout: number;
+  matchId: string;
+  chain: Chain;
 }
 
 // ========== Matchmaking ==========

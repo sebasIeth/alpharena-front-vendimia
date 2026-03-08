@@ -439,6 +439,8 @@ const translations = {
       claimFailed: "Failed to claim.",
       minBet: "Min 0.01 ALPHA",
       odds: "Odds",
+      pendingClaims: "Pending Claims",
+      unclaimedBets: "unclaimed bets",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
@@ -1078,6 +1080,8 @@ const translations = {
       claimFailed: "Error al reclamar.",
       minBet: "Mín 0.01 ALPHA",
       odds: "Cuota",
+      pendingClaims: "Reclamos Pendientes",
+      unclaimedBets: "apuestas sin reclamar",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
