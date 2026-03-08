@@ -118,6 +118,9 @@ function PlayContent() {
   const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(0);
   const [pokerDealerIndex, setPokerDealerIndex] = useState(0);
   const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
+  const [pokerLobbyInfo, setPokerLobbyInfo] = useState<{
+    playerCount: number; countdownMs: number | null; players: { name: string }[];
+  } | null>(null);
 
   // Result
   const [resultMessage, setResultMessage] = useState("");
@@ -159,6 +162,9 @@ function PlayContent() {
       if (board) {
         setBoardState(board);
         setPhase("playing");
+      } else if (m.gameType === "poker" && m.pokerState) {
+        // Poker doesn't use traditional board state
+        setPhase("playing");
       }
 
       const agents = m.agents as Record<string, Record<string, unknown>> | undefined;
@@ -177,6 +183,36 @@ function PlayContent() {
           (currentTurn === "a" && agents?.a?.agentId === agent) ||
           (currentTurn === "b" && agents?.b?.agentId === agent);
         setIsMyTurn(myTurn);
+      }
+
+      // Restore poker state from HTTP
+      if (m.gameType) setGameType(m.gameType as string);
+      if (m.pokerState) {
+        const ps = m.pokerState as Record<string, unknown>;
+        if (ps.communityCards) setPokerCommunityCards(ps.communityCards as PokerCard[]);
+        if (ps.pot != null) setPokerPot(ps.pot as number);
+        if (ps.street) setPokerStreet(ps.street as string);
+        if (ps.handNumber != null) setPokerHandNumber(ps.handNumber as number);
+        if (ps.currentPlayerIndex != null) setPokerCurrentPlayerIndex(ps.currentPlayerIndex as number);
+        if (ps.dealerIndex != null) setPokerDealerIndex(ps.dealerIndex as number);
+        if (ps.actionHistory) setPokerActionHistory(ps.actionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
+        if (ps.players) {
+          const players = ps.players as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; holeCards?: PokerCard[] }[];
+          setPokerPlayers(players.map(p => ({
+            seatIndex: p.seatIndex, stack: p.stack, currentBet: p.currentBet,
+            hasFolded: p.hasFolded, isAllIn: p.isAllIn, isDealer: p.isDealer, isEliminated: p.isEliminated,
+            playerId: p.playerId,
+          })));
+          // Find our seat and extract hole cards
+          const ourAgent = myAgentId ?? agentIdRef.current;
+          if (ourAgent) {
+            const ourPlayer = players.find(p => p.playerId === ourAgent);
+            if (ourPlayer) {
+              setPokerSeatIndex(ourPlayer.seatIndex);
+              if (ourPlayer.holeCards) setPokerHoleCards(ourPlayer.holeCards);
+            }
+          }
+        }
       }
     } catch {
       /* fetch failed — WS will handle it */
@@ -317,9 +353,17 @@ function PlayContent() {
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
-        if (data.pokerSeatIndex != null) setPokerSeatIndex(data.pokerSeatIndex as number);
+        if (data.pokerSeatIndex != null) {
+          setPokerSeatIndex(data.pokerSeatIndex as number);
+        }
+        // Use backend's currentPlayerIndex if available, fallback to seatIndex (it IS our turn)
+        if (data.pokerCurrentPlayerIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerCurrentPlayerIndex as number);
+        } else if (data.pokerSeatIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerSeatIndex as number);
+        }
         if (data.pokerPlayers) {
-          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean }[];
+          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
           setPokerPlayers(players);
           const dealer = players.findIndex(p => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
@@ -353,7 +397,7 @@ function PlayContent() {
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
         if (data.pokerPlayers) {
-          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean }[];
+          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
           setPokerPlayers(players);
           const dealer = players.findIndex(p => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
@@ -387,6 +431,22 @@ function PlayContent() {
             (currentTurn === "b" && agents.b?.agentId === agent);
           setIsMyTurn(myTurn);
         }
+        // Poker state restoration on reconnect
+        if (data.pokerPlayers) {
+          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
+          setPokerPlayers(players);
+          const dealer = players.findIndex(p => p.isDealer);
+          if (dealer !== -1) setPokerDealerIndex(dealer);
+        }
+        if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
+        if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
+        if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
+        if (data.pokerHoleCards) setPokerHoleCards(data.pokerHoleCards as PokerCard[]);
+        if (data.pokerSeatIndex != null) setPokerSeatIndex(data.pokerSeatIndex as number);
+        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerCurrentPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerCurrentPlayerIndex as number);
+        if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
+        if (data.gameType) setGameType(data.gameType as string);
       }
 
       if (type === "agent:thinking") {
@@ -507,9 +567,18 @@ function PlayContent() {
           matchIdRef.current = mid;
           setMatchId(mid);
           if (data.gameType) setGameType(data.gameType as string);
+          setPokerLobbyInfo(null);
           setPhase("entering");
           switchToMatchSocket(mid);
         }
+      }
+
+      if (type === "poker:lobby_update") {
+        setPokerLobbyInfo({
+          playerCount: data.playerCount as number,
+          countdownMs: data.countdownMs as number | null,
+          players: (data.players as { name: string }[]) ?? [],
+        });
       }
     });
 
@@ -622,6 +691,7 @@ function PlayContent() {
     setPokerSeatIndex(0);
     setPokerCurrentPlayerIndex(0);
     setPokerDealerIndex(0);
+    setPokerLobbyInfo(null);
     fetchBalance();
   };
 
@@ -815,6 +885,36 @@ function PlayContent() {
               <PulseRing />
               <h2 className="text-xl font-display font-bold text-arena-text">{t.play.waiting}</h2>
               <p className="text-sm text-arena-muted max-w-sm mx-auto">{t.play.waitingDesc}</p>
+
+              {/* Poker lobby info */}
+              {gameType === "poker" && pokerLobbyInfo && (
+                <div className="space-y-3 max-w-sm mx-auto">
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">
+                      {pokerLobbyInfo.playerCount}
+                    </span>
+                    <span className="text-sm text-arena-muted">/9 players</span>
+                    {pokerLobbyInfo.countdownMs != null && pokerLobbyInfo.countdownMs > 0 && (
+                      <>
+                        <span className="text-arena-border-light">|</span>
+                        <span className="text-lg font-bold font-mono tabular-nums text-arena-accent">
+                          {Math.ceil(pokerLobbyInfo.countdownMs / 1000)}s
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {pokerLobbyInfo.players.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {pokerLobbyInfo.players.map((p, i) => (
+                        <span key={i} className="text-xs bg-arena-primary/10 text-arena-primary px-2 py-1 rounded-full font-medium">
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Button variant="danger" onClick={handleCancelQueue} isLoading={cancelling}>
                 {t.play.cancelQueue}
               </Button>
@@ -943,41 +1043,75 @@ function PlayContent() {
                 {/* Players */}
                 <Card>
                   <div className="p-4">
-                    <div className="space-y-2.5">
-                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
-                        !isMyTurn && mySide !== "a" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
-                      }`}>
-                        <div
-                          className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
-                          style={{ backgroundColor: sideAColor }}
-                        />
-                        <span className="text-sm text-arena-text font-medium truncate">{playerA || sideALabel}</span>
-                        {mySide === "a" && (
-                          <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
-                            {t.play.you}
-                          </span>
-                        )}
+                    {gameType === "poker" && pokerPlayers.length > 0 ? (
+                      <>
+                        <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-3">
+                          Players ({pokerPlayers.filter(p => !p.isEliminated).length} active)
+                        </h3>
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                          {pokerPlayers.map((player, idx) => (
+                            <div key={player.playerId ?? `p${idx}`} className={`
+                              flex items-center gap-2 rounded-lg px-3 py-2 transition-colors text-sm
+                              ${idx === pokerCurrentPlayerIndex ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""}
+                              ${player.isEliminated ? "opacity-30" : ""}
+                              ${player.hasFolded && !player.isEliminated ? "opacity-50" : ""}
+                            `}>
+                              <div className="w-2 h-2 rounded-full shrink-0" style={{
+                                backgroundColor: player.isEliminated ? "#666" :
+                                  player.hasFolded ? "#999" :
+                                  player.seatIndex === pokerSeatIndex ? "#10B981" : "#8B5CF6"
+                              }} />
+                              <span className={`truncate flex-1 ${player.isEliminated ? "line-through" : ""}`}>
+                                {player.name ?? `Player ${idx + 1}`}
+                              </span>
+                              {player.seatIndex === pokerSeatIndex && (
+                                <span className="text-[8px] bg-arena-primary/10 text-arena-primary px-1 py-0.5 rounded-full uppercase tracking-wider font-bold">YOU</span>
+                              )}
+                              {player.isDealer && (
+                                <span className="w-4 h-4 rounded-full bg-yellow-400 text-black text-[7px] font-extrabold flex items-center justify-center">D</span>
+                              )}
+                              <span className="text-xs font-mono text-arena-muted/60 tabular-nums">{player.stack}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2.5">
+                        <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                          !isMyTurn && mySide !== "a" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                        }`}>
+                          <div
+                            className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
+                            style={{ backgroundColor: sideAColor }}
+                          />
+                          <span className="text-sm text-arena-text font-medium truncate">{playerA || sideALabel}</span>
+                          {mySide === "a" && (
+                            <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+                              {t.play.you}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 px-3">
+                          <div className="flex-1 border-t border-arena-border-light/60" />
+                          <span className="text-[10px] text-arena-muted font-mono">VS</span>
+                          <div className="flex-1 border-t border-arena-border-light/60" />
+                        </div>
+                        <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                          !isMyTurn && mySide !== "b" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
+                        }`}>
+                          <div
+                            className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
+                            style={{ backgroundColor: sideBColor }}
+                          />
+                          <span className="text-sm text-arena-text font-medium truncate">{playerB || sideBLabel}</span>
+                          {mySide === "b" && (
+                            <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+                              {t.play.you}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 px-3">
-                        <div className="flex-1 border-t border-arena-border-light/60" />
-                        <span className="text-[10px] text-arena-muted font-mono">VS</span>
-                        <div className="flex-1 border-t border-arena-border-light/60" />
-                      </div>
-                      <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
-                        !isMyTurn && mySide !== "b" ? "bg-arena-primary/[0.04] ring-1 ring-arena-primary/20" : ""
-                      }`}>
-                        <div
-                          className="w-5 h-5 rounded-full shadow-sm border border-black/10 shrink-0"
-                          style={{ backgroundColor: sideBColor }}
-                        />
-                        <span className="text-sm text-arena-text font-medium truncate">{playerB || sideBLabel}</span>
-                        {mySide === "b" && (
-                          <span className="text-[9px] bg-arena-primary/10 text-arena-primary px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
-                            {t.play.you}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </Card>
 
