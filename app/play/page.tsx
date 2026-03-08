@@ -629,7 +629,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000, chain: selectedChain });
+      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
       setAgentId(result.agentId);
       setPhase("queue");
     } catch (err) {
