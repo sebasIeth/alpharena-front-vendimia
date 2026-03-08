@@ -19,7 +19,8 @@
       "WebFetch(domain:api.dexscreener.com)",
       "Bash(bash:*)",
       "Bash(ssh:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ]
   }
 }
