@@ -321,6 +321,21 @@ export interface ClaimBetResponse {
   chain: Chain;
 }
 
+export interface PendingClaim {
+  matchId: string;
+  chain: Chain;
+  gameType: string;
+  outcome: "won" | "refund";
+  betOnA: string;
+  betOnB: string;
+  winnings: number;
+  endedAt: string;
+}
+
+export interface PendingClaimsResponse {
+  claims: PendingClaim[];
+}
+
 // ========== Matchmaking ==========
 export interface QueueEntry {
   id: string;

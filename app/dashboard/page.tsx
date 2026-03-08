@@ -21,7 +21,7 @@ import {
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import { getExplorerTxUrl } from "@/lib/api";
-import type { Agent, Match, PlayBalance, UserBets, Chain } from "@/lib/types";
+import type { Agent, Match, PlayBalance, PendingClaim, Chain } from "@/lib/types";
 
 /* ═══════════════════════════════════════════════════════
    SVG ICONS
@@ -274,15 +274,6 @@ function DashboardContent() {
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
 
   /* ── Pending Claims state ── */
-  interface PendingClaim {
-    matchId: string;
-    chain: Chain;
-    outcome: string;
-    winnings: number;
-    bets: { onA: string; onB: string; total: string; claimed: boolean };
-    matchAgents: string[];
-    gameType: string;
-  }
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>([]);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [claimMsg, setClaimMsg] = useState<{ matchId: string; type: "success" | "error"; text: string; txHash?: string; chain?: Chain } | null>(null);
@@ -290,50 +281,26 @@ function DashboardContent() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsRes, matchesRes, balRes] = await Promise.allSettled([
+        const [agentsRes, matchesRes, balRes, claimsRes] = await Promise.allSettled([
           api.getAgents(),
-          api.getMatches({ limit: 20 }),
+          api.getMatches({ limit: 6 }),
           api.playBalance(),
+          api.getMyPendingClaims(),
         ]);
         if (agentsRes.status === "fulfilled") setAgents(agentsRes.value.agents || []);
-        let matches: Match[] = [];
-        if (matchesRes.status === "fulfilled") {
-          matches = (matchesRes.value.matches || []).map((m) => {
-            const raw = m as any;
-            return {
-              ...m,
-              id: m.id || raw._id,
-              winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
-            };
-          });
-          setRecentMatches(matches.slice(0, 6));
-        }
-        if (balRes.status === "fulfilled") setPlayBalance(balRes.value);
-
-        // Check pending claims for completed matches
-        const completedMatches = matches.filter((m) => m.status === "completed");
-        if (completedMatches.length > 0) {
-          const betsResults = await Promise.allSettled(
-            completedMatches.map((m) => api.getMyBets(m.id))
+        if (matchesRes.status === "fulfilled")
+          setRecentMatches(
+            (matchesRes.value.matches || []).map((m) => {
+              const raw = m as any;
+              return {
+                ...m,
+                id: m.id || raw._id,
+                winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+              };
+            })
           );
-          const claims: PendingClaim[] = [];
-          betsResults.forEach((res, idx) => {
-            if (res.status === "fulfilled" && res.value.canClaim) {
-              const m = completedMatches[idx];
-              const agents = normalizeMatchAgents(m.agents);
-              claims.push({
-                matchId: m.id,
-                chain: (res.value.chain || m.chain || "base") as Chain,
-                outcome: res.value.outcome,
-                winnings: res.value.winnings,
-                bets: res.value.bets,
-                matchAgents: agents.map((a) => a.agentName),
-                gameType: m.gameType,
-              });
-            }
-          });
-          setPendingClaims(claims);
-        }
+        if (balRes.status === "fulfilled") setPlayBalance(balRes.value);
+        if (claimsRes.status === "fulfilled") setPendingClaims(claimsRes.value.claims || []);
       } catch {
         /* silently handle */
       } finally {
@@ -851,11 +818,11 @@ function DashboardContent() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-arena-text-bright">
-                      {claim.matchAgents.join(" vs ")}
-                    </span>
-                    <span className="text-[10px] font-mono text-arena-muted capitalize px-1.5 py-0.5 bg-arena-bg/50 rounded">
+                    <span className="text-sm font-semibold text-arena-text-bright capitalize">
                       {claim.gameType}
+                    </span>
+                    <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
+                      {claim.matchId.slice(0, 8)}...
                     </span>
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
                       claim.chain === "celo"
@@ -867,7 +834,7 @@ function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-arena-muted font-mono">
-                      {t.betting.yourTotal}: {claim.bets.total} ALPHA
+                      {t.betting.yourTotal}: {(parseFloat(claim.betOnA || "0") + parseFloat(claim.betOnB || "0")).toFixed(2)} ALPHA
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">

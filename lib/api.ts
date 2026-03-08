@@ -32,6 +32,7 @@ import type {
   UserBets,
   PlaceBetResponse,
   ClaimBetResponse,
+  PendingClaimsResponse,
 } from "./types";
 
 /**
@@ -359,6 +360,10 @@ class ApiClient {
 
   async claimBet(matchId: string): Promise<ClaimBetResponse> {
     return this.post<ClaimBetResponse>("/betting/claim", { matchId });
+  }
+
+  async getMyPendingClaims(): Promise<PendingClaimsResponse> {
+    return this.get<PendingClaimsResponse>("/betting/my-pending-claims");
   }
 
   // ========== Socket.IO ==========
