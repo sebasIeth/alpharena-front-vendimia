@@ -22,8 +22,13 @@ export interface LoginPayload {
 export interface RegisterPayload {
   username: string;
   password: string;
-  email?: string;
+  email: string;
+  verificationCode: string;
 }
+
+// ========== Chain ==========
+export const SUPPORTED_CHAINS = ['base', 'celo'] as const;
+export type Chain = (typeof SUPPORTED_CHAINS)[number];
 
 // ========== Agent ==========
 export interface AgentStats {
@@ -48,6 +53,7 @@ export interface Agent {
   openclawAgentId?: string;
   selfclawPublicKey?: string;
   walletAddress?: string;
+  chain: Chain;
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
@@ -63,17 +69,20 @@ export interface AgentBalance {
   walletAddress: string;
   alpha: string;
   eth: string;
+  chain: Chain;
 }
 
 export interface WithdrawResponse {
   txHash: string;
   amount: number;
   to: string;
+  chain: Chain;
 }
 
 export interface CreateAgentPayload {
   name: string;
   type?: AgentType;
+  chain?: Chain;
   endpointUrl?: string;
   openclawUrl?: string;
   openclawToken?: string;
@@ -115,6 +124,7 @@ export interface MatchAgent {
 export interface Match {
   id: string;
   gameType: string;
+  chain?: Chain;
   status: "pending" | "active" | "completed" | "cancelled" | "error";
   agents: MatchAgent[];
   stakeAmount: number;
@@ -238,6 +248,94 @@ export interface PokerLegalActions {
   allInAmount: number;
 }
 
+// ========== Betting ==========
+export interface BettingContracts {
+  arena: string;
+  alpha: string;
+  chain: Chain;
+}
+
+export type OnChainBettingState = "none" | "escrowed" | "settled" | "refunded";
+
+export interface BettingPoolData {
+  totalBetsA: number;
+  totalBetsB: number;
+  totalPool: number;
+  netPool?: number;
+  noContest: boolean;
+  percentA: number;
+  percentB: number;
+}
+
+export interface BettingInfo {
+  matchId: string;
+  chain: Chain;
+  gameType: string;
+  status: string;
+  stakeAmount: number;
+  agents: {
+    a: { agentId: string; name: string; eloAtStart: number };
+    b: { agentId: string; name: string; eloAtStart: number };
+  };
+  betting: {
+    open: boolean;
+    onChainState: OnChainBettingState;
+    pool: BettingPoolData;
+    odds: { a: number; b: number };
+    feePercent: number;
+  };
+  winner: { side: "a" | "b"; agentName: string; agentId: string } | null;
+  contracts: { arena: string; alpha: string };
+}
+
+export interface BettingPoolResponse {
+  matchId: string;
+  chain: Chain;
+  status: string;
+  bettingOpen: boolean;
+  pool: BettingPoolData;
+}
+
+export interface UserBets {
+  matchId: string;
+  chain: Chain;
+  walletAddress: string;
+  bets: { onA: string; onB: string; total: string; claimed: boolean };
+  potential: { winIfA: number; winIfB: number };
+  outcome: "won" | "lost" | "refund" | "pending" | "no_bet";
+  winnings: number;
+  canClaim: boolean;
+}
+
+export interface PlaceBetResponse {
+  txHash: string;
+  matchId: string;
+  onAgentA: boolean;
+  amount: number;
+  chain: Chain;
+}
+
+export interface ClaimBetResponse {
+  txHash: string;
+  matchId: string;
+  chain: Chain;
+}
+
+export interface PendingClaim {
+  matchId: string;
+  chain: Chain;
+  gameType: string;
+  outcome: "won" | "refund";
+  betOnA: string;
+  betOnB: string;
+  winnings: number;
+  endedAt: string;
+}
+
+export interface PendingClaimsResponse {
+  claims: PendingClaim[];
+}
+
 // ========== Matchmaking ==========
 export interface QueueEntry {
   id: string;
@@ -340,6 +438,7 @@ export interface PlayStatus {
 export interface PlayJoinPayload {
   gameType: string;
   stakeAmount: number;
+  chain?: Chain;
 }
 
 // ========== API Error ==========

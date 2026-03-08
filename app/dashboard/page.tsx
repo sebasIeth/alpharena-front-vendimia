@@ -20,7 +20,8 @@ import {
   truncateAddress,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
-import type { Agent, Match, PlayBalance } from "@/lib/types";
+import { getExplorerTxUrl } from "@/lib/api";
+import type { Agent, Match, PlayBalance, PendingClaim, Chain } from "@/lib/types";
 
 /* ═══════════════════════════════════════════════════════
    SVG ICONS
@@ -272,13 +273,19 @@ function DashboardContent() {
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
 
+  /* ── Pending Claims state ── */
+  const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>([]);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimMsg, setClaimMsg] = useState<{ matchId: string; type: "success" | "error"; text: string; txHash?: string; chain?: Chain } | null>(null);
+
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsRes, matchesRes, balRes] = await Promise.allSettled([
+        const [agentsRes, matchesRes, balRes, claimsRes] = await Promise.allSettled([
           api.getAgents(),
           api.getMatches({ limit: 6 }),
           api.playBalance(),
+          api.getMyPendingClaims(),
         ]);
         if (agentsRes.status === "fulfilled") setAgents(agentsRes.value.agents || []);
         if (matchesRes.status === "fulfilled")
@@ -293,6 +300,7 @@ function DashboardContent() {
             })
           );
         if (balRes.status === "fulfilled") setPlayBalance(balRes.value);
+        if (claimsRes.status === "fulfilled") setPendingClaims(claimsRes.value.claims || []);
       } catch {
         /* silently handle */
       } finally {
@@ -329,6 +337,20 @@ function DashboardContent() {
       setWithdrawError(err?.message || "Withdraw failed");
     } finally {
       setWithdrawLoading(false);
+    }
+  };
+
+  const handleClaimBet = async (matchId: string, chain: Chain) => {
+    setClaimingId(matchId);
+    setClaimMsg(null);
+    try {
+      const res = await api.claimBet(matchId);
+      setClaimMsg({ matchId, type: "success", text: t.betting.claimSuccess, txHash: res.txHash, chain: res.chain || chain });
+      setPendingClaims((prev) => prev.filter((c) => c.matchId !== matchId));
+    } catch (err) {
+      setClaimMsg({ matchId, type: "error", text: err instanceof Error ? err.message : t.betting.claimFailed });
+    } finally {
+      setClaimingId(null);
     }
   };
 
@@ -765,6 +787,107 @@ function DashboardContent() {
               {withdrawSuccess && <p className="text-xs text-arena-success mt-1">{withdrawSuccess}</p>}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          PENDING CLAIMS
+          ═══════════════════════════════════════════════════ */}
+      {pendingClaims.length > 0 && (
+        <div
+          className="dash-glass-card rounded-2xl p-6 mb-8 opacity-0 animate-fade-up ring-1 ring-arena-accent/20"
+          style={{ animationDelay: "0.24s", animationFillMode: "both" }}
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
+              <IconCoin className="w-5 h-5 text-arena-accent" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">
+                {t.betting.pendingClaims}
+              </h3>
+              <p className="text-xs text-arena-muted">{pendingClaims.length} {t.betting.unclaimedBets}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {pendingClaims.map((claim) => (
+              <div
+                key={claim.matchId}
+                className="flex items-center justify-between gap-4 p-4 bg-white/50 border border-arena-border-light/40 rounded-xl"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-arena-text-bright capitalize">
+                      {claim.gameType}
+                    </span>
+                    <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
+                      {claim.matchId.slice(0, 8)}...
+                    </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                      claim.chain === "celo"
+                        ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                    }`}>
+                      {claim.chain === "celo" ? "Celo" : "Base"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-xs text-arena-muted font-mono">
+                      {t.betting.yourTotal}: {(parseFloat(claim.betOnA || "0") + parseFloat(claim.betOnB || "0")).toFixed(2)} ALPHA
+                    </span>
+                    {claim.winnings > 0 && (
+                      <span className="text-xs font-semibold text-arena-success font-mono">
+                        +{claim.winnings.toFixed(2)} ALPHA
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
+                      claim.outcome === "won" ? "bg-arena-success/10 text-arena-success" :
+                      claim.outcome === "refund" ? "bg-arena-muted/10 text-arena-muted" :
+                      "bg-arena-accent/10 text-arena-accent"
+                    }`}>
+                      {claim.outcome === "won" ? t.common.won : claim.outcome === "refund" ? t.betting.refunded : claim.outcome}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/matches/${claim.matchId}`}>
+                    <Button variant="ghost" size="sm">
+                      <IconArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    onClick={() => handleClaimBet(claim.matchId, claim.chain)}
+                    disabled={claimingId === claim.matchId}
+                    isLoading={claimingId === claim.matchId}
+                  >
+                    {claimingId === claim.matchId ? t.betting.claiming : claim.outcome === "refund" ? t.betting.claimRefund : t.betting.claimWinnings}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Claim feedback */}
+          {claimMsg && (
+            <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+              claimMsg.type === "success" ? "bg-arena-success/10 text-arena-success" : "bg-arena-danger/10 text-arena-danger"
+            }`}>
+              {claimMsg.text}
+              {claimMsg.txHash && claimMsg.chain && (
+                <a
+                  href={getExplorerTxUrl(claimMsg.txHash, claimMsg.chain)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 underline text-xs"
+                >
+                  {t.common.viewOnExplorer}
+                </a>
+              )}
+            </div>
+          )}
         </div>
       )}
 

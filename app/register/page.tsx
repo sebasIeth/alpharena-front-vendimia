@@ -14,14 +14,17 @@ export default function RegisterPage() {
   const router = useRouter();
   const { login, isAuthenticated, initialize } = useAuthStore();
   const { t } = useLanguage();
+  const [step, setStep] = useState<"form" | "verify">("form");
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
+    verificationCode: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -33,49 +36,78 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, router]);
 
+  const validateForm = (): boolean => {
+    if (!formData.username.trim() || !formData.password || !formData.email.trim()) {
+      setError(t.register.fillRequired);
+      return false;
+    }
+    if (formData.username.trim().length < 3) {
+      setError(t.register.usernameMin);
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError(t.register.passwordMin);
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError(t.register.passwordMismatch);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validateForm()) return;
+
+    setSendingCode(true);
+    try {
+      await api.sendVerificationCode(formData.email.trim());
+      setStep("verify");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.register.registerFailed);
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError("");
+    setSendingCode(true);
+    try {
+      await api.sendVerificationCode(formData.email.trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.register.registerFailed);
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!formData.verificationCode.trim()) {
+      setError(t.register.codeRequired);
+      return;
+    }
+
     setLoading(true);
-
-    if (!formData.username.trim() || !formData.password || !formData.email.trim()) {
-      setError(t.register.fillRequired);
-      setLoading(false);
-      return;
-    }
-
-    if (formData.username.trim().length < 3) {
-      setError(t.register.usernameMin);
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError(t.register.passwordMin);
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError(t.register.passwordMismatch);
-      setLoading(false);
-      return;
-    }
-
     try {
       const payload = {
         username: formData.username.trim(),
         password: formData.password,
         email: formData.email.trim(),
+        verificationCode: formData.verificationCode.trim(),
       };
 
       const data = await api.register(payload);
       login(data.token, data.user);
       router.push("/dashboard");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t.register.registerFailed
-      );
+      setError(err instanceof Error ? err.message : t.register.registerFailed);
     } finally {
       setLoading(false);
     }
@@ -101,9 +133,81 @@ export default function RegisterPage() {
   const strength = getPasswordStrength();
   const strengthColors = ["", "bg-arena-danger", "bg-arena-accent", "bg-arena-primary-light", "bg-arena-success"];
 
+  if (step === "verify") {
+    return (
+      <AuthLayout title={t.register.title} subtitle={t.register.subtitle}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="auth-error">
+              {error}
+            </div>
+          )}
+
+          <div className="opacity-0 animate-fade-up auth-stagger-1">
+            <p className="text-sm text-arena-muted mb-1">
+              {t.register.codeSent}{" "}
+              <span className="text-arena-text font-medium">{formData.email}</span>
+            </p>
+          </div>
+
+          <div className="opacity-0 animate-fade-up auth-stagger-2">
+            <div className="auth-input-focus">
+              <Input
+                label={t.register.verificationCode}
+                type="text"
+                placeholder={t.register.codePlaceholder}
+                value={formData.verificationCode}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setFormData({ ...formData, verificationCode: val });
+                }}
+                required
+                autoComplete="one-time-code"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <div className="opacity-0 animate-fade-up auth-stagger-3 pt-1">
+            <Button
+              type="submit"
+              isLoading={loading}
+              className="w-full"
+              size="lg"
+            >
+              {t.register.createAccount}
+            </Button>
+          </div>
+
+          <div className="opacity-0 animate-fade-up auth-stagger-4 flex items-center justify-between text-sm">
+            <button
+              type="button"
+              onClick={handleResendCode}
+              disabled={sendingCode}
+              className="text-arena-primary hover:text-arena-primary-light transition-colors font-medium disabled:opacity-50"
+            >
+              {sendingCode ? t.register.sendingCode : t.register.resendCode}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("form");
+                setFormData({ ...formData, verificationCode: "" });
+                setError("");
+              }}
+              className="text-arena-muted hover:text-arena-text transition-colors"
+            >
+              {t.register.changeEmail}
+            </button>
+          </div>
+        </form>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout title={t.register.title} subtitle={t.register.subtitle}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSendCode} className="space-y-4">
         {error && (
           <div className="auth-error">
             {error}
@@ -221,11 +325,11 @@ export default function RegisterPage() {
         <div className="opacity-0 animate-fade-up auth-stagger-5 pt-1">
           <Button
             type="submit"
-            isLoading={loading}
+            isLoading={sendingCode}
             className="w-full"
             size="lg"
           >
-            {t.register.createAccount}
+            {sendingCode ? t.register.sendingCode : t.register.sendCode}
           </Button>
         </div>
       </form>

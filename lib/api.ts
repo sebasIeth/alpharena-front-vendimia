@@ -25,6 +25,14 @@ import type {
   PlayJoinPayload,
   PlayStatus,
   PlayBalance,
+  Chain,
+  BettingContracts,
+  BettingInfo,
+  BettingPoolResponse,
+  UserBets,
+  PlaceBetResponse,
+  ClaimBetResponse,
+  PendingClaimsResponse,
 } from "./types";
 
 /**
@@ -129,6 +137,10 @@ class ApiClient {
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     return this.post<AuthResponse>("/auth/register", payload, false);
+  }
+
+  async sendVerificationCode(email: string): Promise<{ message: string }> {
+    return this.post<{ message: string }>("/auth/send-verification-code", { email }, false);
   }
 
   async getMe(): Promise<{ user: User }> {
@@ -310,8 +322,9 @@ class ApiClient {
     return this.get("/play/status");
   }
 
-  async playBalance(): Promise<PlayBalance> {
-    const raw = await this.get<PlayBalance>("/play/balance");
+  async playBalance(chain?: Chain): Promise<PlayBalance> {
+    const query = chain ? `?chain=${chain}` : "";
+    const raw = await this.get<PlayBalance>(`/play/balance${query}`);
     return normalizeBalance(raw);
   }
 
@@ -321,6 +334,36 @@ class ApiClient {
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
     return this.post("/play/move", { matchId, move });
+  }
+
+  // ========== Betting ==========
+  async getBettingContracts(chain?: Chain): Promise<BettingContracts> {
+    const query = chain ? `?chain=${chain}` : "";
+    return this.get<BettingContracts>(`/betting/contracts${query}`, false);
+  }
+
+  async getBettingInfo(matchId: string): Promise<BettingInfo> {
+    return this.get<BettingInfo>(`/betting/${matchId}/info`, false);
+  }
+
+  async getBettingPool(matchId: string): Promise<BettingPoolResponse> {
+    return this.get<BettingPoolResponse>(`/betting/${matchId}/pool`, false);
+  }
+
+  async getMyBets(matchId: string): Promise<UserBets> {
+    return this.get<UserBets>(`/betting/my-bets/${matchId}`);
+  }
+
+  async placeBet(matchId: string, onAgentA: boolean, amount: number): Promise<PlaceBetResponse> {
+    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentA, amount });
+  }
+
+  async claimBet(matchId: string): Promise<ClaimBetResponse> {
+    return this.post<ClaimBetResponse>("/betting/claim", { matchId });
+  }
+
+  async getMyPendingClaims(): Promise<PendingClaimsResponse> {
+    return this.get<PendingClaimsResponse>("/betting/my-pending-claims");
   }
 
   // ========== Socket.IO ==========
@@ -349,3 +392,19 @@ class ApiClient {
 }
 
 export const api = new ApiClient(API_URL);
+
+/** Build a block-explorer transaction URL for the given chain. */
+export function getExplorerTxUrl(txHash: string, chain: Chain): string {
+  const isTestnet = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "testnet";
+  switch (chain) {
+    case "celo":
+      return isTestnet
+        ? `https://alfajores.celoscan.io/tx/${txHash}`
+        : `https://celoscan.io/tx/${txHash}`;
+    case "base":
+    default:
+      return isTestnet
+        ? `https://sepolia.basescan.org/tx/${txHash}`
+        : `https://basescan.org/tx/${txHash}`;
+  }
+}

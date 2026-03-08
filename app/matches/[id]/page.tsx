@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, getExplorerTxUrl } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import type { Match } from "@/lib/types";
+import type { Match, Chain, BettingInfo, BettingPoolResponse, UserBets } from "@/lib/types";
 import { normalizeMatchAgents, formatRelativeTime } from "@/lib/utils";
 
 const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
@@ -179,6 +179,350 @@ function EloComparisonBar({
   );
 }
 
+/* ── Betting Panel ── */
+function BettingPanel({ match }: { match: Match }) {
+  const { t } = useLanguage();
+  const matchAgents = normalizeMatchAgents(match.agents);
+  const chain = match.chain || "base";
+
+  const [info, setInfo] = useState<BettingInfo | null>(null);
+  const [poolResp, setPoolResp] = useState<BettingPoolResponse | null>(null);
+  const [myBets, setMyBets] = useState<UserBets | null>(null);
+  const [betAmount, setBetAmount] = useState("");
+  const [betOnA, setBetOnA] = useState(true);
+  const [placing, setPlacing] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_token");
+
+  const fetchInfo = useCallback(() => {
+    api.getBettingInfo(match.id).then(setInfo).catch(() => {});
+  }, [match.id]);
+  const fetchPool = useCallback(() => {
+    api.getBettingPool(match.id).then(setPoolResp).catch(() => {});
+  }, [match.id]);
+  const fetchMyBets = useCallback(() => {
+    if (isLoggedIn) api.getMyBets(match.id).then(setMyBets).catch(() => {});
+  }, [match.id, isLoggedIn]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchInfo();
+    fetchPool();
+    fetchMyBets();
+  }, [fetchInfo, fetchPool, fetchMyBets]);
+
+  // Derive open state from either /info or /pool response
+  const bettingOpen = info?.betting?.open ?? poolResp?.bettingOpen ?? false;
+  const onChainState = info?.betting?.onChainState ?? "none";
+
+  // Poll pool every 10s while betting is open
+  useEffect(() => {
+    if (!bettingOpen) return;
+    pollRef.current = setInterval(() => {
+      fetchPool();
+    }, 10000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [bettingOpen, fetchPool]);
+
+  const handlePlaceBet = async () => {
+    const amount = parseFloat(betAmount);
+    if (!amount || amount < 0.01) return;
+    setPlacing(true);
+    setMsg(null);
+    setTxHash(null);
+    try {
+      const res = await api.placeBet(match.id, betOnA, amount);
+      setTxHash(res.txHash);
+      setMsg({ type: "success", text: t.betting.betPlaced });
+      setBetAmount("");
+      fetchPool();
+      fetchMyBets();
+      fetchInfo();
+    } catch (err) {
+      setMsg({ type: "error", text: err instanceof Error ? err.message : t.betting.betFailed });
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    setMsg(null);
+    setTxHash(null);
+    try {
+      const res = await api.claimBet(match.id);
+      setTxHash(res.txHash);
+      setMsg({ type: "success", text: t.betting.claimSuccess });
+      fetchMyBets();
+      fetchInfo();
+    } catch (err) {
+      setMsg({ type: "error", text: err instanceof Error ? err.message : t.betting.claimFailed });
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  // Don't render if no data or on-chain state is none
+  if (!info && !poolResp) return null;
+  if (onChainState === "none" && !poolResp) return null;
+
+  // Pool data: prefer lightweight /pool response, fall back to /info
+  const pool = poolResp?.pool ?? info?.betting?.pool;
+  const totalPool = pool?.totalPool ?? 0;
+  const poolA = pool?.totalBetsA ?? 0;
+  const poolB = pool?.totalBetsB ?? 0;
+  const pctA = pool?.percentA ?? (totalPool > 0 ? Math.round((poolA / totalPool) * 100) : 50);
+  const pctB = pool?.percentB ?? (100 - pctA);
+
+  const isSettled = onChainState === "settled";
+  const isRefunded = onChainState === "refunded";
+
+  // Odds from /info
+  const oddsA = info?.betting?.odds?.a;
+  const oddsB = info?.betting?.odds?.b;
+  const feePercent = info?.betting?.feePercent;
+
+  // Names from /info agents or from match agents
+  const nameA = info?.agents?.a?.name ?? matchAgents[0]?.agentName ?? "Agent A";
+  const nameB = info?.agents?.b?.name ?? matchAgents[1]?.agentName ?? "Agent B";
+
+  // User bets
+  const userOnA = parseFloat(myBets?.bets?.onA ?? "0");
+  const userOnB = parseFloat(myBets?.bets?.onB ?? "0");
+  const hasUserBets = userOnA > 0 || userOnB > 0;
+
+  return (
+    <div className="mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
+      <div className="dash-glass-card rounded-2xl p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-arena-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-[11px] text-arena-text font-semibold uppercase tracking-widest font-mono">
+              {t.betting.title}
+            </h3>
+          </div>
+          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${
+            bettingOpen ? "bg-arena-success/10 text-arena-success" :
+            isSettled ? "bg-arena-accent/10 text-arena-accent" :
+            isRefunded ? "bg-arena-muted/10 text-arena-muted" :
+            "bg-arena-muted/10 text-arena-muted"
+          }`}>
+            {bettingOpen ? t.betting.open : isSettled ? t.betting.settled : isRefunded ? t.betting.refunded : t.betting.bettingClosed}
+          </span>
+        </div>
+
+        {/* Pool Visualization */}
+        {totalPool > 0 ? (
+          <div className="mb-5">
+            {/* Labels */}
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
+                <span className="text-xs font-medium text-arena-text-bright truncate max-w-[120px]">{nameA}</span>
+                <span className="text-xs font-extrabold font-mono tabular-nums text-arena-text-bright">{poolA.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-extrabold font-mono tabular-nums text-arena-text-bright">{poolB.toFixed(2)}</span>
+                <span className="text-xs font-medium text-arena-text-bright truncate max-w-[120px]">{nameB}</span>
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
+              </div>
+            </div>
+            {/* Bar */}
+            <div className="elo-bar-track flex">
+              <div className="elo-bar-fill" style={{ width: `${pctA}%`, backgroundColor: PLAYER_COLORS[0] }} />
+              <div className="w-px bg-white/80 shrink-0" />
+              <div className="elo-bar-fill" style={{ width: `${pctB}%`, backgroundColor: PLAYER_COLORS[1] }} />
+            </div>
+            {/* Pool total + percentages */}
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[10px] font-mono text-arena-muted">{pctA.toFixed(1)}%</span>
+              <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {totalPool.toFixed(2)} ALPHA</span>
+              <span className="text-[10px] font-mono text-arena-muted">{pctB.toFixed(1)}%</span>
+            </div>
+
+            {/* Odds row */}
+            {oddsA != null && oddsB != null && (
+              <div className="flex items-center justify-between mt-2 px-1">
+                <span className="text-[10px] font-mono text-arena-muted">
+                  {t.betting.odds}: <span className="text-arena-text-bright font-semibold">{oddsA.toFixed(2)}x</span>
+                </span>
+                {feePercent != null && (
+                  <span className="text-[10px] font-mono text-arena-muted">
+                    Fee: {feePercent}%
+                  </span>
+                )}
+                <span className="text-[10px] font-mono text-arena-muted">
+                  {t.betting.odds}: <span className="text-arena-text-bright font-semibold">{oddsB.toFixed(2)}x</span>
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-arena-muted text-center py-4 mb-4">{t.betting.poolEmpty}</p>
+        )}
+
+        {/* Place Bet Form */}
+        {bettingOpen && (
+          <div className="border-t border-arena-border-light/40 pt-5">
+            {!isLoggedIn ? (
+              <p className="text-sm text-arena-muted text-center py-2">{t.betting.loginToBet}</p>
+            ) : (
+              <div className="space-y-3">
+                {/* Agent selector */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBetOnA(true)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border ${
+                      betOnA
+                        ? "bg-red-500/10 border-red-500/30 text-red-600"
+                        : "bg-white/50 border-arena-border-light/60 text-arena-muted hover:border-red-300"
+                    }`}
+                  >
+                    <div>{nameA}</div>
+                    {oddsA != null && <div className="text-[10px] font-mono opacity-70">{oddsA.toFixed(2)}x</div>}
+                  </button>
+                  <button
+                    onClick={() => setBetOnA(false)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border ${
+                      !betOnA
+                        ? "bg-blue-500/10 border-blue-500/30 text-blue-600"
+                        : "bg-white/50 border-arena-border-light/60 text-arena-muted hover:border-blue-300"
+                    }`}
+                  >
+                    <div>{nameB}</div>
+                    {oddsB != null && <div className="text-[10px] font-mono opacity-70">{oddsB.toFixed(2)}x</div>}
+                  </button>
+                </div>
+
+                {/* Amount input + button */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={betAmount}
+                      onChange={(e) => setBetAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="input-field w-full pr-16 font-mono"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-arena-muted font-mono">ALPHA</span>
+                  </div>
+                  <Button
+                    onClick={handlePlaceBet}
+                    disabled={placing || !betAmount || parseFloat(betAmount) < 0.01}
+                  >
+                    {placing ? t.betting.placing : t.betting.placeBet}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-arena-muted font-mono">{t.betting.minBet}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Claim Button */}
+        {myBets?.canClaim && (isSettled || isRefunded) && (
+          <div className="border-t border-arena-border-light/40 pt-5 mt-4">
+            {myBets.winnings > 0 && (
+              <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
+                {t.betting.payout}: {myBets.winnings.toFixed(2)} ALPHA
+              </p>
+            )}
+            <Button onClick={handleClaim} disabled={claiming} className="w-full">
+              {claiming ? t.betting.claiming : isRefunded ? t.betting.claimRefund : t.betting.claimWinnings}
+            </Button>
+          </div>
+        )}
+
+        {/* User's Bets */}
+        {hasUserBets && (
+          <div className="border-t border-arena-border-light/40 pt-5 mt-5">
+            <h4 className="text-[11px] text-arena-muted font-semibold uppercase tracking-wider font-mono mb-3">{t.betting.yourBets}</h4>
+            <div className="space-y-2">
+              {userOnA > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
+                    <span className="text-xs text-arena-text">{userOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
+                  </div>
+                  {myBets?.potential?.winIfA != null && myBets.potential.winIfA > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfA.toFixed(2)}</span>
+                  )}
+                </div>
+              )}
+              {userOnB > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
+                    <span className="text-xs text-arena-text">{userOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
+                  </div>
+                  {myBets?.potential?.winIfB != null && myBets.potential.winIfB > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfB.toFixed(2)}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Outcome badge */}
+            {myBets?.outcome && myBets.outcome !== "pending" && myBets.outcome !== "no_bet" && (
+              <div className={`mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                myBets.outcome === "won" ? "bg-arena-success/10 text-arena-success" :
+                myBets.outcome === "lost" ? "bg-arena-danger/10 text-arena-danger" :
+                "bg-arena-muted/10 text-arena-muted"
+              }`}>
+                {myBets.outcome === "won" ? t.common.won : myBets.outcome === "lost" ? t.common.lost : t.betting.refunded}
+                {myBets.outcome === "won" && myBets.winnings > 0 && (
+                  <span className="font-mono ml-1">+{myBets.winnings.toFixed(2)}</span>
+                )}
+              </div>
+            )}
+            {myBets?.bets?.claimed && (
+              <p className="text-[10px] text-arena-success font-semibold mt-2">{t.betting.claimed}</p>
+            )}
+          </div>
+        )}
+
+        {/* Winner info from /info */}
+        {info?.winner && (isSettled) && (
+          <div className="border-t border-arena-border-light/40 pt-4 mt-4">
+            <div className="flex items-center gap-2 text-xs text-arena-text">
+              <IconCrown className="w-4 h-4 text-arena-accent" />
+              <span className="font-semibold">{t.common.winner}:</span>
+              <span className="text-arena-text-bright font-bold">{info.winner.agentName}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Feedback message */}
+        {msg && (
+          <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+            msg.type === "success" ? "bg-arena-success/10 text-arena-success" : "bg-arena-danger/10 text-arena-danger"
+          }`}>
+            {msg.text}
+            {txHash && (
+              <a
+                href={getExplorerTxUrl(txHash, chain)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 underline text-xs"
+              >
+                {t.common.viewOnExplorer}
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MatchDetailPage() {
   const { t } = useLanguage();
   const params = useParams();
@@ -297,6 +641,15 @@ export default function MatchDetailPage() {
               <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2.5 py-1 rounded">
                 {match.gameType}
               </span>
+              {match.chain && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                  match.chain === "celo"
+                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
+                }`}>
+                  {match.chain === "celo" ? "Celo" : "Base"}
+                </span>
+              )}
               <Badge status={match.status} />
               {isActive && (
                 <span className="flex items-center gap-1.5 text-[11px] text-arena-success font-semibold uppercase tracking-wider">
@@ -451,7 +804,7 @@ export default function MatchDetailPage() {
                 <svg className="w-3 h-3 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                 </svg>
-                {match.moveCount} {t.common.moves.toLowerCase()}
+                {match.moveCount} {(match.gameType === "poker" ? t.common.hands : t.common.moves).toLowerCase()}
               </span>
             )}
             <span className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
@@ -466,6 +819,9 @@ export default function MatchDetailPage() {
 
       {/* ── Match Viewer ── */}
       <MatchViewer match={match} onMatchUpdate={handleMatchUpdate} />
+
+      {/* ── Betting Panel ── */}
+      {agents.length === 2 && <BettingPanel match={match} />}
 
       {/* ── Result Section (completed) ── */}
       {isCompleted && (

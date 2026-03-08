@@ -10,7 +10,22 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
 import { formatWinRate, formatElo, formatRelativeTime } from "@/lib/utils";
-import type { Agent } from "@/lib/types";
+import type { Agent, Chain } from "@/lib/types";
+
+/* ── Chain Badge ── */
+function ChainBadge({ chain }: { chain?: Chain }) {
+  if (!chain) return null;
+  const isCelo = chain === "celo";
+  return (
+    <span className={`shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded ${
+      isCelo
+        ? "bg-yellow-50 text-yellow-600 border border-yellow-200"
+        : "bg-blue-50 text-blue-600 border border-blue-200"
+    }`}>
+      {isCelo ? "Celo" : "Base"}
+    </span>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════
    SVG ICONS
@@ -234,6 +249,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 {agent.isHuman && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
                 )}
+                <ChainBadge chain={agent.chain} />
               </div>
               <div className="flex items-center gap-3 text-xs text-arena-muted">
                 {agent.gameTypes.map((gt) => (
@@ -341,6 +357,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
                 Human
               </span>
             )}
+            <ChainBadge chain={agent.chain} />
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             {agent.gameTypes.map((gt) => (
