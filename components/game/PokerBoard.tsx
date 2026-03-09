@@ -1,10 +1,22 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLanguage } from "@/lib/i18n";
 import type { PokerCard, PokerLegalActions, SidePot } from "@/lib/types";
 import type { ShowdownResult } from "@/lib/poker/engine";
 import type { PlayerViewInfo } from "@/lib/poker/useLocalPoker";
+
+/* ── Mobile detection hook ──────────────────────────── */
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 /* ── Suit helpers ─────────────────────────────────── */
 const SUIT_SYM: Record<string, string> = { hearts: "\u2665", diamonds: "\u2666", clubs: "\u2663", spades: "\u2660" };
@@ -12,24 +24,24 @@ const SUIT_CLR: Record<string, string> = { hearts: "text-red-500", diamonds: "te
 
 /* ── Card components ──────────────────────────────── */
 function CardFace({ card, size = "md", highlight = false }: { card: PokerCard; size?: "sm" | "md" | "lg" | "cc"; highlight?: boolean }) {
-  // cc = community card: 50x70 fixed, fits center without overlap
+  // cc = community card: responsive sizes for mobile → tablet → desktop
   const dim = {
     sm: "w-9 h-[52px]",
     md: "w-[52px] h-[74px]",
     lg: "w-16 h-[92px]",
-    cc: "w-[50px] h-[70px]",
+    cc: "w-[32px] h-[45px] sm:w-[42px] sm:h-[59px] md:w-[50px] md:h-[70px]",
   }[size] ?? "w-[52px] h-[74px]";
   const rankSz = {
     sm: "text-[8px]",
     md: "text-[11px]",
     lg: "text-sm",
-    cc: "text-[9px]",
+    cc: "text-[7px] sm:text-[8px] md:text-[10px]",
   }[size] ?? "text-[11px]";
   const suitSz = {
     sm: "text-sm",
     md: "text-xl",
     lg: "text-3xl",
-    cc: "text-base",
+    cc: "text-xs sm:text-sm md:text-base",
   }[size] ?? "text-xl";
   const clr = SUIT_CLR[card.suit] ?? "text-gray-900";
 
@@ -101,8 +113,14 @@ function getSeatsForPlayerCount(count: number) {
   return seats;
 }
 
-// Card size scales with player count so seats stay compact with many players
-function getCardSize(playerCount: number) {
+// Card size scales with player count and screen size
+function getCardSize(playerCount: number, isMobile: boolean) {
+  if (isMobile) {
+    if (playerCount <= 2) return { w: 28, h: 40, text: "text-[8px]" as const, gap: 2, infoMin: 50 };
+    if (playerCount <= 4) return { w: 24, h: 34, text: "text-[7px]" as const, gap: 1, infoMin: 44 };
+    if (playerCount <= 6) return { w: 20, h: 28, text: "text-[7px]" as const, gap: 1, infoMin: 38 };
+    return { w: 18, h: 26, text: "text-[6px]" as const, gap: 1, infoMin: 34 };
+  }
   if (playerCount <= 2) return { w: 40, h: 56, text: "text-[11px]" as const, gap: 3, infoMin: 72 };
   if (playerCount <= 4) return { w: 36, h: 50, text: "text-[10px]" as const, gap: 2, infoMin: 64 };
   if (playerCount <= 6) return { w: 30, h: 42, text: "text-[9px]" as const, gap: 2, infoMin: 56 };
@@ -383,6 +401,7 @@ export default function PokerBoard({
   showdownResult,
 }: PokerBoardProps) {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
 
   const isShowdown = !!showdownResult;
   const winnerIndices = new Set(showdownResult?.winners.map(w => w.playerIndex) ?? []);
@@ -391,7 +410,7 @@ export default function PokerBoard({
   for (let i = 0; i < 5; i++) filled.push(communityCards[i] ?? null);
 
   const seats = getSeatsForPlayerCount(players.length);
-  const cardSize = getCardSize(players.length);
+  const cardSize = getCardSize(players.length, isMobile);
 
   return (
     <div className="rounded-2xl bg-gradient-to-b from-[#0f2818] to-[#0a1f12] shadow-2xl">
@@ -410,7 +429,7 @@ export default function PokerBoard({
           aspect-[5/3] gives the oval more height than 16/10 so players 
           on top/bottom have room. On larger screens we can go wider.
         */}
-        <div className="relative w-full mx-auto aspect-[5/3] max-w-[700px]">
+        <div className="relative w-full mx-auto aspect-[4/3] sm:aspect-[5/3] max-w-[700px]">
 
           {/* Outer rail */}
           <div
@@ -440,7 +459,7 @@ export default function PokerBoard({
               {filled.map((c, i) =>
                 c
                   ? <CardFace key={`cc-${i}`} card={c} size="cc" />
-                  : <div key={`empty-${i}`} className="w-[50px] h-[70px] rounded-md border border-dashed border-white/15 flex-shrink-0" />
+                  : <div key={`empty-${i}`} className="w-[32px] h-[45px] sm:w-[42px] sm:h-[59px] md:w-[50px] md:h-[70px] rounded-md border border-dashed border-white/15 flex-shrink-0" />
               )}
             </div>
             <div className={`flex items-center gap-1.5 bg-black/40 rounded-full px-2.5 py-0.5 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
