@@ -50,6 +50,7 @@ export interface PlayerViewInfo {
   isEliminated: boolean;
   isDealer: boolean;
   isHuman: boolean;
+  isAgent?: boolean;
   aiProfile?: AIProfileType;
   holeCards?: PokerCard[];
 }

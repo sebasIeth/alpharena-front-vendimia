@@ -275,13 +275,11 @@ function PlayerSeat({
       <div className={`${cardSize.text} font-bold text-white truncate flex items-center justify-center gap-1`}
         style={{ maxWidth: cardSize.infoMin + 16 }}
       >
-        {player.name}
+        <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${player.isAgent ? "bg-yellow-400" : "bg-green-400"}`} />
+        {player.name}{player.isAgent ? "(A)" : ""}
         {player.isDealer && <DealerChip />}
         {player.isHuman && (
           <span className="inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
-        )}
-        {!player.isHuman && (
-          <span className="inline-flex px-1 rounded text-[7px] bg-purple-500/80 text-white font-bold uppercase">A</span>
         )}
       </div>
       <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack}</div>
