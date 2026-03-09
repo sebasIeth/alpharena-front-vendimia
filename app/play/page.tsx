@@ -369,9 +369,12 @@ function PlayContent() {
           setPokerCurrentPlayerIndex(data.pokerSeatIndex as number);
         }
         if (data.pokerPlayers) {
-          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
-          setPokerPlayers(players);
-          const dealer = players.findIndex(p => p.isDealer);
+          const incoming = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
+          setPokerPlayers(prev => incoming.map(p => {
+            const existing = prev.find(e => e.seatIndex === p.seatIndex);
+            return { ...p, name: p.name ?? existing?.name, playerId: p.playerId ?? existing?.playerId };
+          }));
+          const dealer = incoming.findIndex(p => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
         }
         if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
@@ -403,9 +406,13 @@ function PlayContent() {
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
         if (data.pokerPlayers) {
-          const players = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
-          setPokerPlayers(players);
-          const dealer = players.findIndex(p => p.isDealer);
+          const incoming = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string }[];
+          // Merge names from existing state if missing in update
+          setPokerPlayers(prev => incoming.map(p => {
+            const existing = prev.find(e => e.seatIndex === p.seatIndex);
+            return { ...p, name: p.name ?? existing?.name, playerId: p.playerId ?? existing?.playerId };
+          }));
+          const dealer = incoming.findIndex(p => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
         }
         if (data.pokerPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerPlayerIndex as number);
@@ -631,7 +638,15 @@ function PlayContent() {
       await api.playCancel().catch(() => {});
       const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
       setAgentId(result.agentId);
-      setPhase("queue");
+      // Check if already matched (race condition: match may start during playJoin)
+      const status = await api.playStatus().catch(() => null);
+      if (status?.inMatch && status.matchId) {
+        setMatchId(status.matchId);
+        if (status.gameType) setGameType(status.gameType);
+        setPhase("entering");
+      } else {
+        setPhase("queue");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.play.joinFailed);
     } finally {
