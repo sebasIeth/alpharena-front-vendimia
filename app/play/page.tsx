@@ -99,7 +99,7 @@ function PlayContent() {
   const [playerA, setPlayerA] = useState<string>("");
   const [playerB, setPlayerB] = useState<string>("");
   const [isCheck, setIsCheck] = useState(false);
-  const [agentThinking, setAgentThinking] = useState<string | null>(null);
+  const [agentThinking, setAgentThinking] = useState<{ text: string; agentName: string } | null>(null);
 
   // Local poker (vs AI)
   const [localPokerState, localPokerControls] = useLocalPoker();
@@ -132,6 +132,7 @@ function PlayContent() {
   const matchIdRef = useRef<string | null>(null);
   const agentIdRef = useRef<string | null>(null);
   const mySideRef = useRef<"a" | "b" | null>(null);
+  const pokerPlayersRef = useRef(pokerPlayers);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const balancePollRef = useRef<NodeJS.Timeout | null>(null);
   const queuePollRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,6 +140,7 @@ function PlayContent() {
   useEffect(() => { matchIdRef.current = matchId; }, [matchId]);
   useEffect(() => { agentIdRef.current = agentId; }, [agentId]);
   useEffect(() => { mySideRef.current = mySide; }, [mySide]);
+  useEffect(() => { pokerPlayersRef.current = pokerPlayers; }, [pokerPlayers]);
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -507,7 +509,24 @@ function PlayContent() {
         }
         const rawText = (data.raw ?? data.text ?? data.thinking ?? data.content ?? data.message) as string | undefined;
         if (rawText) {
-          setAgentThinking(rawText);
+          // Resolve agent name from poker players or fallback labels
+          const agentId = data.agentId as string | undefined;
+          const seatIdx = data.pokerSeatIndex as number | undefined;
+          let agentName = "Agent";
+          if (seatIdx != null) {
+            const player = pokerPlayersRef.current.find(p => p.seatIndex === seatIdx);
+            if (player?.name) agentName = player.name;
+          }
+          if (agentName === "Agent" && agentId) {
+            const player = pokerPlayersRef.current.find(p => p.playerId === agentId);
+            if (player?.name) agentName = player.name;
+          }
+          if (agentName === "Agent") {
+            const side = data.side as string | undefined;
+            if (side === "a" && playerA) agentName = playerA;
+            else if (side === "b" && playerB) agentName = playerB;
+          }
+          setAgentThinking({ text: rawText, agentName });
         }
       }
 
@@ -1236,7 +1255,7 @@ function PlayContent() {
 
             {/* Agent Reasoning — full width below the board */}
             {agentThinking && (() => {
-              const parsed = parseAgentThinking(agentThinking);
+              const parsed = parseAgentThinking(agentThinking.text);
               return (
                 <Card>
                   <div className="p-5">
@@ -1246,7 +1265,7 @@ function PlayContent() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                         </svg>
                       </div>
-                      <span className="text-sm font-display font-semibold text-arena-text">Agent Reasoning</span>
+                      <span className="text-sm font-display font-semibold text-arena-text">{agentThinking.agentName}</span>
                       {parsed.move && (
                         <span className="ml-auto text-[10px] font-mono font-bold bg-arena-primary/10 text-arena-primary px-2 py-1 rounded-md">
                           {parsed.move}
