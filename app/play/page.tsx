@@ -458,6 +458,13 @@ function PlayContent() {
         }
       }
 
+      if (type === "agent:thinking") {
+        // Agent is about to make a move — update active seat so UI highlights it
+        if (data.pokerSeatIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerSeatIndex as number);
+        }
+      }
+
       if (type === "match:state") {
         // Sent on reconnect — restore full board + turn state
         const boardData = (data.currentBoard ?? data.board) as unknown;
