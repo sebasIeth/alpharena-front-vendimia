@@ -83,37 +83,22 @@ function DealerChip() {
   );
 }
 
-/* ── Seat positioning (9-max) ─────────────────────── */
-// Positions are % of the table container.
-// Players sit at the EDGE of the oval — pushed further out so they
-// never overlap with community cards in the center.
-// Symmetric around center (50, 50). Top/bottom mirrors are equidistant.
-const SEAT_POSITIONS_9 = [
-  { x: 50, y: 85 },   // Seat 0: bottom center (YOU)      — 35 from center
-  { x: 18, y: 72 },   // Seat 1: bottom-left               — mirrors seat 8
-  { x: 8,  y: 48 },   // Seat 2: left                      — mirrors seat 7
-  { x: 16, y: 22 },   // Seat 3: top-left                  — mirrors seat 1 (y: 50-28=22, 50+22=72)
-  { x: 35, y: 12 },   // Seat 4: top-left-center
-  { x: 50, y: 10 },   // Seat 5: top-center                — 40 from center, heads-up opponent
-  { x: 65, y: 12 },   // Seat 6: top-right-center          — mirrors seat 4
-  { x: 92, y: 48 },   // Seat 7: right                     — mirrors seat 2
-  { x: 82, y: 72 },   // Seat 8: bottom-right              — mirrors seat 1
-];
-
-const SEAT_CONFIGS: Record<number, number[]> = {
-  2: [0, 5],                          // face to face, both x:50
-  3: [0, 3, 6],                       // triangle
-  4: [0, 2, 5, 7],                    // diamond
-  5: [0, 2, 4, 6, 7],                 // pentagon
-  6: [0, 1, 3, 5, 6, 8],             // hexagon
-  7: [0, 1, 3, 4, 6, 7, 8],          // 7 spread
-  8: [0, 1, 2, 3, 4, 6, 7, 8],       // 8 seats
-  9: [0, 1, 2, 3, 4, 5, 6, 7, 8],    // full table
-};
-
+/* ── Seat positioning (parametric ellipse) ────────── */
+// Compute symmetric positions around an elliptical table.
+// Seat 0 = bottom center (human). Others placed at equal angular intervals clockwise.
 function getSeatsForPlayerCount(count: number) {
-  const clamped = Math.max(2, Math.min(9, count));
-  return SEAT_CONFIGS[clamped].map(i => SEAT_POSITIONS_9[i]);
+  const n = Math.max(2, Math.min(9, count));
+  const rx = 42; // horizontal radius (% from center)
+  const ry = 38; // vertical radius (% from center)
+  const seats: { x: number; y: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const angle = Math.PI / 2 + (2 * Math.PI * i) / n;
+    seats.push({
+      x: Math.round(50 + rx * Math.cos(angle)),
+      y: Math.round(50 + ry * Math.sin(angle)),
+    });
+  }
+  return seats;
 }
 
 // Card size scales with player count so seats stay compact with many players
@@ -294,6 +279,9 @@ function PlayerSeat({
         {player.isDealer && <DealerChip />}
         {player.isHuman && (
           <span className="inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
+        )}
+        {!player.isHuman && (
+          <span className="inline-flex px-1 rounded text-[7px] bg-purple-500/80 text-white font-bold uppercase">A</span>
         )}
       </div>
       <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack}</div>
@@ -488,7 +476,7 @@ export default function PokerBoard({
                 showCards={showCards}
                 isShowdown={isShowdown}
                 isWinner={winnerIndices.has(idx)}
-                hideCards={false}
+                hideCards={player.isHuman}
               />
             );
           })}
