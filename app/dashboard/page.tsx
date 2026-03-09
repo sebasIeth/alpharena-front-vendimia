@@ -890,7 +890,7 @@ function DashboardContent() {
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">
-                        +{claim.winnings.toFixed(2)} ALPHA
+                        +{Number(claim.winnings).toFixed(2)} ALPHA
                       </span>
                     )}
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
