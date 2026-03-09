@@ -400,6 +400,7 @@ function PlayContent() {
           setTurnExpired(false);
           setIsCheck(check);
           setTurnTimer(TURN_TIMEOUT_S);
+          setAgentThinking(null); // Clear agent reasoning when it's our turn
           if (timeMs) setMatchClock(Math.ceil(timeMs / 1000));
           if (moves) setGameLegalMoves(moves);
           if (data.pokerHoleCards) setPokerHoleCards(data.pokerHoleCards as PokerCard[]);
@@ -458,13 +459,6 @@ function PlayContent() {
         }
       }
 
-      if (type === "agent:thinking") {
-        // Agent is about to make a move — update active seat so UI highlights it
-        if (data.pokerSeatIndex != null) {
-          setPokerCurrentPlayerIndex(data.pokerSeatIndex as number);
-        }
-      }
-
       if (type === "match:state") {
         // Sent on reconnect — restore full board + turn state
         const boardData = (data.currentBoard ?? data.board) as unknown;
@@ -507,13 +501,13 @@ function PlayContent() {
       }
 
       if (type === "agent:thinking") {
+        // Update poker seat highlight
+        if (data.pokerSeatIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerSeatIndex as number);
+        }
         const rawText = (data.raw ?? data.text ?? data.thinking ?? data.content ?? data.message) as string | undefined;
         if (rawText) {
           setAgentThinking(rawText);
-        } else {
-          // Try stringifying the whole data object as fallback
-          const fallback = JSON.stringify(data);
-          if (fallback && fallback !== "{}") setAgentThinking(fallback);
         }
       }
 
