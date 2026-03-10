@@ -6,18 +6,24 @@ import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
-import type { Match, MatchAgent, Chain } from "@/lib/types";
+import { formatRelativeTime, normalizeMatchAgents, formatUsdEquivalent } from "@/lib/utils";
+import { useAlphaPrice } from "@/lib/useAlphaPrice";
+import type { Match, MatchAgent, PokerPlayer, Chain } from "@/lib/types";
 
 type Tab = "all" | "active" | "completed";
 type SortKey = "newest" | "oldest" | "highestStake";
+type ChainFilter = "all" | "base" | "celo";
 
-const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
+const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EC4899", "#06B6D4", "#F97316"];
 const PLAYER_GRADIENTS = [
   "from-red-500 to-red-600",
   "from-blue-500 to-blue-600",
   "from-emerald-500 to-emerald-600",
   "from-violet-500 to-violet-600",
+  "from-amber-500 to-amber-600",
+  "from-pink-500 to-pink-600",
+  "from-cyan-500 to-cyan-600",
+  "from-orange-500 to-orange-600",
 ];
 
 /* ── SVG Icons ── */
@@ -172,10 +178,134 @@ function AgentColumn({
   );
 }
 
+/* ── Game Type Icons ── */
+function IconPoker({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C9.24 2 7 4.24 7 7c0 2.85 2.92 7.21 5 9.88 2.11-2.69 5-7 5-9.88 0-2.76-2.24-5-5-5zm0 7.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" opacity=".3"/>
+      <path d="M12 2L9 9l3 4 3-4-3-7zM4.5 12.5l5 3-2 5.5-5-3 2-5.5zM19.5 12.5l-5 3 2 5.5 5-3-2-5.5z"/>
+    </svg>
+  );
+}
+function IconChess({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 22H5v-2h14v2M17.16 8.26A8.94 8.94 0 0018 5h-3V3h-2v2h-2V3H9v2H6a8.94 8.94 0 00.84 3.26L4.5 12.5l2.09 2.09C7.47 16.05 9.56 17 12 17c2.44 0 4.53-.95 5.41-2.41l2.09-2.09-2.34-4.24z"/>
+    </svg>
+  );
+}
+function IconGamepad({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+    </svg>
+  );
+}
+function IconStack({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+    </svg>
+  );
+}
+function IconUsers({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  );
+}
+
+const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>; label: string; color: string; bg: string }> = {
+  poker: { icon: IconPoker, label: "Poker", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
+  chess: { icon: IconChess, label: "Chess", color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
+  marrakech: { icon: IconGamepad, label: "Marrakech", color: "text-rose-600", bg: "bg-rose-50 border-rose-200" },
+};
+
+/* ── Poker Player Row ── */
+function PokerPlayerRow({
+  agent,
+  idx,
+  stack,
+  isWinner,
+  isEliminated,
+  startingStack,
+}: {
+  agent: MatchAgent;
+  idx: number;
+  stack?: number;
+  isWinner: boolean;
+  isEliminated: boolean;
+  startingStack: number;
+}) {
+  const stackPct = stack !== undefined && startingStack > 0 ? Math.min((stack / (startingStack * 2)) * 100, 100) : 0;
+  const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+  const gradient = PLAYER_GRADIENTS[idx % PLAYER_GRADIENTS.length];
+
+  return (
+    <div
+      className={`relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all ${
+        isWinner
+          ? "bg-arena-accent/8 ring-1 ring-arena-accent/25"
+          : isEliminated
+          ? "opacity-40"
+          : ""
+      }`}
+    >
+      {/* Position + Avatar */}
+      <div className="relative shrink-0">
+        <div
+          className={`w-7 h-7 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}
+          style={{ boxShadow: `0 2px 6px ${color}20` }}
+        >
+          <span className="text-[10px] font-bold text-white drop-shadow-sm">
+            {agent.agentName.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        {isWinner && (
+          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-arena-accent flex items-center justify-center">
+            <IconCrown className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
+      </div>
+
+      {/* Name + stack bar */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-1">
+          <span className={`text-[11px] font-semibold truncate ${
+            isEliminated ? "text-arena-muted line-through" : "text-arena-text-bright"
+          }`}>
+            {agent.agentName}
+          </span>
+          {stack !== undefined && (
+            <span className={`text-[10px] font-mono font-bold shrink-0 ${
+              isEliminated ? "text-arena-danger" : "text-arena-text-bright"
+            }`}>
+              {isEliminated ? "OUT" : stack.toLocaleString()}
+            </span>
+          )}
+        </div>
+        {/* Stack bar */}
+        {stack !== undefined && !isEliminated && (
+          <div className="w-full h-1 rounded-full bg-arena-border-light/30 mt-0.5 overflow-hidden">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all`}
+              style={{ width: `${stackPct}%` }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Match Card ── */
-function MatchCard({ match, index }: { match: Match; index: number }) {
+function MatchCard({ match, index, priceUsd }: { match: Match; index: number; priceUsd: number | null }) {
   const { t } = useLanguage();
-  const agents = normalizeMatchAgents(match.agents);
+  const raw = match as any;
+  const chain: Chain = match.chain || "base";
+  const isPoker = match.gameType === "poker";
+  const agents = normalizeMatchAgents(match.agents, isPoker ? raw.pokerPlayers || match.pokerPlayers : undefined);
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
   const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
@@ -185,6 +315,22 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
       ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
   const pot = match.pot ?? (match as any).potAmount ?? 0;
+  const pokerScores: Record<string, number> | undefined = raw.pokerScores || match.pokerScores;
+  const pokerState = raw.pokerState;
+  const startingStack = pokerState?.startingStack ?? 2000;
+  const handNumber = pokerState?.handNumber;
+  const playersAlive = isPoker ? agents.filter((a) => {
+    const s = pokerScores?.[a.agentId];
+    return s === undefined || s > 0;
+  }).length : 0;
+
+  const gameConfig = GAME_TYPE_CONFIG[match.gameType] || {
+    icon: IconGamepad,
+    label: match.gameType,
+    color: "text-arena-primary",
+    bg: "bg-arena-primary/5 border-arena-border-light",
+  };
+  const GameIcon = gameConfig.icon;
 
   return (
     <Link href={`/matches/${match.id}`}>
@@ -195,20 +341,22 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
         style={{ animationDelay: `${0.05 + index * 0.04}s`, animationFillMode: "both" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2 py-0.5 rounded">
-              {match.gameType}
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border ${gameConfig.bg} ${gameConfig.color}`}>
+              <GameIcon className="w-3.5 h-3.5" />
+              {gameConfig.label}
             </span>
-            {match.chain && (
-              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                match.chain === "celo"
-                  ? "bg-yellow-50 text-yellow-600 border border-yellow-200"
-                  : "bg-blue-50 text-blue-600 border border-blue-200"
-              }`}>
-                {match.chain === "celo" ? "Celo" : "Base"}
-              </span>
-            )}
+            <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold font-mono px-2 py-1 rounded-md border ${
+              chain === "celo"
+                ? "bg-yellow-50 text-yellow-700 border-yellow-300"
+                : "bg-blue-50 text-blue-700 border-blue-300"
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${chain === "celo" ? "bg-yellow-500" : "bg-blue-500"}`} />
+              {chain === "celo" ? "Celo" : "Base"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             {isActive && (
               <span className="flex items-center gap-1.5 text-[10px] text-arena-success font-semibold uppercase tracking-wider">
                 <span className="relative w-2 h-2">
@@ -218,14 +366,62 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
                 {t.common.live}
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2">
             <Badge status={match.status} />
           </div>
         </div>
 
-        {/* VS Section - Centered Layout */}
-        {agents.length >= 2 ? (
+        {/* Poker info bar */}
+        {isPoker && (
+          <div className="flex items-center gap-3 mb-3 text-[10px] text-arena-muted font-mono">
+            <span className="flex items-center gap-1">
+              <IconUsers className="w-3 h-3" />
+              {playersAlive}/{agents.length}
+            </span>
+            {handNumber && (
+              <span className="flex items-center gap-1">
+                Hand #{handNumber}
+              </span>
+            )}
+            <span className="flex items-center gap-1 ml-auto">
+              <IconStack className="w-3 h-3" />
+              {t.common.pot} {Number(pot).toLocaleString()}
+              {priceUsd && (
+                <span className="text-arena-muted/70">({formatUsdEquivalent(Number(pot), priceUsd)})</span>
+              )}
+            </span>
+          </div>
+        )}
+
+        {/* Players Section */}
+        {isPoker && agents.length > 2 ? (
+          /* Poker: vertical list with stack bars */
+          <div className="space-y-1 mb-3">
+            {agents
+              .slice()
+              .sort((a, b) => {
+                const sa = pokerScores?.[a.agentId] ?? 0;
+                const sb = pokerScores?.[b.agentId] ?? 0;
+                return sb - sa;
+              })
+              .map((agent, idx) => {
+                const stack = pokerScores?.[agent.agentId];
+                const isEliminated = stack !== undefined && stack <= 0;
+                const isWinner = isCompleted && match.winnerId === agent.agentId;
+                return (
+                  <PokerPlayerRow
+                    key={agent.agentId}
+                    agent={agent}
+                    idx={agents.indexOf(agent)}
+                    stack={stack}
+                    isWinner={isWinner}
+                    isEliminated={isEliminated}
+                    startingStack={startingStack}
+                  />
+                );
+              })}
+          </div>
+        ) : agents.length >= 2 ? (
+          /* Chess / Marrakech: VS layout */
           <div className="flex items-start justify-between gap-2 mb-4">
             <AgentColumn
               agent={agents[0]}
@@ -272,8 +468,8 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
           </div>
         )}
 
-        {/* Winner / Draw Banner */}
-        {isCompleted && (
+        {/* Winner / Draw Banner (chess/marrakech only, poker shows it inline) */}
+        {isCompleted && !isPoker && (
           winnerAgent ? (
             <div className="bg-arena-accent/8 border border-arena-accent/20 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
               <IconCrown className="w-3.5 h-3.5 text-arena-accent shrink-0" />
@@ -295,14 +491,22 @@ function MatchCard({ match, index }: { match: Match; index: number }) {
 
         {/* Footer */}
         <div className="pt-3 border-t border-arena-border-light/60 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs text-arena-muted font-mono">
-            <span>{match.stakeAmount} ALPHA</span>
-            <span className="text-arena-border-light/80">·</span>
-            <span>{t.common.pot} {pot}</span>
+          <div className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono">
+            <span className="font-semibold text-arena-text">{Number(match.stakeAmount).toLocaleString()}</span>
+            <span>ALPHA</span>
+            {!isPoker && (
+              <>
+                <span className="text-arena-border-light/80">·</span>
+                <span>{t.common.pot} {Number(pot).toLocaleString()}</span>
+                {priceUsd && (
+                  <span className="text-arena-muted/70">({formatUsdEquivalent(Number(pot), priceUsd)})</span>
+                )}
+              </>
+            )}
             {match.moveCount > 0 && (
               <>
                 <span className="text-arena-border-light/80">·</span>
-                <span>{match.moveCount} {(match.gameType === "poker" ? t.common.hands : t.common.moves).toLowerCase()}</span>
+                <span>{match.moveCount} {(isPoker ? t.common.hands : t.common.moves).toLowerCase()}</span>
               </>
             )}
           </div>
@@ -340,6 +544,7 @@ function sortMatches(matches: Match[], sortKey: SortKey): Match[] {
 
 export default function MatchesPage() {
   const { t } = useLanguage();
+  const { priceUsd } = useAlphaPrice();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -350,6 +555,7 @@ export default function MatchesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [sortOpen, setSortOpen] = useState(false);
+  const [chainFilter, setChainFilter] = useState<ChainFilter>("all");
   const sortRef = useRef<HTMLDivElement>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const limit = 12;
@@ -383,6 +589,10 @@ export default function MatchesPage() {
           ...m,
           id: m.id || raw._id,
           winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+          pot: m.pot || raw.potAmount || 0,
+          pokerPlayers: raw.pokerPlayers,
+          pokerScores: raw.pokerScores,
+          pokerState: raw.pokerState,
         };
       }));
       setTotalPages(data.pages || 1);
@@ -429,10 +639,14 @@ export default function MatchesPage() {
     setPage(1);
   };
 
-  const activeMatches = matches.filter((m) => m.status === "active");
+  const chainFiltered = chainFilter === "all"
+    ? matches
+    : matches.filter((m) => (m.chain || "base") === chainFilter);
+
+  const activeMatches = chainFiltered.filter((m) => m.status === "active");
   const otherMatches = tab === "all"
-    ? matches.filter((m) => m.status !== "active")
-    : matches;
+    ? chainFiltered.filter((m) => m.status !== "active")
+    : chainFiltered;
 
   const sortedActiveMatches = sortMatches(activeMatches, sortKey);
   const sortedOtherMatches = sortMatches(otherMatches, sortKey);
@@ -549,6 +763,30 @@ export default function MatchesPage() {
           )}
         </div>
 
+        {/* Chain filter */}
+        <div className="flex items-center gap-1 bg-arena-card rounded-lg p-0.5 border border-arena-border-light shadow-arena-sm">
+          {(["all", "base", "celo"] as ChainFilter[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setChainFilter(key)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-md transition-all ${
+                chainFilter === key
+                  ? key === "celo"
+                    ? "bg-yellow-50 text-yellow-700 shadow-sm"
+                    : key === "base"
+                    ? "bg-blue-50 text-blue-700 shadow-sm"
+                    : "bg-arena-primary text-white shadow-sm"
+                  : "text-arena-muted hover:text-arena-text"
+              }`}
+            >
+              {key !== "all" && (
+                <span className={`w-2 h-2 rounded-full ${key === "celo" ? "bg-yellow-500" : "bg-blue-500"}`} />
+              )}
+              {key === "all" ? "All Chains" : key === "celo" ? "Celo" : "Base"}
+            </button>
+          ))}
+        </div>
+
         {/* Auto-refresh indicator */}
         {tab !== "completed" && (
           <div className={`flex items-center gap-1.5 text-[10px] text-arena-muted font-mono transition-opacity ${
@@ -617,7 +855,7 @@ export default function MatchesPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedActiveMatches.map((match, i) => (
-                  <MatchCard key={match.id} match={match} index={i} />
+                  <MatchCard key={match.id} match={match} index={i} priceUsd={priceUsd} />
                 ))}
               </div>
             </div>
@@ -638,7 +876,7 @@ export default function MatchesPage() {
           {/* ── Match Grid ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {(tab === "all" ? sortedOtherMatches : sortMatches(matches, sortKey)).map((match, i) => (
-              <MatchCard key={match.id} match={match} index={i + (tab === "all" ? sortedActiveMatches.length : 0)} />
+              <MatchCard key={match.id} match={match} index={i + (tab === "all" ? sortedActiveMatches.length : 0)} priceUsd={priceUsd} />
             ))}
           </div>
 
