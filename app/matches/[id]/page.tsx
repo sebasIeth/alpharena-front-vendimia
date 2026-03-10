@@ -271,20 +271,21 @@ function BettingPanel({ match }: { match: Match }) {
   if (onChainState === "none" && !poolResp) return null;
 
   // Pool data: prefer lightweight /pool response, fall back to /info
+  // Backend may return strings or numbers, so always coerce with Number()
   const pool = poolResp?.pool ?? info?.betting?.pool;
-  const totalPool = pool?.totalPool ?? 0;
-  const poolA = pool?.totalBetsA ?? 0;
-  const poolB = pool?.totalBetsB ?? 0;
-  const pctA = pool?.percentA ?? (totalPool > 0 ? Math.round((poolA / totalPool) * 100) : 50);
-  const pctB = pool?.percentB ?? (100 - pctA);
+  const totalPool = Number(pool?.totalPool ?? 0);
+  const poolA = Number(pool?.totalBetsA ?? 0);
+  const poolB = Number(pool?.totalBetsB ?? 0);
+  const pctA = Number(pool?.percentA ?? (totalPool > 0 ? Math.round((poolA / totalPool) * 100) : 50));
+  const pctB = Number(pool?.percentB ?? (100 - pctA));
 
   const isSettled = onChainState === "settled";
   const isRefunded = onChainState === "refunded";
 
   // Odds from /info
-  const oddsA = info?.betting?.odds?.a;
-  const oddsB = info?.betting?.odds?.b;
-  const feePercent = info?.betting?.feePercent;
+  const oddsA = info?.betting?.odds?.a != null ? Number(info.betting.odds.a) : null;
+  const oddsB = info?.betting?.odds?.b != null ? Number(info.betting.odds.b) : null;
+  const feePercent = info?.betting?.feePercent != null ? Number(info.betting.feePercent) : null;
 
   // Names from /info agents or from match agents
   const nameA = info?.agents?.a?.name ?? matchAgents[0]?.agentName ?? "Agent A";
@@ -431,9 +432,9 @@ function BettingPanel({ match }: { match: Match }) {
         {/* Claim Button */}
         {myBets?.canClaim && (isSettled || isRefunded) && (
           <div className="border-t border-arena-border-light/40 pt-5 mt-4">
-            {myBets.winnings > 0 && (
+            {Number(myBets.winnings) > 0 && (
               <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
-                {t.betting.payout}: {myBets.winnings.toFixed(2)} ALPHA
+                {t.betting.payout}: {Number(myBets.winnings).toFixed(2)} ALPHA
               </p>
             )}
             <Button onClick={handleClaim} disabled={claiming} className="w-full">
@@ -453,8 +454,8 @@ function BettingPanel({ match }: { match: Match }) {
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
                     <span className="text-xs text-arena-text">{userOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
                   </div>
-                  {myBets?.potential?.winIfA != null && myBets.potential.winIfA > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfA.toFixed(2)}</span>
+                  {myBets?.potential?.winIfA != null && Number(myBets.potential.winIfA) > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{Number(myBets.potential.winIfA).toFixed(2)}</span>
                   )}
                 </div>
               )}
@@ -464,8 +465,8 @@ function BettingPanel({ match }: { match: Match }) {
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
                     <span className="text-xs text-arena-text">{userOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
                   </div>
-                  {myBets?.potential?.winIfB != null && myBets.potential.winIfB > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{myBets.potential.winIfB.toFixed(2)}</span>
+                  {myBets?.potential?.winIfB != null && Number(myBets.potential.winIfB) > 0 && (
+                    <span className="text-[10px] font-mono text-arena-success">+{Number(myBets.potential.winIfB).toFixed(2)}</span>
                   )}
                 </div>
               )}
@@ -479,7 +480,7 @@ function BettingPanel({ match }: { match: Match }) {
               }`}>
                 {myBets.outcome === "won" ? t.common.won : myBets.outcome === "lost" ? t.common.lost : t.betting.refunded}
                 {myBets.outcome === "won" && myBets.winnings > 0 && (
-                  <span className="font-mono ml-1">+{myBets.winnings.toFixed(2)}</span>
+                  <span className="font-mono ml-1">+{Number(myBets.winnings).toFixed(2)}</span>
                 )}
               </div>
             )}

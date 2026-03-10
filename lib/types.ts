@@ -121,12 +121,24 @@ export interface MatchAgent {
   finalScore?: number;
 }
 
+export interface PokerPlayer {
+  seatIndex: number;
+  agentId: string;
+  userId: string;
+  name: string;
+  eloAtStart: number;
+  isEliminated?: boolean;
+  stack?: number;
+}
+
 export interface Match {
   id: string;
   gameType: string;
   chain?: Chain;
   status: "pending" | "active" | "completed" | "cancelled" | "error";
   agents: MatchAgent[];
+  pokerPlayers?: PokerPlayer[];
+  pokerScores?: Record<string, number>;
   stakeAmount: number;
   pot: number;
   winnerId?: string;

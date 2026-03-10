@@ -138,9 +138,10 @@ export function classNames(...classes: (string | boolean | undefined | null)[]):
 /**
  * Backend sends match.agents as object {a: {...}, b: {...}, _id: "..."} not as array.
  * Also uses "name" instead of "agentName" and may lack "username".
+ * For poker, prefer pokerPlayers[] which has all 4 seats.
  * This normalizes it to the MatchAgent[] array format the frontend expects.
  */
-export function normalizeMatchAgents(agents: any): {
+export function normalizeMatchAgents(agents: any, pokerPlayers?: any[]): {
   agentId: string;
   agentName: string;
   userId: string;
@@ -149,6 +150,17 @@ export function normalizeMatchAgents(agents: any): {
   eloChange?: number;
   finalScore?: number;
 }[] {
+  if (pokerPlayers && Array.isArray(pokerPlayers) && pokerPlayers.length > 0) {
+    return pokerPlayers.map((p) => ({
+      agentId: p.agentId || "",
+      agentName: p.agentName || p.name || "Agent",
+      userId: p.userId || "",
+      username: p.username || "",
+      eloAtStart: p.eloAtStart ?? 0,
+      eloChange: p.eloChange,
+      finalScore: p.finalScore,
+    }));
+  }
   if (Array.isArray(agents)) return agents;
   if (agents && typeof agents === "object") {
     const result: any[] = [];
