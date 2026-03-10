@@ -548,7 +548,7 @@ export default function MatchDetailPage() {
         const raw = m as any;
         setMatch({
           ...m,
-          id: m.id || raw._id,
+          id: m.id || raw._id || matchId,
           winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
         });
       } catch (err) {
@@ -563,8 +563,12 @@ export default function MatchDetailPage() {
   }, [matchId, t.matchDetail.loadFailed]);
 
   const handleMatchUpdate = useCallback((updatedMatch: Match) => {
-    setMatch(updatedMatch);
-  }, []);
+    const raw = updatedMatch as any;
+    setMatch({
+      ...updatedMatch,
+      id: updatedMatch.id || raw._id || matchId,
+    });
+  }, [matchId]);
 
   const copyMatchId = () => {
     navigator.clipboard.writeText(match?.id || "");
@@ -602,7 +606,7 @@ export default function MatchDetailPage() {
     );
   }
 
-  const agents = normalizeMatchAgents(match.agents);
+  const agents = normalizeMatchAgents(match.agents, match.pokerPlayers);
   const pot = match.pot ?? (match as any).potAmount ?? 0;
   const isActive = match.status === "active";
   const isCompleted = match.status === "completed";
@@ -612,9 +616,10 @@ export default function MatchDetailPage() {
     ? agents.find((a) => a.agentId === match.winnerId)
       ?? (match.winnerId in sideMap ? agents[sideMap[match.winnerId]] : null)
     : null;
-  const truncatedId = match.id.length > 16
-    ? `${match.id.slice(0, 8)}...${match.id.slice(-6)}`
-    : match.id;
+  const displayId = match.id || matchId;
+  const truncatedId = displayId.length > 16
+    ? `${displayId.slice(0, 8)}...${displayId.slice(-6)}`
+    : displayId;
 
   return (
     <div className="page-container">
@@ -688,8 +693,9 @@ export default function MatchDetailPage() {
           </h1>
           <p className="text-xs text-arena-muted font-mono mb-5">{truncatedId}</p>
 
-          {/* Row 3: Centered VS Layout */}
-          {agents.length >= 2 && (
+          {/* Row 3: Players Layout */}
+          {agents.length >= 2 && agents.length <= 2 && (
+            /* Classic 2-player VS layout */
             <div className="flex items-center justify-center gap-4 sm:gap-8 mb-5 py-2">
               {/* Agent A - Right-aligned */}
               <div className="flex-1 flex flex-col items-end max-w-[200px]">
@@ -774,8 +780,64 @@ export default function MatchDetailPage() {
             </div>
           )}
 
-          {/* ELO Comparison Bar */}
-          {agents.length >= 2 && (
+          {/* N-player layout (3+) */}
+          {agents.length > 2 && (
+            <div className="mb-5 py-2">
+              {/* Inline "vs" names row */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
+                {agents.map((agent, idx) => (
+                  <span key={agent.agentId ?? idx} className="flex items-center gap-1.5">
+                    {idx > 0 && (
+                      <span className="text-[10px] font-bold text-arena-muted uppercase">vs</span>
+                    )}
+                    <span className="text-sm sm:text-base font-bold text-arena-text-bright">{agent.agentName}</span>
+                  </span>
+                ))}
+              </div>
+              {/* Player cards grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {agents.map((agent, idx) => (
+                  <div
+                    key={agent.agentId ?? idx}
+                    className="flex items-center gap-2.5 bg-white/50 border border-white/60 rounded-xl px-3 py-2.5"
+                  >
+                    <div className="relative shrink-0">
+                      <div
+                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${PLAYER_GRADIENTS[idx % PLAYER_GRADIENTS.length]} flex items-center justify-center`}
+                        style={{ boxShadow: `0 3px 10px ${PLAYER_COLORS[idx % PLAYER_COLORS.length]}35` }}
+                      >
+                        <span className="text-base font-bold text-white drop-shadow-sm">{agent.agentName.charAt(0).toUpperCase()}</span>
+                      </div>
+                      {winnerAgent?.agentId === agent.agentId && (
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-arena-accent flex items-center justify-center shadow-md">
+                          <IconCrown className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-arena-text-bright leading-tight truncate">{agent.agentName}</div>
+                      <div className="text-[10px] text-arena-muted font-mono truncate">{t.common.by} {agent.username}</div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-xs font-extrabold text-arena-text-bright font-mono tabular-nums">{agent.eloAtStart}</span>
+                        <span className="text-[9px] text-arena-muted font-mono">ELO</span>
+                        {agent.eloChange !== undefined && agent.eloChange !== null && agent.eloChange !== 0 && (
+                          <span className={`flex items-center gap-0.5 text-[10px] font-bold font-mono ${
+                            agent.eloChange > 0 ? "text-arena-success" : "text-arena-danger"
+                          }`}>
+                            {agent.eloChange > 0 ? <IconArrowUp className="w-2.5 h-2.5" /> : <IconArrowDown className="w-2.5 h-2.5" />}
+                            {Math.abs(agent.eloChange)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ELO Comparison Bar (2-player only) */}
+          {agents.length === 2 && (
             <EloComparisonBar
               eloA={agents[0].eloAtStart}
               eloB={agents[1].eloAtStart}

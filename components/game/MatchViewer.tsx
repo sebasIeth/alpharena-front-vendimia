@@ -200,8 +200,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [pokerPot, setPokerPot] = useState(0);
   const [pokerStreet, setPokerStreet] = useState("preflop");
   const [pokerHandNumber, setPokerHandNumber] = useState(0);
-  const [pokerStacks, setPokerStacks] = useState<{ a: number; b: number }>({ a: 0, b: 0 });
-  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerSide: string; street: string }[]>([]);
+  const [pokerPlayers, setPokerPlayers] = useState<{
+    seatIndex: number; stack: number; currentBet: number;
+    hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean;
+    playerId?: string; name?: string; isAgent?: boolean;
+  }[]>([]);
+  const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(0);
+  const [pokerDealerIndex, setPokerDealerIndex] = useState(0);
+  const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const movesEndRef = useRef<HTMLDivElement>(null);
@@ -210,7 +216,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const matchId = match.id || (match as any)._id;
 
   // Normalize agents: backend sends {a: {...}, b: {...}} not array
-  const agents = React.useMemo(() => normalizeMatchAgents(match.agents), [match.agents]);
+  const agents = React.useMemo(() => normalizeMatchAgents(match.agents, match.pokerPlayers), [match.agents, match.pokerPlayers]);
 
   // pot: backend sends "potAmount" not "pot"
   const pot = match.pot ?? (match as any).potAmount ?? 0;
@@ -316,9 +322,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             eliminated: p.eliminated,
           })));
         }
-        // Poker
-        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks);
-        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber);
+        // Poker: N-player support
+        if (data.pokerPlayers) {
+          const players = data.pokerPlayers as typeof pokerPlayers;
+          setPokerPlayers(players);
+          const dealer = players.findIndex((p: any) => p.isDealer);
+          if (dealer !== -1) setPokerDealerIndex(dealer);
+        } else if (data.pokerPlayerStacks) {
+          const stacks = data.pokerPlayerStacks as { a: number; b: number };
+          setPokerPlayers([
+            { seatIndex: 0, stack: stacks.a, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: true, isEliminated: false },
+            { seatIndex: 1, stack: stacks.b, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: false, isEliminated: false },
+          ]);
+        }
+        if (data.pokerHandNumber != null) {
+          setPokerHandNumber((prev: number) => {
+            if ((data.pokerHandNumber as number) > prev) setPokerActionHistory([]);
+            return data.pokerHandNumber as number;
+          });
+        }
+        if (data.pokerCurrentPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerCurrentPlayerIndex as number);
       }
 
       if (type === "match:move" || type === "match:state") {
@@ -353,22 +376,50 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           })));
         }
         if (data.score) setScore(data.score);
-        // Poker-specific
+        // Poker-specific (N-player)
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards);
         if (data.pokerPot != null) setPokerPot(data.pokerPot);
         if (data.pokerStreet) setPokerStreet(data.pokerStreet);
-        if (data.pokerPlayerStacks) setPokerStacks(data.pokerPlayerStacks);
-        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber);
+        if (data.pokerHandNumber != null) {
+          setPokerHandNumber((prev: number) => {
+            if ((data.pokerHandNumber as number) > prev) setPokerActionHistory([]);
+            return data.pokerHandNumber as number;
+          });
+        }
+        if (data.pokerPlayers) {
+          const incoming = data.pokerPlayers as typeof pokerPlayers;
+          setPokerPlayers(prev => incoming.map((p: any) => {
+            const existing = prev.find(e => e.seatIndex === p.seatIndex);
+            return { ...p, name: p.name ?? existing?.name, playerId: p.playerId ?? existing?.playerId, isAgent: p.isAgent ?? existing?.isAgent };
+          }));
+          const dealer = incoming.findIndex((p: any) => p.isDealer);
+          if (dealer !== -1) setPokerDealerIndex(dealer);
+        } else if (data.pokerPlayerStacks) {
+          const stacks = data.pokerPlayerStacks as { a: number; b: number };
+          setPokerPlayers(prev => {
+            if (prev.length === 0) {
+              return [
+                { seatIndex: 0, stack: stacks.a, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: true, isEliminated: false },
+                { seatIndex: 1, stack: stacks.b, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: false, isEliminated: false },
+              ];
+            }
+            return prev.map((p, i) => ({ ...p, stack: i === 0 ? stacks.a : stacks.b }));
+          });
+        }
+        if (data.pokerCurrentPlayerIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerCurrentPlayerIndex as number);
+        } else if (data.pokerPlayerIndex != null) {
+          setPokerCurrentPlayerIndex(data.pokerPlayerIndex as number);
+        }
         if (data.pokerAction) {
-          setPokerActionHistory((prev) => [
-            ...prev,
-            {
-              type: data.pokerAction.type,
-              amount: data.pokerAction.amount,
-              playerSide: data.side,
-              street: data.pokerStreet || pokerStreet,
-            },
-          ]);
+          const action = data.pokerAction as { type: string; amount?: number };
+          const playerIndex = (data.pokerPlayerIndex as number) ?? (data.side === "a" ? 0 : data.side === "b" ? 1 : 0);
+          setPokerActionHistory((prev) => [...prev, {
+            type: action.type,
+            amount: action.amount,
+            playerIndex,
+            street: (data.pokerStreet as string) || pokerStreet,
+          }]);
         }
       }
 
@@ -565,33 +616,50 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 isMyTurn={false}
               />
             ) : match.gameType === "poker" ? (
-              <PokerBoard
-                communityCards={pokerCommunityCards}
-                pot={pokerPot}
-                street={pokerStreet}
-                handNumber={pokerHandNumber}
-                players={[
-                  {
-                    id: "a", name: agents[0]?.agentName ?? "Player A", seatIndex: 0,
-                    stack: pokerStacks.a, currentBet: 0, hasFolded: false, isAllIn: false,
-                    isEliminated: false, isDealer: false, isHuman: false,
-                  },
-                  {
-                    id: "b", name: agents[1]?.agentName ?? "Player B", seatIndex: 1,
-                    stack: pokerStacks.b, currentBet: 0, hasFolded: false, isAllIn: false,
-                    isEliminated: false, isDealer: false, isHuman: false,
-                  },
-                ]}
-                humanPlayerIndex={0}
-                currentPlayerIndex={0}
-                dealerIndex={0}
-                actionHistory={pokerActionHistory.map(a => ({
-                  type: a.type,
-                  amount: a.amount,
-                  playerIndex: a.playerSide === "a" ? 0 : 1,
-                  street: a.street,
-                }))}
-              />
+              (() => {
+                const spectatorPlayers = pokerPlayers.length > 0
+                  ? pokerPlayers.map((p, i) => ({
+                      id: p.playerId ?? `p${i}`,
+                      name: p.name ?? agents[p.seatIndex]?.agentName ?? `Player ${p.seatIndex + 1}`,
+                      seatIndex: p.seatIndex,
+                      stack: p.stack,
+                      currentBet: p.currentBet,
+                      hasFolded: p.hasFolded,
+                      isAllIn: p.isAllIn,
+                      isEliminated: p.isEliminated,
+                      isDealer: p.isDealer,
+                      isHuman: false,
+                      isAgent: p.isAgent ?? true,
+                      holeCards: undefined as undefined,
+                    }))
+                  : agents.map((a, i) => ({
+                      id: a.agentId ?? `p${i}`,
+                      name: a.agentName ?? `Player ${i + 1}`,
+                      seatIndex: i,
+                      stack: 0,
+                      currentBet: 0,
+                      hasFolded: false,
+                      isAllIn: false,
+                      isEliminated: false,
+                      isDealer: i === 0,
+                      isHuman: false,
+                      isAgent: true,
+                      holeCards: undefined as undefined,
+                    }));
+                return (
+                  <PokerBoard
+                    communityCards={pokerCommunityCards}
+                    pot={pokerPot}
+                    street={pokerStreet}
+                    handNumber={pokerHandNumber}
+                    players={spectatorPlayers}
+                    humanPlayerIndex={-1}
+                    currentPlayerIndex={pokerCurrentPlayerIndex}
+                    dealerIndex={pokerDealerIndex}
+                    actionHistory={pokerActionHistory}
+                  />
+                );
+              })()
             ) : (
               <MarrakechBoard
                 boardState={
