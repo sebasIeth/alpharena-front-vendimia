@@ -29,19 +29,19 @@ function CardFace({ card, size = "md", highlight = false }: { card: PokerCard; s
     sm: "w-9 h-[52px]",
     md: "w-[52px] h-[74px]",
     lg: "w-16 h-[92px]",
-    cc: "w-[32px] h-[45px] sm:w-[42px] sm:h-[59px] md:w-[50px] md:h-[70px]",
+    cc: "w-[24px] h-[34px] sm:w-[40px] sm:h-[56px] md:w-[50px] md:h-[70px]",
   }[size] ?? "w-[52px] h-[74px]";
   const rankSz = {
     sm: "text-[8px]",
     md: "text-[11px]",
     lg: "text-sm",
-    cc: "text-[7px] sm:text-[8px] md:text-[10px]",
+    cc: "text-[5px] sm:text-[8px] md:text-[10px]",
   }[size] ?? "text-[11px]";
   const suitSz = {
     sm: "text-sm",
     md: "text-xl",
     lg: "text-3xl",
-    cc: "text-xs sm:text-sm md:text-base",
+    cc: "text-[8px] sm:text-xs md:text-base",
   }[size] ?? "text-xl";
   const clr = SUIT_CLR[card.suit] ?? "text-gray-900";
 
@@ -89,7 +89,7 @@ function StreetBadge({ street }: { street: string }) {
 
 function DealerChip() {
   return (
-    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-black text-[8px] font-extrabold shadow-md ring-1 ring-yellow-500/50">
+    <span className="inline-flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-yellow-400 text-black text-[5px] sm:text-[8px] font-extrabold shadow-md ring-1 ring-yellow-500/50">
       D
     </span>
   );
@@ -116,10 +116,10 @@ function getSeatsForPlayerCount(count: number) {
 // Card size scales with player count and screen size
 function getCardSize(playerCount: number, isMobile: boolean) {
   if (isMobile) {
-    if (playerCount <= 2) return { w: 28, h: 40, text: "text-[8px]" as const, gap: 2, infoMin: 50 };
-    if (playerCount <= 4) return { w: 24, h: 34, text: "text-[7px]" as const, gap: 1, infoMin: 44 };
-    if (playerCount <= 6) return { w: 20, h: 28, text: "text-[7px]" as const, gap: 1, infoMin: 38 };
-    return { w: 18, h: 26, text: "text-[6px]" as const, gap: 1, infoMin: 34 };
+    if (playerCount <= 2) return { w: 18, h: 26, text: "text-[7px]" as const, gap: 1, infoMin: 36 };
+    if (playerCount <= 4) return { w: 15, h: 22, text: "text-[6px]" as const, gap: 1, infoMin: 32 };
+    if (playerCount <= 6) return { w: 13, h: 19, text: "text-[5px]" as const, gap: 1, infoMin: 28 };
+    return { w: 12, h: 17, text: "text-[5px]" as const, gap: 1, infoMin: 26 };
   }
   if (playerCount <= 2) return { w: 40, h: 56, text: "text-[11px]" as const, gap: 3, infoMin: 72 };
   if (playerCount <= 4) return { w: 36, h: 50, text: "text-[10px]" as const, gap: 2, infoMin: 64 };
@@ -177,22 +177,22 @@ function ActionBar({
     <div className="space-y-3 pt-3 poker-slide-up">
       <div className="flex flex-wrap items-center justify-center gap-2">
         {legalActions.canFold && (
-          <button onClick={() => onAction({ action: "fold" })} className="px-5 py-2.5 rounded-xl bg-red-500/90 text-white text-sm font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "fold" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-500/90 text-white text-xs sm:text-sm font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95">
             {t.poker.fold}
           </button>
         )}
         {legalActions.canCheck && (
-          <button onClick={() => onAction({ action: "check" })} className="px-5 py-2.5 rounded-xl bg-blue-500/90 text-white text-sm font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "check" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-blue-500/90 text-white text-xs sm:text-sm font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 active:scale-95">
             {t.poker.check}
           </button>
         )}
         {legalActions.canCall && (
-          <button onClick={() => onAction({ action: "call" })} className="px-5 py-2.5 rounded-xl bg-emerald-500/90 text-white text-sm font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "call" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-emerald-500/90 text-white text-xs sm:text-sm font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95">
             {t.poker.call} {legalActions.callAmount}
           </button>
         )}
         {legalActions.canAllIn && (
-          <button onClick={() => onAction({ action: "all_in" })} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "all_in" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs sm:text-sm font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/20 active:scale-95">
             ALL IN {legalActions.allInAmount}
           </button>
         )}
@@ -281,7 +281,7 @@ function PlayerSeat({
   const infoEl = (
     <div
       className={`
-        px-2 py-1 rounded-lg backdrop-blur-sm text-center transition-all
+        px-1 sm:px-2 py-0.5 sm:py-1 rounded sm:rounded-lg backdrop-blur-sm text-center transition-all
         ${isShowdown && isWinner ? "bg-amber-400/15 poker-winner-glow ring-2 ring-amber-400/60" : ""}
         ${isActive && !isShowdown ? "bg-black/60 ring-2 ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)] poker-seat-active" : ""}
         ${!isActive && !(isShowdown && isWinner) ? "bg-black/50" : ""}
@@ -290,14 +290,14 @@ function PlayerSeat({
       `}
       style={{ minWidth: cardSize.infoMin }}
     >
-      <div className={`${cardSize.text} font-bold text-white truncate flex items-center justify-center gap-1`}
-        style={{ maxWidth: cardSize.infoMin + 16 }}
+      <div className={`${cardSize.text} font-bold text-white truncate flex items-center justify-center gap-0.5 sm:gap-1`}
+        style={{ maxWidth: cardSize.infoMin }}
       >
-        <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${player.isAgent ? "bg-yellow-400" : "bg-green-400"}`} />
-        {player.name}{player.isAgent ? "(A)" : ""}
+        <span className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${player.isAgent ? "bg-yellow-400" : "bg-green-400"}`} />
+        <span className="truncate max-w-[32px] sm:max-w-[56px] md:max-w-[80px]">{player.name}{player.isAgent ? "(A)" : ""}</span>
         {player.isDealer && <DealerChip />}
         {player.isHuman && (
-          <span className="inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
+          <span className="hidden sm:inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
         )}
       </div>
       <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack}</div>
@@ -326,9 +326,9 @@ function PlayerSeat({
 
       {player.currentBet > 0 && (
         <div className={`absolute left-1/2 -translate-x-1/2 z-30
-          bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5
-          text-[9px] text-yellow-300 font-mono font-bold shadow-md
-          ${isTop ? "-bottom-4" : "-top-4"}
+          bg-black/50 backdrop-blur-sm rounded-full px-1 sm:px-2 py-0 sm:py-0.5
+          text-[6px] sm:text-[9px] text-yellow-300 font-mono font-bold shadow-md
+          ${isTop ? "-bottom-2 sm:-bottom-4" : "-top-2 sm:-top-4"}
         `}>
           {player.currentBet}
         </div>
@@ -459,12 +459,12 @@ export default function PokerBoard({
               {filled.map((c, i) =>
                 c
                   ? <CardFace key={`cc-${i}`} card={c} size="cc" />
-                  : <div key={`empty-${i}`} className="w-[32px] h-[45px] sm:w-[42px] sm:h-[59px] md:w-[50px] md:h-[70px] rounded-md border border-dashed border-white/15 flex-shrink-0" />
+                  : <div key={`empty-${i}`} className="w-[24px] h-[34px] sm:w-[40px] sm:h-[56px] md:w-[50px] md:h-[70px] rounded border border-dashed border-white/15 flex-shrink-0" />
               )}
             </div>
-            <div className={`flex items-center gap-1.5 bg-black/40 rounded-full px-2.5 py-0.5 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
-              <span className="text-[8px] text-white/50 uppercase tracking-widest font-mono">{t.poker.pot}</span>
-              <span className="text-xs font-bold text-yellow-300 font-mono tabular-nums">{pot}</span>
+            <div className={`flex items-center gap-1 bg-black/40 rounded-full px-1.5 sm:px-2.5 py-0.5 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
+              <span className="text-[5px] sm:text-[8px] text-white/50 uppercase tracking-widest font-mono">{t.poker.pot}</span>
+              <span className="text-[8px] sm:text-xs font-bold text-yellow-300 font-mono tabular-nums">{pot}</span>
             </div>
             {sidePots && sidePots.length > 1 && (
               <div className="flex gap-1.5 flex-wrap justify-center">
@@ -511,12 +511,12 @@ export default function PokerBoard({
           <div className="flex flex-col gap-3 px-4 py-4">
             {/* Your hole cards — large and clear */}
             {humanShowCards && (
-              <div className="flex justify-center gap-2">
+              <div className="flex justify-center gap-1.5 sm:gap-2">
                 {humanPlayer.holeCards && humanPlayer.holeCards.length === 2
                   ? humanPlayer.holeCards.map((c, i) => (
-                      <CardFace key={i} card={c} size="md" highlight={isShowdown && humanIsWinner} />
+                      <CardFace key={i} card={c} size={isMobile ? "sm" : "md"} highlight={isShowdown && humanIsWinner} />
                     ))
-                  : <><CardBack size="md" /><CardBack size="md" /></>
+                  : <><CardBack size={isMobile ? "sm" : "md"} /><CardBack size={isMobile ? "sm" : "md"} /></>
                 }
               </div>
             )}
@@ -535,9 +535,9 @@ export default function PokerBoard({
 
             {/* Log */}
             {actionHistory && actionHistory.length > 0 && (
-              <div className="space-y-0.5 pt-2 border-t border-white/5">
-                {actionHistory.slice(-6).map((a, i) => (
-                  <div key={i} className="text-[10px] font-mono flex items-center gap-1.5">
+              <div className="space-y-0 sm:space-y-0.5 pt-1 sm:pt-2 border-t border-white/5">
+                {actionHistory.slice(isMobile ? -3 : -6).map((a, i) => (
+                  <div key={i} className="text-[8px] sm:text-[10px] font-mono flex items-center gap-1 sm:gap-1.5">
                     <span className={a.playerIndex === humanPlayerIndex ? "text-blue-300" : "text-red-300"}>
                       {players[a.playerIndex]?.name ?? `P${a.playerIndex}`}
                     </span>
