@@ -481,7 +481,7 @@ export default function PokerBoard({
           {players.map((player, idx) => {
             const visualIndex = (idx - humanPlayerIndex + players.length) % players.length;
             const pos = seats[visualIndex % seats.length];
-            const showCards = player.isHuman || (isShowdown && !player.hasFolded);
+            const showCards = player.isHuman || (isShowdown && !player.hasFolded) || (player.holeCards != null && player.holeCards.length === 2);
 
             return (
               <PlayerSeat

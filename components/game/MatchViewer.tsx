@@ -617,20 +617,52 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               />
             ) : match.gameType === "poker" ? (
               (() => {
+                const isReplay = match.status === "completed";
+                const savedState = (match as any).pokerState as {
+                  players?: { seatIndex: number; holeCards?: PokerCard[]; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string }[];
+                  communityCards?: PokerCard[];
+                  pot?: number;
+                  street?: string;
+                  handNumber?: number;
+                  dealerIndex?: number;
+                  actionHistory?: { type: string; amount?: number; playerIndex: number; street: string }[];
+                } | null;
+
+                // For replays, use saved pokerState for hole cards
+                const replayPlayers = isReplay && savedState?.players;
+
                 const spectatorPlayers = pokerPlayers.length > 0
-                  ? pokerPlayers.map((p, i) => ({
-                      id: p.playerId ?? `p${i}`,
-                      name: p.name ?? agents[p.seatIndex]?.agentName ?? `Player ${p.seatIndex + 1}`,
-                      seatIndex: p.seatIndex,
-                      stack: p.stack,
-                      currentBet: p.currentBet,
-                      hasFolded: p.hasFolded,
-                      isAllIn: p.isAllIn,
-                      isEliminated: p.isEliminated,
-                      isDealer: p.isDealer,
+                  ? pokerPlayers.map((p, i) => {
+                      const replayP = replayPlayers ? replayPlayers.find(rp => rp.seatIndex === p.seatIndex) : null;
+                      return {
+                        id: p.playerId ?? `p${i}`,
+                        name: p.name ?? agents[p.seatIndex]?.agentName ?? `Player ${p.seatIndex + 1}`,
+                        seatIndex: p.seatIndex,
+                        stack: p.stack,
+                        currentBet: p.currentBet,
+                        hasFolded: p.hasFolded,
+                        isAllIn: p.isAllIn,
+                        isEliminated: p.isEliminated,
+                        isDealer: p.isDealer,
+                        isHuman: false,
+                        isAgent: p.isAgent ?? true,
+                        holeCards: isReplay ? (replayP?.holeCards as PokerCard[] | undefined) : undefined,
+                      };
+                    })
+                  : replayPlayers
+                  ? replayPlayers.map((rp, i) => ({
+                      id: rp.playerId ?? `p${i}`,
+                      name: agents[rp.seatIndex]?.agentName ?? `Player ${rp.seatIndex + 1}`,
+                      seatIndex: rp.seatIndex,
+                      stack: rp.stack,
+                      currentBet: rp.currentBet,
+                      hasFolded: rp.hasFolded,
+                      isAllIn: rp.isAllIn,
+                      isEliminated: rp.isEliminated,
+                      isDealer: rp.isDealer,
                       isHuman: false,
-                      isAgent: p.isAgent ?? true,
-                      holeCards: undefined as undefined,
+                      isAgent: true,
+                      holeCards: rp.holeCards as PokerCard[] | undefined,
                     }))
                   : agents.map((a, i) => ({
                       id: a.agentId ?? `p${i}`,
@@ -644,18 +676,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       isDealer: i === 0,
                       isHuman: false,
                       isAgent: true,
-                      holeCards: undefined as undefined,
+                      holeCards: undefined as PokerCard[] | undefined,
                     }));
+
+                // For replays, use saved state values if live state is empty
+                const displayCommunity = pokerCommunityCards.length > 0 ? pokerCommunityCards : (isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards);
+                const displayPot = pokerPot > 0 ? pokerPot : (isReplay && savedState?.pot ? savedState.pot : pokerPot);
+                const displayStreet = pokerStreet !== "preflop" ? pokerStreet : (isReplay && savedState?.street ? savedState.street : pokerStreet);
+                const displayHandNumber = pokerHandNumber > 0 ? pokerHandNumber : (isReplay && savedState?.handNumber ? savedState.handNumber : pokerHandNumber);
+                const displayDealer = pokerDealerIndex > 0 ? pokerDealerIndex : (isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex);
+
                 return (
                   <PokerBoard
-                    communityCards={pokerCommunityCards}
-                    pot={pokerPot}
-                    street={pokerStreet}
-                    handNumber={pokerHandNumber}
+                    communityCards={displayCommunity}
+                    pot={displayPot}
+                    street={displayStreet}
+                    handNumber={displayHandNumber}
                     players={spectatorPlayers}
                     humanPlayerIndex={-1}
                     currentPlayerIndex={pokerCurrentPlayerIndex}
-                    dealerIndex={pokerDealerIndex}
+                    dealerIndex={displayDealer}
                     actionHistory={pokerActionHistory}
                   />
                 );
