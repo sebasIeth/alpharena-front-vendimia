@@ -922,15 +922,15 @@ function PlayContent() {
               <div className="p-6">
                 {balance ? (
                   <div className="space-y-3">
-                    <div className="flex items-end gap-4">
-                      <div>
-                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                        <span className="text-xs text-arena-muted ml-1">ALPHA</span>
-                        {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate min-w-0">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span className="text-xs text-arena-muted">ALPHA</span>
                       </div>
-                      <div>
-                        <span className="text-sm font-mono tabular-nums text-arena-muted">{Number(balance.eth).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
-                        <span className="text-xs text-arena-muted ml-1">{selectedChain === "celo" ? "CELO" : "ETH"}</span>
+                      {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
+                      <div className="flex items-baseline gap-1.5 pt-1">
+                        <span className="text-lg font-bold font-mono tabular-nums text-arena-text-bright">{Number(balance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                        <span className="text-xs text-arena-muted">{selectedChain === "celo" ? "CELO" : "ETH"}</span>
                       </div>
                     </div>
                     {balance.walletAddress && (
@@ -993,13 +993,11 @@ function PlayContent() {
 
                 {/* Entry fee */}
                 <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-arena-muted font-medium">{t.play.entryFee}</span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-bold font-mono tabular-nums text-arena-text">1,000,000</span>
-                      <span className="text-xs text-arena-muted">ALPHA</span>
-                      {(() => { const usd = formatUsdEquivalent(1_000_000, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-1">({usd})</span> : null; })()}
-                    </div>
+                  <span className="text-xs text-arena-muted font-medium uppercase tracking-wider">{t.play.entryFee}</span>
+                  <div className="flex flex-wrap items-baseline gap-1.5 mt-1">
+                    <span className="text-lg font-bold font-mono tabular-nums text-arena-text">1,000,000</span>
+                    <span className="text-xs text-arena-muted">ALPHA</span>
+                    {(() => { const usd = formatUsdEquivalent(1_000_000, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
                   </div>
                   <p className="text-[10px] text-arena-muted/70 mt-1">{t.play.entryFeeDesc}</p>
                 </div>

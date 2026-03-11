@@ -618,18 +618,18 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             ) : match.gameType === "poker" ? (
               (() => {
                 const isReplay = match.status === "completed";
-                const savedState = (match as any).pokerState as {
+                const rawPokerState = isReplay ? match.pokerState : null;
+                const savedState = rawPokerState && typeof rawPokerState === "object" ? rawPokerState as {
                   players?: { seatIndex: number; holeCards?: PokerCard[]; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string }[];
                   communityCards?: PokerCard[];
                   pot?: number;
                   street?: string;
                   handNumber?: number;
                   dealerIndex?: number;
-                  actionHistory?: { type: string; amount?: number; playerIndex: number; street: string }[];
-                } | null;
+                } : null;
 
                 // For replays, use saved pokerState for hole cards
-                const replayPlayers = isReplay && savedState?.players;
+                const replayPlayers = savedState?.players && Array.isArray(savedState.players) ? savedState.players : null;
 
                 const spectatorPlayers = pokerPlayers.length > 0
                   ? pokerPlayers.map((p, i) => {
@@ -652,14 +652,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   : replayPlayers
                   ? replayPlayers.map((rp, i) => ({
                       id: rp.playerId ?? `p${i}`,
-                      name: agents[rp.seatIndex]?.agentName ?? `Player ${rp.seatIndex + 1}`,
-                      seatIndex: rp.seatIndex,
-                      stack: rp.stack,
-                      currentBet: rp.currentBet,
-                      hasFolded: rp.hasFolded,
-                      isAllIn: rp.isAllIn,
-                      isEliminated: rp.isEliminated,
-                      isDealer: rp.isDealer,
+                      name: agents[rp.seatIndex]?.agentName ?? `Player ${(rp.seatIndex ?? i) + 1}`,
+                      seatIndex: rp.seatIndex ?? i,
+                      stack: rp.stack ?? 0,
+                      currentBet: rp.currentBet ?? 0,
+                      hasFolded: rp.hasFolded ?? false,
+                      isAllIn: rp.isAllIn ?? false,
+                      isEliminated: rp.isEliminated ?? false,
+                      isDealer: rp.isDealer ?? false,
                       isHuman: false,
                       isAgent: true,
                       holeCards: rp.holeCards as PokerCard[] | undefined,

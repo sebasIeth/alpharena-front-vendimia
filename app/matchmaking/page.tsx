@@ -203,14 +203,14 @@ function AgentCard({
           {balanceLoading ? (
             <div className="text-xs text-arena-muted font-mono animate-pulse">Loading balance...</div>
           ) : balance ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold font-mono tabular-nums text-arena-primary">{balance.alpha}</span>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex flex-wrap items-baseline gap-1">
+                <span className="text-sm font-bold font-mono tabular-nums text-arena-primary truncate min-w-0">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                 <span className="text-[10px] text-arena-muted">ALPHA</span>
-                {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted ml-1">({usd})</span> : null; })()}
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xs font-mono tabular-nums text-arena-muted">{balance.eth}</span>
+              {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">{usd}</span> : null; })()}
+              <div className="flex items-baseline gap-1 pt-0.5">
+                <span className="text-xs font-mono tabular-nums text-arena-muted">{Number(balance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
                 <span className="text-[10px] text-arena-muted">ETH</span>
               </div>
             </div>

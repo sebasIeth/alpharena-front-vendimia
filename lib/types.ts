@@ -139,6 +139,14 @@ export interface Match {
   agents: MatchAgent[];
   pokerPlayers?: PokerPlayer[];
   pokerScores?: Record<string, number>;
+  pokerState?: {
+    players?: { seatIndex: number; holeCards?: PokerCard[]; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string }[];
+    communityCards?: PokerCard[];
+    pot?: number;
+    street?: string;
+    handNumber?: number;
+    dealerIndex?: number;
+  };
   stakeAmount: number;
   pot: number;
   winnerId?: string;
