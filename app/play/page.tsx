@@ -892,12 +892,12 @@ function PlayContent() {
                   <div className="space-y-3">
                     <div className="flex items-end gap-4">
                       <div>
-                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{balance.alpha}</span>
+                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                         <span className="text-xs text-arena-muted ml-1">ALPHA</span>
                         {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
                       </div>
                       <div>
-                        <span className="text-sm font-mono tabular-nums text-arena-muted">{balance.eth}</span>
+                        <span className="text-sm font-mono tabular-nums text-arena-muted">{Number(balance.eth).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                         <span className="text-xs text-arena-muted ml-1">{selectedChain === "celo" ? "CELO" : "ETH"}</span>
                       </div>
                     </div>

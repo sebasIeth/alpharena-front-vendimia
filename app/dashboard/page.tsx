@@ -714,12 +714,12 @@ function DashboardContent() {
               {/* Balances */}
               <div className="flex items-end gap-5">
                 <div>
-                  <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary">{playBalance.alpha}</span>
+                  <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate">{Number(playBalance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                   <span className="text-xs text-arena-muted ml-1">ALPHA</span>
                   {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
                 </div>
                 <div>
-                  <span className="text-sm font-mono tabular-nums text-arena-muted">{playBalance.eth}</span>
+                  <span className="text-sm font-mono tabular-nums text-arena-muted">{Number(playBalance.eth).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                   <span className="text-xs text-arena-muted ml-1">ETH</span>
                 </div>
               </div>
