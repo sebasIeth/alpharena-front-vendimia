@@ -362,7 +362,24 @@ function PlayContent() {
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
-        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerHandNumber != null) {
+          setPokerHandNumber((prev: number) => {
+            if ((data.pokerHandNumber as number) > prev) {
+              // New hand: reset stale state
+              setPokerHoleCards([]);
+              setPokerActionHistory([]);
+              setPokerCommunityCards(data.pokerCommunityCards as PokerCard[] ?? []);
+              // Reset player fold/allIn/bet flags
+              setPokerPlayers(cur => cur.map(p => ({
+                ...p,
+                hasFolded: false,
+                isAllIn: false,
+                currentBet: 0,
+              })));
+            }
+            return data.pokerHandNumber as number;
+          });
+        }
         if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
 
         // Active player's seat (whose turn it is)
@@ -438,7 +455,22 @@ function PlayContent() {
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
         if (data.pokerStreet) setPokerStreet(data.pokerStreet as string);
-        if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        if (data.pokerHandNumber != null) {
+          setPokerHandNumber((prev: number) => {
+            if ((data.pokerHandNumber as number) > prev) {
+              setPokerHoleCards([]);
+              setPokerActionHistory([]);
+              setPokerCommunityCards(data.pokerCommunityCards as PokerCard[] ?? []);
+              setPokerPlayers(cur => cur.map(p => ({
+                ...p,
+                hasFolded: false,
+                isAllIn: false,
+                currentBet: 0,
+              })));
+            }
+            return data.pokerHandNumber as number;
+          });
+        }
         if (data.pokerPlayers) {
           const incoming = data.pokerPlayers as { seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean; playerId?: string; name?: string; isAgent?: boolean }[];
           // Merge names/playerId/isAgent from existing state if missing in update
