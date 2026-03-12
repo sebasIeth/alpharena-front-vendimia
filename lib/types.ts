@@ -461,6 +461,28 @@ export interface PlayJoinPayload {
   chain?: Chain;
 }
 
+// ========== Scheduled Matches ==========
+export interface ScheduledMatchAgent {
+  agentId: string;
+  userId: string;
+  name: string;
+  elo: number;
+  color: string;
+}
+
+export interface ScheduledMatchResponse {
+  _id: string;
+  gameType: string;
+  scheduledAt: string;
+  status: "scheduled" | "starting" | "completed" | "cancelled";
+  stakeAmount: number;
+  agents: ScheduledMatchAgent[];
+  matchId?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ========== API Error ==========
 export interface ApiError {
   statusCode: number;

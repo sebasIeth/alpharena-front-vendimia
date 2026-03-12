@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
+import ScheduledMatches from "@/components/scheduled/ScheduledMatches";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -942,6 +943,13 @@ function DashboardContent() {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════
+          SCHEDULED MATCHES
+          ═══════════════════════════════════════════════════ */}
+      <div className="mb-8">
+        <ScheduledMatches />
+      </div>
 
       {/* ═══════════════════════════════════════════════════
           QUICK ACTIONS

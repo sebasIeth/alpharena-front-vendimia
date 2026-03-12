@@ -33,6 +33,7 @@ import type {
   PlaceBetResponse,
   ClaimBetResponse,
   PendingClaimsResponse,
+  ScheduledMatchResponse,
 } from "./types";
 
 /**
@@ -364,6 +365,12 @@ class ApiClient {
 
   async getMyPendingClaims(): Promise<PendingClaimsResponse> {
     return this.get<PendingClaimsResponse>("/betting/my-pending-claims");
+  }
+
+  // ========== Scheduled Matches ==========
+  async getScheduledMatches(gameType?: string): Promise<{ matches: ScheduledMatchResponse[] }> {
+    const query = gameType ? `?gameType=${gameType}` : "";
+    return this.get<{ matches: ScheduledMatchResponse[] }>(`/scheduled-matches${query}`, false);
   }
 
   // ========== Socket.IO ==========

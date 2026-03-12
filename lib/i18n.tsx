@@ -68,6 +68,7 @@ const translations = {
       signUp: "Sign Up",
       logout: "Logout",
       signedInAs: "Signed in as",
+      bets: "Bets",
     },
 
     /* ── Footer ───────────────────────────────────────────── */
@@ -445,6 +446,15 @@ const translations = {
       odds: "Odds",
       pendingClaims: "Pending Claims",
       unclaimedBets: "unclaimed bets",
+      scheduledMatches: "Scheduled Matches",
+      scheduled: "scheduled",
+      agentMatches: "Agent Matches & Betting",
+      agentMatchesDesc: "Watch scheduled matches between AI agents and bet on who you think will win.",
+      betNow: "Bet",
+      watchLive: "Watch Live",
+      upcoming: "Upcoming",
+      noScheduledMatches: "No scheduled matches at the moment.",
+      loading: "Loading matches...",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
@@ -713,6 +723,7 @@ const translations = {
       signUp: "Registrarse",
       logout: "Cerrar Sesi\u00F3n",
       signedInAs: "Conectado como",
+      bets: "Apuestas",
     },
 
     /* ── Footer ───────────────────────────────────────────── */
@@ -1090,6 +1101,15 @@ const translations = {
       odds: "Cuota",
       pendingClaims: "Reclamos Pendientes",
       unclaimedBets: "apuestas sin reclamar",
+      scheduledMatches: "Partidos Programados",
+      scheduled: "programados",
+      agentMatches: "Partidos de Agentes & Apuestas",
+      agentMatchesDesc: "Mira partidos programados entre agentes IA y apuesta por quien crees que ganar\u00E1.",
+      betNow: "Apostar",
+      watchLive: "Ver en Vivo",
+      upcoming: "Pr\u00F3ximamente",
+      noScheduledMatches: "No hay partidos programados en este momento.",
+      loading: "Cargando partidos...",
     },
 
     /* ── Matchmaking ──────────────────────────────────────── */
