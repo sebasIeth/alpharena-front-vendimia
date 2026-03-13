@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import type { Socket } from "socket.io-client";
 import { api } from "@/lib/api";
 import type { Match, Move, BoardState, AssamPosition, PlayerState, DiceResult, TributeEvent, GamePhase } from "@/lib/types";
@@ -195,23 +195,53 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [tribute, setTribute] = useState<TributeEvent | null>(null);
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [score, setScore] = useState<Record<string, number> | null>(null);
-  // Poker-specific state
-  const [pokerCommunityCards, setPokerCommunityCards] = useState<PokerCard[]>([]);
-  const [pokerPot, setPokerPot] = useState(0);
-  const [pokerStreet, setPokerStreet] = useState("preflop");
-  const [pokerHandNumber, setPokerHandNumber] = useState(0);
+  // Poker-specific state — initialize from match.pokerState if available
+  // Backend stores players as { a: {...}, b: {...} }, convert to array
+  const initPoker = match.pokerState && typeof match.pokerState === "object" ? match.pokerState as any : null;
+  const [pokerCommunityCards, setPokerCommunityCards] = useState<PokerCard[]>(initPoker?.communityCards || []);
+  const [pokerPot, setPokerPot] = useState(initPoker?.pot || 0);
+  const [pokerStreet, setPokerStreet] = useState(initPoker?.street || "preflop");
+  const [pokerHandNumber, setPokerHandNumber] = useState(initPoker?.handNumber || 0);
   const [pokerPlayers, setPokerPlayers] = useState<{
     seatIndex: number; stack: number; currentBet: number;
     hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean;
     playerId?: string; name?: string; isAgent?: boolean;
-  }[]>([]);
-  const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(0);
-  const [pokerDealerIndex, setPokerDealerIndex] = useState(0);
+  }[]>(() => {
+    if (!initPoker?.players) return [];
+    // Array format (from WS events)
+    if (Array.isArray(initPoker.players)) {
+      return initPoker.players.map((p: any, i: number) => ({
+        seatIndex: p.seatIndex ?? i, stack: p.stack ?? 0, currentBet: p.currentBet ?? 0,
+        hasFolded: p.hasFolded ?? false, isAllIn: p.isAllIn ?? false, isDealer: p.isDealer ?? false,
+        isEliminated: p.isEliminated ?? false, playerId: p.playerId, name: p.name, isAgent: p.isAgent,
+      }));
+    }
+    // Object format from backend DB: { a: {...}, b: {...} }
+    const p = initPoker.players;
+    const arr: any[] = [];
+    if (p.a) arr.push({ seatIndex: 0, stack: p.a.stack ?? 0, currentBet: p.a.currentBet ?? 0, hasFolded: p.a.hasFolded ?? false, isAllIn: p.a.isAllIn ?? false, isDealer: p.a.isDealer ?? false, isEliminated: false });
+    if (p.b) arr.push({ seatIndex: 1, stack: p.b.stack ?? 0, currentBet: p.b.currentBet ?? 0, hasFolded: p.b.hasFolded ?? false, isAllIn: p.b.isAllIn ?? false, isDealer: p.b.isDealer ?? false, isEliminated: false });
+    return arr;
+  });
+  const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(() => {
+    if (!initPoker?.currentPlayerSide) return 0;
+    return initPoker.currentPlayerSide === "b" ? 1 : 0;
+  });
+  const [pokerDealerIndex, setPokerDealerIndex] = useState(() => {
+    if (initPoker?.dealerIndex != null) return initPoker.dealerIndex;
+    if (initPoker?.dealerSide) return initPoker.dealerSide === "b" ? 1 : 0;
+    return 0;
+  });
   const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
+  // Replay state
+  const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(800);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const movesEndRef = useRef<HTMLDivElement>(null);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
+  const replayMoveRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const matchId = match.id || (match as any)._id;
 
@@ -236,6 +266,52 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   agentLookupRef.current = agentLookup;
   const onMatchUpdateRef = useRef(onMatchUpdate);
   onMatchUpdateRef.current = onMatchUpdate;
+
+  // Replay: can we replay this match?
+  const canReplay = match.status === "completed" && moves.length > 0
+    && moves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0);
+
+  // Replay: the board to display (override when stepping through moves)
+  const displayBoard = useMemo(() => {
+    if (replayStep >= 0 && replayStep < moves.length) {
+      const board = moves[replayStep].boardStateAfter;
+      if (board && board.length > 0) return board;
+    }
+    return extractBoard(currentBoard || match.boardState || (match as any).currentBoard);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayStep, moves, currentBoard, match.boardState]);
+
+  // Replay: current move info for display
+  const replayMoveInfo = useMemo(() => {
+    if (replayStep < 0 || replayStep >= moves.length) return null;
+    const move = moves[replayStep];
+    const info = agentLookup.get(move.agentId);
+    const { text } = formatMoveDisplay(move.moveData, match.gameType);
+    return { agentName: info?.name || "Agent", side: info?.side || move.side || "a", text, moveNumber: move.moveNumber ?? move.turnNumber };
+  }, [replayStep, moves, agentLookup, match.gameType]);
+
+  // Replay: auto-play timer
+  useEffect(() => {
+    if (!isAutoPlaying || !canReplay) return;
+    const timer = setInterval(() => {
+      setReplayStep(prev => {
+        const next = (prev < 0 ? 0 : prev) + 1;
+        if (next >= moves.length) {
+          setIsAutoPlaying(false);
+          return moves.length - 1;
+        }
+        return next;
+      });
+    }, playbackSpeed);
+    return () => clearInterval(timer);
+  }, [isAutoPlaying, playbackSpeed, moves.length, canReplay]);
+
+  // Replay: auto-scroll move list to current step
+  useEffect(() => {
+    if (replayStep < 0) return;
+    const el = replayMoveRefs.current.get(replayStep);
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [replayStep]);
 
   // Fetch moves + extract initial thoughts
   useEffect(() => {
@@ -274,6 +350,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             setCurrentAssam((prev) => prev || assamFromMove);
           }
         }
+
+        // Auto-start replay for completed matches with board data
+        if (match.status === "completed" && fetchedMoves.length > 0
+            && fetchedMoves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0)) {
+          setReplayStep(0);
+          setIsAutoPlaying(true);
+        }
       } catch {
         // silently fail
       } finally {
@@ -283,9 +366,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     fetchMoves();
   }, [matchId]);
 
-  // Socket.IO for live updates
+  // Socket.IO for live updates (connect for both "starting" and "active" matches)
   useEffect(() => {
-    if (match.status !== "active" || !matchId) return;
+    if ((match.status !== "active" && match.status !== "starting") || !matchId) return;
 
     setWsStatus("connecting");
     const socket = api.connectMatchSocket(matchId);
@@ -471,10 +554,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId, match.status]);
 
-  // Polling fallback: re-fetch match + moves while active
+  // Polling fallback: re-fetch match + moves while active/starting
   // Uses 8s interval with backoff on 429 to avoid rate limiting
   useEffect(() => {
-    if (match.status !== "active" || !matchId) return;
+    if ((match.status !== "active" && match.status !== "starting") || !matchId) return;
 
     let interval = 8000;
     const schedule = () => {
@@ -507,6 +590,52 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               }
               const assam = extractAssam(updated);
               if (assam) setCurrentAssam(assam);
+
+              // Extract poker state from polled match data
+              const pk = updated.pokerState as any;
+              if (pk && typeof pk === "object") {
+                if (pk.communityCards) setPokerCommunityCards(pk.communityCards);
+                if (pk.pot != null) setPokerPot(pk.pot);
+                if (pk.street) setPokerStreet(pk.street);
+                if (pk.handNumber != null) {
+                  setPokerHandNumber((prev: number) => {
+                    if ((pk.handNumber as number) > prev) setPokerActionHistory([]);
+                    return pk.handNumber as number;
+                  });
+                }
+                if (pk.dealerIndex != null) setPokerDealerIndex(pk.dealerIndex);
+                else if (pk.dealerSide) setPokerDealerIndex(pk.dealerSide === "b" ? 1 : 0);
+                if (pk.currentPlayerSide) setPokerCurrentPlayerIndex(pk.currentPlayerSide === "b" ? 1 : 0);
+                // Players: handle both array format (WS) and object format (DB: { a, b })
+                if (pk.players) {
+                  if (Array.isArray(pk.players)) {
+                    setPokerPlayers(prev => (pk.players as any[]).map((p: any, i: number) => {
+                      const existing = prev.find(e => e.seatIndex === (p.seatIndex ?? i));
+                      return {
+                        seatIndex: p.seatIndex ?? i, stack: p.stack ?? 0, currentBet: p.currentBet ?? 0,
+                        hasFolded: p.hasFolded ?? false, isAllIn: p.isAllIn ?? false, isDealer: p.isDealer ?? false,
+                        isEliminated: p.isEliminated ?? false, playerId: p.playerId ?? existing?.playerId,
+                        name: p.name ?? existing?.name, isAgent: p.isAgent ?? existing?.isAgent,
+                      };
+                    }));
+                  } else if (pk.players.a || pk.players.b) {
+                    setPokerPlayers(prev => {
+                      const arr: typeof prev = [];
+                      for (const [side, idx] of [["a", 0], ["b", 1]] as const) {
+                        const p = (pk.players as any)[side];
+                        if (!p) continue;
+                        const existing = prev.find(e => e.seatIndex === idx);
+                        arr.push({
+                          seatIndex: idx, stack: p.stack ?? 0, currentBet: p.currentBet ?? 0,
+                          hasFolded: p.hasFolded ?? false, isAllIn: p.isAllIn ?? false, isDealer: p.isDealer ?? false,
+                          isEliminated: false, playerId: existing?.playerId, name: existing?.name, isAgent: existing?.isAgent,
+                        });
+                      }
+                      return arr;
+                    });
+                  }
+                }
+              }
 
               onMatchUpdateRef.current?.({ ...updated, id: updated.id || (updated as any)._id });
             }
@@ -593,24 +722,24 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <h3 className="text-lg font-semibold text-arena-text">Board</h3>
               <div className="flex items-center gap-2">
                 <Badge status={match.status} />
-                {match.status === "active" && (
+                {(match.status === "active" || match.status === "starting") && (
                   <span className="flex items-center gap-1 text-xs text-arena-success">
                     <span className="w-2 h-2 bg-arena-success rounded-full animate-pulse" />
-                    LIVE
+                    {match.status === "starting" ? "STARTING" : "LIVE"}
                   </span>
                 )}
               </div>
             </div>
             {match.gameType === "chess" ? (
               <ChessBoard
-                board={extractBoard(currentBoard || match.boardState || (match as any).currentBoard) as number[][] | null}
+                board={displayBoard as number[][] | null}
                 legalMoves={[]}
                 mySide={null}
                 isMyTurn={false}
               />
             ) : match.gameType === "reversi" ? (
               <ReversiBoard
-                board={extractBoard(currentBoard || match.boardState || (match as any).currentBoard) as number[][] | null}
+                board={displayBoard as number[][] | null}
                 legalMoves={[]}
                 mySide={null}
                 isMyTurn={false}
@@ -712,6 +841,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               />
             )}
 
+            {/* Waiting to start overlay */}
+            {match.status === "starting" && moves.length === 0 && (
+              <div className="mt-4 flex items-center justify-center gap-3 bg-arena-primary/5 border border-arena-primary/20 rounded-lg px-4 py-6">
+                <div className="w-5 h-5 border-2 border-arena-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm font-medium text-arena-primary">Match is about to start...</span>
+              </div>
+            )}
+
             {/* Game Status Bar (Marrakech-specific) */}
             {match.gameType !== "chess" && match.gameType !== "reversi" && (gamePhase || diceResult || tribute || score) && (
               <div className="mt-4 flex flex-wrap items-center gap-3 bg-arena-bg rounded-lg px-4 py-2.5">
@@ -770,6 +907,105 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── Replay Controls ── */}
+            {canReplay && (
+              <div className="mt-4 bg-[#1a1a2e] border border-white/10 rounded-xl p-4 space-y-3">
+                {/* Timeline slider */}
+                <div className="relative">
+                  <input
+                    type="range"
+                    min={0}
+                    max={moves.length - 1}
+                    value={replayStep >= 0 ? replayStep : moves.length - 1}
+                    onChange={(e) => { setReplayStep(parseInt(e.target.value)); setIsAutoPlaying(false); }}
+                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-arena-primary [&::-webkit-slider-thumb]:shadow-lg
+                      [&::-webkit-slider-thumb]:shadow-arena-primary/30 [&::-webkit-slider-thumb]:cursor-pointer"
+                  />
+                </div>
+
+                {/* Controls row */}
+                <div className="flex items-center justify-between gap-3">
+                  {/* Transport buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => { setReplayStep(0); setIsAutoPlaying(false); }}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      title="Start"
+                    >⏮</button>
+                    <button
+                      onClick={() => {
+                        setReplayStep(prev => Math.max(0, (prev < 0 ? moves.length - 1 : prev) - 1));
+                        setIsAutoPlaying(false);
+                      }}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      title="Step back"
+                    >◀</button>
+                    <button
+                      onClick={() => {
+                        if (replayStep < 0) setReplayStep(0);
+                        // If at the end, restart
+                        if (replayStep >= moves.length - 1) {
+                          setReplayStep(0);
+                          setIsAutoPlaying(true);
+                        } else {
+                          setIsAutoPlaying(!isAutoPlaying);
+                        }
+                      }}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all text-lg ${
+                        isAutoPlaying
+                          ? "bg-arena-primary/20 text-arena-primary ring-1 ring-arena-primary/30"
+                          : "bg-arena-primary/10 hover:bg-arena-primary/20 text-arena-primary"
+                      }`}
+                      title={isAutoPlaying ? "Pause" : "Play"}
+                    >{isAutoPlaying ? "⏸" : "▶"}</button>
+                    <button
+                      onClick={() => {
+                        setReplayStep(prev => Math.min(moves.length - 1, (prev < 0 ? moves.length - 1 : prev) + 1));
+                        setIsAutoPlaying(false);
+                      }}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      title="Step forward"
+                    >▶</button>
+                    <button
+                      onClick={() => { setReplayStep(-1); setIsAutoPlaying(false); }}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      title="End"
+                    >⏭</button>
+                  </div>
+
+                  {/* Move counter + info */}
+                  <div className="flex-1 text-center min-w-0">
+                    <div className="text-white/80 text-xs font-mono font-semibold">
+                      Move {replayStep >= 0 ? replayStep + 1 : moves.length} / {moves.length}
+                    </div>
+                    {replayMoveInfo && (
+                      <div className="text-white/40 text-[10px] font-mono truncate mt-0.5">
+                        <span style={{ color: SIDE_COLORS[replayMoveInfo.side] || "#8B5CF6" }}>
+                          {replayMoveInfo.agentName}
+                        </span>
+                        {" — "}
+                        {replayMoveInfo.text}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Speed selector */}
+                  <select
+                    value={playbackSpeed}
+                    onChange={(e) => setPlaybackSpeed(parseInt(e.target.value))}
+                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white/70 text-xs font-mono cursor-pointer focus:outline-none focus:border-arena-primary/50"
+                  >
+                    <option value={1600}>0.5x</option>
+                    <option value={800}>1x</option>
+                    <option value={400}>2x</option>
+                    <option value={200}>4x</option>
+                  </select>
+                </div>
               </div>
             )}
 
@@ -918,16 +1154,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               ) : (
                 moves.map((move, idx) => {
                   const info = agentLookup.get(move.agentId);
-                  const side = info?.side || "a";
+                  const side = info?.side || move.side || "a";
                   const { text: display, phase } = formatMoveDisplay(move.moveData, match.gameType);
                   const phaseConf = phase ? PHASE_CONFIG[phase] : null;
+                  const isActiveReplayMove = canReplay && replayStep === idx;
                   return (
                     <div
-                      key={move.id || idx}
-                      className="bg-arena-bg rounded-lg px-2.5 py-2 flex items-center gap-2"
+                      key={move.id || move._id || idx}
+                      ref={(el) => { if (el) replayMoveRefs.current.set(idx, el); }}
+                      className={`rounded-lg px-2.5 py-2 flex items-center gap-2 transition-all cursor-pointer ${
+                        isActiveReplayMove
+                          ? "bg-arena-primary/15 ring-1 ring-arena-primary/30"
+                          : "bg-arena-bg hover:bg-arena-bg/80"
+                      }`}
+                      onClick={() => { if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); } }}
                     >
                       <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
-                        #{move.turnNumber}
+                        #{move.moveNumber ?? move.turnNumber ?? idx + 1}
                       </span>
                       {phaseConf && (
                         <span

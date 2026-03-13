@@ -135,7 +135,7 @@ export interface Match {
   id: string;
   gameType: string;
   chain?: Chain;
-  status: "pending" | "active" | "completed" | "cancelled" | "error";
+  status: "pending" | "starting" | "active" | "completed" | "cancelled" | "error";
   agents: MatchAgent[];
   pokerPlayers?: PokerPlayer[];
   pokerScores?: Record<string, number>;
@@ -169,10 +169,16 @@ export interface MatchesResponse {
 // ========== Move ==========
 export interface Move {
   id: string;
+  _id?: string;
   matchId: string;
   agentId: string;
+  side?: string;
   turnNumber: number;
+  moveNumber?: number;
   moveData: Record<string, unknown>;
+  boardStateAfter?: number[][];
+  scoreAfter?: { a: number; b: number };
+  thinkingTimeMs?: number;
   timestamp: string;
 }
 

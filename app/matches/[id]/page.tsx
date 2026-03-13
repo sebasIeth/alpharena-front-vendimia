@@ -562,6 +562,26 @@ export default function MatchDetailPage() {
     fetchMatch();
   }, [matchId, t.matchDetail.loadFailed]);
 
+  // Poll match data while status is "starting" so page updates when match goes active
+  useEffect(() => {
+    if (!match || (match.status !== "starting" && match.status !== "pending")) return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await api.getMatch(matchId);
+        const m = data.match;
+        const raw = m as any;
+        setMatch({
+          ...m,
+          id: m.id || raw._id || matchId,
+          winnerId: m.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || undefined,
+        });
+      } catch {
+        // silently fail, next poll will retry
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [match?.status, matchId]);
+
   const handleMatchUpdate = useCallback((updatedMatch: Match) => {
     const raw = updatedMatch as any;
     setMatch({
@@ -608,7 +628,7 @@ export default function MatchDetailPage() {
 
   const agents = normalizeMatchAgents(match.agents, match.pokerPlayers);
   const pot = match.pot ?? (match as any).potAmount ?? 0;
-  const isActive = match.status === "active";
+  const isActive = match.status === "active" || match.status === "starting";
   const isCompleted = match.status === "completed";
   const sideMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
   const isDraw = isCompleted && !match.winnerId;
@@ -663,7 +683,7 @@ export default function MatchDetailPage() {
                     <span className="absolute inset-0 bg-arena-success rounded-full animate-ping opacity-75" />
                     <span className="relative block w-2 h-2 bg-arena-success rounded-full" />
                   </span>
-                  {t.common.live}
+                  {match.status === "starting" ? "STARTING" : t.common.live}
                 </span>
               )}
             </div>

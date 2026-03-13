@@ -69,6 +69,8 @@ export function getStatusColor(status: string): string {
       return "bg-slate-100 text-slate-600 border border-slate-300";
     case "pending":
       return "bg-amber-100 text-amber-700 border border-amber-300";
+    case "starting":
+      return "bg-blue-100 text-blue-700 border border-blue-300";
     case "cancelled":
       return "bg-slate-100 text-slate-600 border border-slate-300";
     case "error":
