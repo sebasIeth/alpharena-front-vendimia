@@ -164,11 +164,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ──────────────────────────────────── */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-arena-primary to-arena-primary-dark rounded-xl flex items-center justify-center shadow-arena-sm transition-all duration-300 group-hover:shadow-arena group-hover:scale-105">
-              <span className="text-white font-extrabold text-sm tracking-tight">A</span>
-            </div>
-            <span className="text-arena-text-bright font-bold text-lg hidden sm:block font-display">
+          <Link href="/" className="flex items-center group">
+            <span className="text-arena-text-bright font-bold text-lg font-display">
               Alph<span className="text-arena-primary">Arena</span>
             </span>
           </Link>
