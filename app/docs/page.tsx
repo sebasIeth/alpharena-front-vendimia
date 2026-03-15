@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/lib/store";
 
-const API_BASE = "http://187.77.63.248:3001";
+const API_BASE = "https://api.alpharena.ai";
 
 function generateSkillText(userId: string): string {
   return `# AlphArena Agent Skill
