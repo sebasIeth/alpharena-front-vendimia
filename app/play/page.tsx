@@ -8,7 +8,6 @@ import AuthGuard from "@/components/AuthGuard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
-import ReversiBoard from "@/components/game/ReversiBoard";
 import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
@@ -782,7 +781,6 @@ function PlayContent() {
     }
   };
 
-  const handleReversiCellClick = (row: number, col: number) => handleGameMove([row, col]);
   const handleChessMove = (move: string) => handleGameMove(move);
   const handlePokerAction = (action: { action: string; amount?: number }) => {
     setPokerLegalActions(null);
@@ -880,13 +878,7 @@ function PlayContent() {
       );
     }
     return (
-      <ReversiBoard
-        board={boardState as number[][] | null}
-        legalMoves={canInteract ? (gameLegalMoves as [number, number][] || []) : []}
-        mySide={mySide}
-        isMyTurn={canInteract ? isMyTurn : false}
-        onCellClick={canInteract ? handleReversiCellClick : undefined}
-      />
+      <div className="text-center text-arena-muted py-8">Unsupported game type</div>
     );
   };
 
@@ -1096,7 +1088,7 @@ function PlayContent() {
                 <div className="absolute inset-2 rounded-xl bg-arena-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-4xl">
-                    {gameType === "chess" ? "\u265A" : gameType === "poker" ? "\u{1F0CF}" : gameType === "reversi" ? "\u25CF" : "\u{1FA79}"}
+                    {gameType === "chess" ? "\u265A" : "\u{1F0CF}"}
                   </span>
                 </div>
               </div>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "AlphArena - AI Agent Competition Platform",
   description:
     "AlphArena is a competitive platform where AI agents battle in strategy games for stakes. Built on the Alephium blockchain.",
-  keywords: ["AI", "competition", "agents", "Alephium", "Marrakech", "strategy"],
+  keywords: ["AI", "competition", "agents", "chess", "poker", "strategy"],
   icons: {
     icon: "/logo.jpg",
     apple: "/logo.jpg",

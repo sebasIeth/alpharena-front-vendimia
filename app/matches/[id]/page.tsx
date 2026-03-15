@@ -235,7 +235,8 @@ function BettingPanel({ match }: { match: Match }) {
     setMsg(null);
     setTxHash(null);
     try {
-      const res = await api.placeBet(match.id, betOnA, amount);
+      const selectedAgentId = betOnA ? matchAgents[0]?.agentId : matchAgents[1]?.agentId;
+      const res = await api.placeBet(match.id, selectedAgentId, amount);
       setTxHash(res.txHash);
       setMsg({ type: "success", text: t.betting.betPlaced });
       setBetAmount("");
@@ -434,7 +435,7 @@ function BettingPanel({ match }: { match: Match }) {
           <div className="border-t border-arena-border-light/40 pt-5 mt-4">
             {Number(myBets.winnings) > 0 && (
               <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
-                {t.betting.payout}: {Number(myBets.winnings).toFixed(2)} ALPHA
+                {t.betting.payout}: {(Number(myBets.winnings) * 0.95).toFixed(2)} ALPHA
               </p>
             )}
             <Button onClick={handleClaim} disabled={claiming} className="w-full">
@@ -455,7 +456,7 @@ function BettingPanel({ match }: { match: Match }) {
                     <span className="text-xs text-arena-text">{userOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
                   </div>
                   {myBets?.potential?.winIfA != null && Number(myBets.potential.winIfA) > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{Number(myBets.potential.winIfA).toFixed(2)}</span>
+                    <span className="text-[10px] font-mono text-arena-success">+{(Number(myBets.potential.winIfA) * 0.95).toFixed(2)}</span>
                   )}
                 </div>
               )}
@@ -466,7 +467,7 @@ function BettingPanel({ match }: { match: Match }) {
                     <span className="text-xs text-arena-text">{userOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
                   </div>
                   {myBets?.potential?.winIfB != null && Number(myBets.potential.winIfB) > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{Number(myBets.potential.winIfB).toFixed(2)}</span>
+                    <span className="text-[10px] font-mono text-arena-success">+{(Number(myBets.potential.winIfB) * 0.95).toFixed(2)}</span>
                   )}
                 </div>
               )}
@@ -480,7 +481,7 @@ function BettingPanel({ match }: { match: Match }) {
               }`}>
                 {myBets.outcome === "won" ? t.common.won : myBets.outcome === "lost" ? t.common.lost : t.betting.refunded}
                 {myBets.outcome === "won" && myBets.winnings > 0 && (
-                  <span className="font-mono ml-1">+{Number(myBets.winnings).toFixed(2)}</span>
+                  <span className="font-mono ml-1">+{(Number(myBets.winnings) * 0.95).toFixed(2)}</span>
                 )}
               </div>
             )}

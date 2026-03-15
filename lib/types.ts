@@ -326,7 +326,7 @@ export interface UserBets {
   matchId: string;
   chain: Chain;
   walletAddress: string;
-  bets: { onA: string; onB: string; total: string; claimed: boolean };
+  bets: { onA: string; onB: string; byAgent?: Record<string, number>; total: string; claimed: boolean };
   potential: { winIfA: number; winIfB: number };
   outcome: "won" | "lost" | "refund" | "pending" | "no_bet";
   winnings: number;
@@ -336,7 +336,7 @@ export interface UserBets {
 export interface PlaceBetResponse {
   txHash: string;
   matchId: string;
-  onAgentA: boolean;
+  onAgentId: string;
   amount: number;
   chain: Chain;
 }
@@ -352,8 +352,7 @@ export interface PendingClaim {
   chain: Chain;
   gameType: string;
   outcome: "won" | "refund";
-  betOnA: string;
-  betOnB: string;
+  betsByAgent: Record<string, number>;
   winnings: number;
   endedAt: string;
 }

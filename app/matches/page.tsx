@@ -219,7 +219,6 @@ function IconUsers({ className = "w-3.5 h-3.5" }: { className?: string }) {
 const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>; label: string; color: string; bg: string }> = {
   poker: { icon: IconPoker, label: "Poker", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
   chess: { icon: IconChess, label: "Chess", color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
-  marrakech: { icon: IconGamepad, label: "Marrakech", color: "text-rose-600", bg: "bg-rose-50 border-rose-200" },
 };
 
 /* ── Poker Player Row ── */

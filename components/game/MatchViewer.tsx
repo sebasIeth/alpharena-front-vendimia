@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import type { Socket } from "socket.io-client";
 import { api } from "@/lib/api";
-import type { Match, Move, BoardState, AssamPosition, PlayerState, DiceResult, TributeEvent, GamePhase } from "@/lib/types";
-import MarrakechBoard from "./MarrakechBoard";
+import type { Match, Move, PokerCard, BettingPoolResponse } from "@/lib/types";
 import ChessBoard from "./ChessBoard";
-import ReversiBoard from "./ReversiBoard";
 import PokerBoard from "./PokerBoard";
-import type { PokerCard } from "@/lib/types";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
 
@@ -33,70 +30,7 @@ const SIDE_COLORS: Record<string, string> = {
   d: "#8B5CF6",
 };
 
-// Normalize direction from various formats
-function normalizeDirection(dir: any): "N" | "S" | "E" | "W" {
-  if (typeof dir === "number") {
-    return (["N", "E", "S", "W"] as const)[dir % 4] || "N";
-  }
-  const s = String(dir || "").toUpperCase();
-  if (s === "N" || s === "NORTH" || s === "UP") return "N";
-  if (s === "S" || s === "SOUTH" || s === "DOWN") return "S";
-  if (s === "E" || s === "EAST" || s === "RIGHT") return "E";
-  if (s === "W" || s === "WEST" || s === "LEFT") return "W";
-  return "N";
-}
-
-function parseAssamCandidate(c: any): AssamPosition | null {
-  if (!c || typeof c !== "object") return null;
-  const row = c.row ?? c.y ?? c.position?.row ?? c.position?.y;
-  const col = c.col ?? c.x ?? c.position?.col ?? c.position?.x;
-  if (row == null || col == null) return null;
-  const dir = c.direction ?? c.dir ?? c.facing ?? c.orientation;
-  return { row: Number(row), col: Number(col), direction: normalizeDirection(dir) };
-}
-
-function extractAssam(data: any): AssamPosition | null {
-  if (!data || typeof data !== "object") return null;
-  const candidates = [
-    data.assam, data.assamPosition, data.assam_position,
-    data.gameState?.assam, data.state?.assam,
-    data.boardState?.assam, data.currentBoard?.assam, data.game?.assam,
-  ];
-  for (const c of candidates) {
-    const parsed = parseAssamCandidate(c);
-    if (parsed) return parsed;
-  }
-  return null;
-}
-
-function extractAssamFromMove(moveData: Record<string, unknown>): AssamPosition | null {
-  const md = moveData as any;
-  const action = md?.action && typeof md.action === "object" ? md.action : null;
-  let parsedRaw: any = null;
-  if (md?.raw && typeof md.raw === "string") {
-    try { parsedRaw = JSON.parse(md.raw); } catch { /* ignore */ }
-  }
-  const candidates = [
-    md?.assam, md?.assamPosition, md?.assam_position, md?.newAssamPosition,
-    md?.result?.assam, md?.result?.assamPosition,
-    action?.assam, action?.assamPosition,
-    parsedRaw?.assam, parsedRaw?.assamPosition,
-  ];
-  for (const c of candidates) {
-    const parsed = parseAssamCandidate(c);
-    if (parsed) return parsed;
-  }
-  return null;
-}
-
-// Phase badge labels/colors
-const PHASE_CONFIG: Record<string, { label: string; color: string }> = {
-  roll: { label: "ROLL", color: "#F59E0B" },
-  tribute: { label: "PAY", color: "#EF4444" },
-  place: { label: "PLACE", color: "#10B981" },
-};
-
-// moveData from backend — now includes phase, diceResult, tribute, etc.
+// Format move data for display
 function formatMoveDisplay(
   moveData: Record<string, unknown>,
   gameType?: string,
@@ -129,33 +63,6 @@ function formatMoveDisplay(
     return { text: "action" };
   }
 
-  // Reversi: show [row, col]
-  if (gameType === "reversi") {
-    const move = md.move || md;
-    if (Array.isArray(move) && move.length === 2) return { text: `(${move[0]}, ${move[1]})` };
-    if (md.row != null && md.col != null) return { text: `(${md.row}, ${md.col})` };
-  }
-
-  // New rich format: check phase first
-  if (md.phase === "roll" && md.diceResult) {
-    const dr = md.diceResult;
-    const val = dr.value ?? dr;
-    const pos = md.assam || md.assamPosition;
-    const posStr = pos ? ` → (${pos.row ?? pos.y},${pos.col ?? pos.x})` : "";
-    return { text: `Rolled ${val}${posStr}`, phase: "roll" };
-  }
-  if (md.phase === "tribute" && md.tribute) {
-    return { text: `Tribute: ${md.tribute.amount} dirhams`, phase: "tribute" };
-  }
-  if (md.phase === "place" && md.move) {
-    const m = md.move;
-    return { text: `Carpet at (${m.row ?? m.y}, ${m.col ?? m.x})`, phase: "place" };
-  }
-
-  // Legacy: simple {row, col} carpet placement
-  if (md.row != null && md.col != null && Object.keys(md).length <= 3) {
-    return { text: `Carpet at (${md.row}, ${md.col})` };
-  }
   // Fallback: show cleaned JSON
   const cleaned = { ...md };
   delete cleaned.thinking;
@@ -167,33 +74,24 @@ function formatMoveDisplay(
 // Extract board from various response formats
 function extractBoard(data: any): any[] | null {
   if (!data) return null;
-  // data is already a board array (e.g. number[][] for chess/reversi)
+  // data is already a board array (e.g. number[][] for chess)
   if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) return data;
   // data is an object with a board inside
   const raw = data?.boardState || data?.currentBoard || data?.board || data?.grid;
   if (!raw) return null;
   if (Array.isArray(raw)) return raw;
   if (raw.grid && Array.isArray(raw.grid)) return raw.grid;
-  const values = Object.values(raw);
-  if (values.length === 7 && Array.isArray(values[0])) return values as any[];
   return null;
 }
 
 export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) {
   const [moves, setMoves] = useState<Move[]>([]);
   const [loadingMoves, setLoadingMoves] = useState(true);
-  const [currentBoard, setCurrentBoard] = useState<BoardState | null | undefined>(
+  const [currentBoard, setCurrentBoard] = useState<any>(
     match.boardState || (match as any).currentBoard
-  );
-  const [currentAssam, setCurrentAssam] = useState<AssamPosition | null>(
-    extractAssam(match.boardState) || extractAssam(match) || null
   );
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [thinkingSide, setThinkingSide] = useState<string | null>(null);
-  const [diceResult, setDiceResult] = useState<DiceResult | null>(null);
-  const [gamePhase, setGamePhase] = useState<GamePhase | null>(null);
-  const [tribute, setTribute] = useState<TributeEvent | null>(null);
-  const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [score, setScore] = useState<Record<string, number> | null>(null);
   // Poker-specific state — initialize from match.pokerState if available
   // Backend stores players as { a: {...}, b: {...} }, convert to array
@@ -262,6 +160,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     });
     return map;
   }, [agents]);
+
+  // Betting pool — compact widget in sidebar
+  const [bettingPool, setBettingPool] = useState<BettingPoolResponse | null>(null);
+  useEffect(() => {
+    if (!matchId || agents.length !== 2) return;
+    const fetch = () => api.getBettingPool(matchId).then(setBettingPool).catch(() => {});
+    fetch();
+    const iv = setInterval(fetch, 15000);
+    return () => clearInterval(iv);
+  }, [matchId, agents.length]);
 
   // Stable refs for socket callbacks (avoid reconnection loops)
   const agentLookupRef = useRef(agentLookup);
@@ -344,15 +252,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           setThoughts(initialThoughts);
         }
 
-        // Try to extract assam from the latest move
-        if (fetchedMoves.length > 0) {
-          const lastMove = fetchedMoves[fetchedMoves.length - 1];
-          const assamFromMove = extractAssamFromMove(lastMove.moveData);
-          if (assamFromMove) {
-            setCurrentAssam((prev) => prev || assamFromMove);
-          }
-        }
-
         // Auto-start replay for completed matches with board data
         if (match.status === "completed" && fetchedMoves.length > 0
             && fetchedMoves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0)) {
@@ -395,18 +294,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       if (type === "match:start") {
         const grid = extractBoard(data);
         if (grid) setCurrentBoard({ grid } as any);
-        const assam = extractAssam(data);
-        if (assam) setCurrentAssam(assam);
-        if (data.players && Array.isArray(data.players)) {
-          setPlayerStates(data.players.map((p: any) => ({
-            id: p.id,
-            coins: p.dirhams ?? p.coins ?? 0,
-            carpetsRemaining: p.carpetsRemaining ?? 0,
-            dirhams: p.dirhams ?? p.coins,
-            name: p.name,
-            eliminated: p.eliminated,
-          })));
-        }
         // Poker: N-player support
         if (data.pokerPlayers) {
           const players = data.pokerPlayers as typeof pokerPlayers;
@@ -437,32 +324,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         if (grid) {
           setCurrentBoard({ grid } as any);
         }
-        const assam = extractAssam(data);
-        if (assam) {
-          setCurrentAssam(assam);
-        } else {
-          const fromMove = extractAssamFromMove(data);
-          if (fromMove) setCurrentAssam(fromMove);
-        }
         if (type === "match:move") setThinkingSide(null);
 
-        // Rich game data
-        if (data.diceResult) setDiceResult(data.diceResult);
-        if (data.phase) setGamePhase(data.phase);
-        if (data.tribute) {
-          setTribute(data.tribute);
-          setTimeout(() => setTribute(null), 3000);
-        }
-        if (data.players && Array.isArray(data.players)) {
-          setPlayerStates(data.players.map((p: any) => ({
-            id: p.id,
-            coins: p.dirhams ?? p.coins ?? 0,
-            carpetsRemaining: p.carpetsRemaining ?? 0,
-            dirhams: p.dirhams ?? p.coins,
-            name: p.name,
-            eliminated: p.eliminated,
-          })));
-        }
         if (data.score) setScore(data.score);
         // Poker-specific (N-player)
         if (Array.isArray(data.pokerCommunityCards)) setPokerCommunityCards(data.pokerCommunityCards);
@@ -609,9 +472,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const rawBoard = updated.boardState || (updated as any).currentBoard;
                 if (rawBoard) setCurrentBoard(rawBoard);
               }
-              const assam = extractAssam(updated);
-              if (assam) setCurrentAssam(assam);
-
               // Extract poker state from polled match data
               const pk = updated.pokerState as any;
               if (pk && typeof pk === "object") {
@@ -706,13 +566,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 }
               }
 
-              // Extract assam from latest move
-              const lastMove = newMoves[newMoves.length - 1];
-              if (lastMove) {
-                const assamFromMove = extractAssamFromMove(lastMove.moveData);
-                if (assamFromMove) setCurrentAssam(assamFromMove);
-              }
-
               return newMoves;
             });
           }
@@ -766,13 +619,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             </div>
             {match.gameType === "chess" ? (
               <ChessBoard
-                board={displayBoard as number[][] | null}
-                legalMoves={[]}
-                mySide={null}
-                isMyTurn={false}
-              />
-            ) : match.gameType === "reversi" ? (
-              <ReversiBoard
                 board={displayBoard as number[][] | null}
                 legalMoves={[]}
                 mySide={null}
@@ -900,15 +746,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 );
               })()
             ) : (
-              <MarrakechBoard
-                boardState={
-                  playerStates
-                    ? { ...(currentBoard || match.boardState || {}), players: playerStates } as BoardState
-                    : currentBoard || match.boardState
-                }
-                assamOverride={currentAssam}
-                playerCount={agents.length || 2}
-              />
+              <div className="text-center text-arena-muted py-8">Unsupported game type</div>
             )}
 
             {/* Waiting to start overlay */}
@@ -916,67 +754,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <div className="mt-4 flex items-center justify-center gap-3 bg-arena-primary/5 border border-arena-primary/20 rounded-lg px-4 py-6">
                 <div className="w-5 h-5 border-2 border-arena-primary border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm font-medium text-arena-primary">Match is about to start...</span>
-              </div>
-            )}
-
-            {/* Game Status Bar (Marrakech-specific) */}
-            {match.gameType !== "chess" && match.gameType !== "reversi" && (gamePhase || diceResult || tribute || score) && (
-              <div className="mt-4 flex flex-wrap items-center gap-3 bg-arena-bg rounded-lg px-4 py-2.5">
-                {/* Phase badge */}
-                {gamePhase && (
-                  <span
-                    className="text-xs font-bold uppercase px-2 py-0.5 rounded"
-                    style={{
-                      backgroundColor: `${PHASE_CONFIG[gamePhase]?.color || "#6B7280"}20`,
-                      color: PHASE_CONFIG[gamePhase]?.color || "#6B7280",
-                    }}
-                  >
-                    {gamePhase === "roll" ? "Rolling" : gamePhase === "tribute" ? "Tribute" : "Placing Carpet"}
-                  </span>
-                )}
-
-                {/* Dice result */}
-                {diceResult && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-arena-muted text-xs">Dice:</span>
-                    <span className="text-xl font-bold text-arena-text">{diceResult.value}</span>
-                    {diceResult.faces && diceResult.faces.length > 0 && (
-                      <span className="text-[10px] text-arena-muted">
-                        [{diceResult.faces.join(",")}]
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Tribute event */}
-                {tribute && (
-                  <span className="text-xs font-medium text-red-400 animate-pulse">
-                    {agents[tribute.fromPlayerId]?.agentName || `Player ${tribute.fromPlayerId}`}
-                    {" pays "}
-                    <span className="font-bold">{tribute.amount}</span>
-                    {" to "}
-                    {agents[tribute.toPlayerId]?.agentName || `Player ${tribute.toPlayerId}`}
-                  </span>
-                )}
-
-                {/* Score */}
-                {score && (
-                  <div className="flex items-center gap-2 ml-auto">
-                    {Object.entries(score).map(([key, value]) => {
-                      const idx = parseInt(key, 10);
-                      const side = ["a", "b", "c", "d"][isNaN(idx) ? 0 : idx] || key;
-                      return (
-                        <div key={key} className="flex items-center gap-1">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
-                          />
-                          <span className="text-xs font-bold text-arena-text">{value}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             )}
 
@@ -1113,9 +890,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <div className="text-arena-text font-medium">
                       {match.currentTurn ?? "-"}
                     </div>
-                    {gamePhase && (
-                      <div className="text-[10px] text-arena-muted capitalize mt-0.5">{gamePhase}</div>
-                    )}
                   </div>
                   <div className="bg-arena-bg rounded-lg p-2 text-center">
                     <div className="text-arena-muted text-xs">Moves</div>
@@ -1137,12 +911,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               )}
             </div>
 
-            {/* Info: Assam not available from backend (Marrakech only) */}
-            {match.gameType !== "chess" && match.gameType !== "reversi" && match.gameType !== "poker" && !currentAssam && match.status === "active" && (
-              <div className="mt-2 text-center text-[10px] text-arena-muted/50">
-                Assam position not available from backend
-              </div>
-            )}
+
           </div>
         </div>
 
@@ -1202,13 +971,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                               {agent.eloChange}
                             </div>
                           )}
-                          {playerStates?.[idx] && (
-                            <div className="text-[10px] text-arena-muted mt-0.5">
-                              {playerStates[idx].dirhams ?? playerStates[idx].coins}💰
-                              {" "}
-                              {playerStates[idx].carpetsRemaining}🧶
-                            </div>
-                          )}
                         </>
                       )}
                     </div>
@@ -1254,8 +1016,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 moves.map((move, idx) => {
                   const info = agentLookup.get(move.agentId);
                   const side = info?.side || move.side || "a";
-                  const { text: display, phase } = formatMoveDisplay(move.moveData, match.gameType);
-                  const phaseConf = phase ? PHASE_CONFIG[phase] : null;
+                  const { text: display } = formatMoveDisplay(move.moveData, match.gameType);
                   const isActiveReplayMove = canReplay && replayStep === idx;
                   return (
                     <div
@@ -1271,17 +1032,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
                         #{move.moveNumber ?? move.turnNumber ?? idx + 1}
                       </span>
-                      {phaseConf && (
-                        <span
-                          className="text-[9px] font-bold uppercase px-1 py-px rounded flex-shrink-0"
-                          style={{
-                            backgroundColor: `${phaseConf.color}20`,
-                            color: phaseConf.color,
-                          }}
-                        >
-                          {phaseConf.label}
-                        </span>
-                      )}
                       <div
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
@@ -1305,6 +1055,62 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <div ref={movesEndRef} />
             </div>
           </div>
+
+          {/* Live Betting Pool */}
+          {bettingPool && bettingPool.pool.totalPool > 0 && (
+            <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-arena-text">Bets</h3>
+                <span className="text-[10px] font-mono text-arena-muted">
+                  {bettingPool.pool.totalPool.toFixed(2)} ALPHA
+                </span>
+              </div>
+
+              {/* Pool bar */}
+              <div className="h-2 rounded-full overflow-hidden flex bg-white/5 mb-3">
+                {bettingPool.pool.percentA > 0 && (
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${bettingPool.pool.percentA}%`,
+                      backgroundColor: SIDE_COLORS.a,
+                    }}
+                  />
+                )}
+                {bettingPool.pool.percentB > 0 && (
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${bettingPool.pool.percentB}%`,
+                      backgroundColor: SIDE_COLORS.b,
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Per-agent breakdown */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.a }} />
+                    <span className="text-arena-text truncate max-w-[100px]">{agents[0]?.agentName || "Agent A"}</span>
+                  </div>
+                  <span className="font-mono text-arena-muted">
+                    {bettingPool.pool.totalBetsA.toFixed(2)} <span className="text-[10px]">({bettingPool.pool.percentA}%)</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.b }} />
+                    <span className="text-arena-text truncate max-w-[100px]">{agents[1]?.agentName || "Agent B"}</span>
+                  </div>
+                  <span className="font-mono text-arena-muted">
+                    {bettingPool.pool.totalBetsB.toFixed(2)} <span className="text-[10px]">({bettingPool.pool.percentB}%)</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Match Details */}
           <div className="bg-arena-card border border-arena-border rounded-xl p-4">

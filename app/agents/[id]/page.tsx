@@ -188,8 +188,8 @@ function AgentDetailContent() {
     openclawUrl: "",
     openclawToken: "",
     openclawAgentId: "",
-    marrakech: true,
-    reversi: false,
+    chess: true,
+    poker: true,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
@@ -233,8 +233,8 @@ function AgentDetailContent() {
             openclawUrl: a.openclawUrl || "",
             openclawToken: "",
             openclawAgentId: a.openclawAgentId || "",
-            marrakech: a.gameTypes.includes("marrakech"),
-            reversi: a.gameTypes.includes("reversi"),
+            chess: a.gameTypes.includes("chess"),
+            poker: a.gameTypes.includes("poker"),
           });
         } else {
           setError(t.agentDetail.agentNotFound);

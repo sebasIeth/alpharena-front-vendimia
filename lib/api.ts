@@ -330,7 +330,7 @@ class ApiClient {
   }
 
   async playWithdraw(amount: number, toAddress: string): Promise<WithdrawResponse> {
-    return this.post<WithdrawResponse>("/play/withdraw", { amount, toAddress });
+    return this.post<WithdrawResponse>("/play/withdraw", { amount, to: toAddress });
   }
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
@@ -355,8 +355,8 @@ class ApiClient {
     return this.get<UserBets>(`/betting/my-bets/${matchId}`);
   }
 
-  async placeBet(matchId: string, onAgentA: boolean, amount: number): Promise<PlaceBetResponse> {
-    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentA, amount });
+  async placeBet(matchId: string, onAgentId: string, amount: number): Promise<PlaceBetResponse> {
+    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentId, amount });
   }
 
   async claimBet(matchId: string): Promise<ClaimBetResponse> {

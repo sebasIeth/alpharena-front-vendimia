@@ -124,11 +124,11 @@ export default function BetsPage() {
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-arena-muted font-mono">
-                        {t.betting.yourTotal}: {(parseFloat(claim.betOnA || "0") + parseFloat(claim.betOnB || "0")).toFixed(2)} ALPHA
+                        {t.betting.yourTotal}: {Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0).toFixed(2)} ALPHA
                       </span>
                       {claim.winnings > 0 && (
                         <span className="text-xs font-semibold text-arena-success font-mono">
-                          +{Number(claim.winnings).toFixed(2)} ALPHA
+                          +{(Number(claim.winnings) * 0.95).toFixed(2)} ALPHA
                         </span>
                       )}
                       <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${

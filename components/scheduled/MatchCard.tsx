@@ -149,7 +149,8 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
     setPlacing(true);
     setMsg(null);
     try {
-      await api.placeBet(match.matchId, betOnA, amount);
+      const selectedAgentId = betOnA ? agents[0]?.agentId : agents[1]?.agentId;
+      await api.placeBet(match.matchId, selectedAgentId, amount);
       setMsg({ type: "success", text: t.betting.betPlaced });
       setBetAmount("");
       fetchBettingData();
