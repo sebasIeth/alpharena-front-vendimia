@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useLanguage } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { formatEarnings } from "@/lib/utils";
 import CountdownTimer from "./CountdownTimer";
 import type { ScheduledMatchResponse, BettingInfo, BettingPoolResponse } from "@/lib/types";
 
@@ -292,7 +293,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             <div className="flex items-center justify-between mb-1">
               <span className="text-white/40 text-[10px] font-mono">{nameA}</span>
               <span className="text-white/30 text-[10px] font-mono font-semibold">
-                {t.betting.totalPool}: {totalPool.toFixed(2)} ALPHA
+                {t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA
               </span>
               <span className="text-white/40 text-[10px] font-mono">{nameB}</span>
             </div>

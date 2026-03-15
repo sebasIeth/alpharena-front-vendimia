@@ -18,6 +18,7 @@ import {
   formatElo,
   normalizeMatchAgents,
   formatUsdEquivalent,
+  formatEarnings,
   truncateAddress,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
@@ -478,7 +479,7 @@ function DashboardContent() {
                   <IconCoin className="w-3.5 h-3.5 text-arena-accent" />
                 </div>
                 <div>
-                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(stats.earnings)}</span>
                   <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">ALPHA</span>
                 </div>
               </div>
@@ -549,7 +550,7 @@ function DashboardContent() {
           />
           <DashStat
             label={t.dashboard.totalEarnings}
-            value={stats.earnings.toFixed(2)}
+            value={formatEarnings(stats.earnings)}
             sub="ALPHA"
             icon={<IconCoin className="w-4 h-4" />}
             accentColor="bg-arena-accent"
@@ -621,7 +622,7 @@ function DashboardContent() {
                   </div>
                   <div>
                     <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
-                    <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{stats.earnings.toFixed(2)}</div>
+                    <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(stats.earnings)}</div>
                   </div>
                 </div>
               </div>
@@ -676,7 +677,7 @@ function DashboardContent() {
                 </div>
                 <div>
                   <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
-                  <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{(stats.bestAgent.stats?.totalEarnings || 0).toFixed(2)}</div>
+                  <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(stats.bestAgent.stats?.totalEarnings || 0)}</div>
                 </div>
               </div>
 
@@ -887,11 +888,11 @@ function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-arena-muted font-mono">
-                      {t.betting.yourTotal}: {Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0).toFixed(2)} ALPHA
+                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} ALPHA
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">
-                        +{(Number(claim.winnings) * 0.95).toFixed(2)} ALPHA
+                        +{formatEarnings(Number(claim.winnings) * 0.95)} ALPHA
                       </span>
                     )}
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
