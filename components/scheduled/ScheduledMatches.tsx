@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
 import type { ScheduledMatchResponse } from "@/lib/types";
 import { useLanguage } from "@/lib/i18n";
+import { normalizeMatchAgents } from "@/lib/utils";
 import MatchCard from "./MatchCard";
 
 /* ══════════════════════════════════════════════════════════
@@ -35,8 +36,44 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
 
   const fetchMatches = useCallback(async () => {
     try {
-      const res = await api.getScheduledMatches();
-      setMatches(res.matches || []);
+      const [scheduledRes, activeRes] = await Promise.all([
+        api.getScheduledMatches(),
+        api.getActiveMatches().catch(() => ({ matches: [] })),
+      ]);
+
+      const scheduled = scheduledRes.matches || [];
+
+      // Deduplicate: skip active matches that already have a ScheduledMatch entry
+      const scheduledMatchIds = new Set(
+        scheduled.map((m) => m.matchId).filter(Boolean)
+      );
+
+      // Transform active Match[] → ScheduledMatchResponse[] so MatchCard can render them
+      const activeAsScheduled: ScheduledMatchResponse[] = (activeRes.matches || [])
+        .filter((m) => !scheduledMatchIds.has(m.id))
+        .map((m) => {
+          const agents = normalizeMatchAgents(m.agents, m.pokerPlayers);
+          return {
+            _id: m.id,
+            gameType: m.gameType,
+            scheduledAt: m.createdAt,
+            status: m.status === "active" ? "starting" as const : m.status as ScheduledMatchResponse["status"],
+            stakeAmount: m.stakeAmount,
+            agents: agents.map((a, i) => ({
+              agentId: a.agentId,
+              userId: a.userId,
+              name: a.agentName,
+              elo: a.eloAtStart,
+              color: ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"][i] || "#8B5CF6",
+            })),
+            matchId: m.id,
+            createdBy: "",
+            createdAt: m.createdAt,
+            updatedAt: m.updatedAt,
+          };
+        });
+
+      setMatches([...scheduled, ...activeAsScheduled]);
     } catch {
       setMatches([]);
     } finally {

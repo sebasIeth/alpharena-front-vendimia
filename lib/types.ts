@@ -480,7 +480,7 @@ export interface ScheduledMatchResponse {
   _id: string;
   gameType: string;
   scheduledAt: string;
-  status: "scheduled" | "starting" | "completed" | "cancelled";
+  status: "scheduled" | "starting" | "active" | "completed" | "cancelled";
   stakeAmount: number;
   agents: ScheduledMatchAgent[];
   matchId?: string;
