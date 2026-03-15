@@ -422,7 +422,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
         if (data.pokerHandNumber != null) {
           setPokerHandNumber((prev: number) => {
-            if ((data.pokerHandNumber as number) > prev) setPokerActionHistory([]);
+            if ((data.pokerHandNumber as number) > prev) {
+              setPokerActionHistory([]);
+              setPokerCommunityCards([]);
+            }
             return data.pokerHandNumber as number;
           });
         }
@@ -471,6 +474,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               setPokerActionHistory([]);
               setPokerShowdownResult(null);
               setPokerHoleCards({});
+              setPokerCommunityCards([]);
             }
             return data.pokerHandNumber as number;
           });
@@ -620,6 +624,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       setPokerActionHistory([]);
                       setPokerShowdownResult(null);
                       setPokerHoleCards({});
+                      setPokerCommunityCards([]);
                     }
                     return pk.handNumber as number;
                   });
@@ -838,12 +843,19 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       holeCards: undefined as PokerCard[] | undefined,
                     }));
 
-                // For replays, use saved state values if live state is empty
-                const displayCommunity = pokerCommunityCards.length > 0 ? pokerCommunityCards : (isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards);
-                const displayPot = pokerPot > 0 ? pokerPot : (isReplay && savedState?.pot ? savedState.pot : pokerPot);
-                const displayStreet = pokerStreet !== "preflop" ? pokerStreet : (isReplay && savedState?.street ? savedState.street : pokerStreet);
-                const displayHandNumber = pokerHandNumber > 0 ? pokerHandNumber : (isReplay && savedState?.handNumber ? savedState.handNumber : pokerHandNumber);
-                const displayDealer = pokerDealerIndex > 0 ? pokerDealerIndex : (isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex);
+                // For replays, prefer saved state; detect fresh unplayed hand (match ended between hands)
+                const replayCommunity = isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards;
+                const replayStreet = isReplay && savedState?.street ? savedState.street : pokerStreet;
+                const replayHandNum = isReplay && savedState?.handNumber != null ? savedState.handNumber : pokerHandNumber;
+                const isFreshUnplayedHand = isReplay &&
+                  (replayStreet === "preflop" || !replayStreet) &&
+                  (!replayCommunity || replayCommunity.length === 0);
+
+                const displayCommunity = replayCommunity;
+                const displayPot = isReplay && savedState?.pot != null ? savedState.pot : pokerPot;
+                const displayStreet = isFreshUnplayedHand ? "showdown" : replayStreet;
+                const displayHandNumber = isFreshUnplayedHand ? Math.max(1, replayHandNum - 1) : replayHandNum;
+                const displayDealer = isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex;
 
                 // Convert backend showdown format to PokerBoard format
                 let convertedShowdown = null;
@@ -1058,35 +1070,64 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
             {/* Match Info Below Board */}
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              <div className="bg-arena-bg rounded-lg p-2 text-center">
-                <div className="text-arena-muted text-xs">Turn</div>
-                <div className="text-arena-text font-medium">
-                  {match.currentTurn ?? "-"}
-                </div>
-                {gamePhase && (
-                  <div className="text-[10px] text-arena-muted capitalize mt-0.5">{gamePhase}</div>
-                )}
-              </div>
-              <div className="bg-arena-bg rounded-lg p-2 text-center">
-                <div className="text-arena-muted text-xs">{match.gameType === "poker" ? "Hands" : "Moves"}</div>
-                <div className="text-arena-text font-medium">
-                  {moves.length || match.moveCount || 0}
-                </div>
-              </div>
-              <div className="bg-arena-bg rounded-lg p-2 text-center">
-                <div className="text-arena-muted text-xs">Stake</div>
-                <div className="text-arena-primary font-medium">
-                  {match.stakeAmount}
-                </div>
-              </div>
-              <div className="bg-arena-bg rounded-lg p-2 text-center">
-                <div className="text-arena-muted text-xs">Pot</div>
-                <div className="text-arena-primary font-medium">{pot}</div>
-              </div>
+              {match.gameType === "poker" ? (
+                <>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Hand</div>
+                    <div className="text-arena-text font-medium">
+                      #{pokerHandNumber || 1}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Hands</div>
+                    <div className="text-arena-text font-medium">
+                      {moves.length || match.moveCount || 0}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Street</div>
+                    <div className="text-arena-primary font-medium capitalize">
+                      {match.status === "completed" ? "Completed" : pokerStreet}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Pot</div>
+                    <div className="text-arena-primary font-medium">{pokerPot}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Turn</div>
+                    <div className="text-arena-text font-medium">
+                      {match.currentTurn ?? "-"}
+                    </div>
+                    {gamePhase && (
+                      <div className="text-[10px] text-arena-muted capitalize mt-0.5">{gamePhase}</div>
+                    )}
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Moves</div>
+                    <div className="text-arena-text font-medium">
+                      {moves.length || match.moveCount || 0}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Stake</div>
+                    <div className="text-arena-primary font-medium">
+                      {match.stakeAmount}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Pot</div>
+                    <div className="text-arena-primary font-medium">{pot}</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Info: Assam not available from backend (Marrakech only) */}
-            {match.gameType !== "chess" && match.gameType !== "reversi" && !currentAssam && match.status === "active" && (
+            {match.gameType !== "chess" && match.gameType !== "reversi" && match.gameType !== "poker" && !currentAssam && match.status === "active" && (
               <div className="mt-2 text-center text-[10px] text-arena-muted/50">
                 Assam position not available from backend
               </div>
