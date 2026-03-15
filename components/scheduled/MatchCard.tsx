@@ -107,7 +107,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
   const isChess = match.gameType === "chess";
   const scheduledDate = useMemo(() => new Date(match.scheduledAt), [match.scheduledAt]);
   const countdown = useCountdown(scheduledDate);
-  const isLive = countdown.isLive || match.status === "starting";
+  const isLive = countdown.isLive || match.status === "starting" || match.status === "active";
 
   // Betting state
   const [bettingInfo, setBettingInfo] = useState<BettingInfo | null>(null);

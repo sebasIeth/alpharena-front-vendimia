@@ -50,11 +50,15 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
 
       // Transform active Match[] → ScheduledMatchResponse[] so MatchCard can render them
       const activeAsScheduled: ScheduledMatchResponse[] = (activeRes.matches || [])
-        .filter((m) => !scheduledMatchIds.has(m.id))
+        .filter((m) => {
+          const mid = m.id || (m as any)._id;
+          return mid && !scheduledMatchIds.has(mid);
+        })
         .map((m) => {
+          const mid = m.id || (m as any)._id;
           const agents = normalizeMatchAgents(m.agents, m.pokerPlayers);
           return {
-            _id: m.id,
+            _id: mid,
             gameType: m.gameType,
             scheduledAt: m.createdAt,
             status: m.status === "active" ? "starting" as const : m.status as ScheduledMatchResponse["status"],
@@ -66,7 +70,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
               elo: a.eloAtStart,
               color: ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"][i] || "#8B5CF6",
             })),
-            matchId: m.id,
+            matchId: mid,
             createdBy: "",
             createdAt: m.createdAt,
             updatedAt: m.updatedAt,
