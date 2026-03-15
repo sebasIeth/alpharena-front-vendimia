@@ -18,6 +18,7 @@ import {
   formatRelativeTime,
   normalizeMatchAgents,
   formatUsdEquivalent,
+  formatEarnings,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match, Chain } from "@/lib/types";
@@ -704,11 +705,11 @@ function AgentDetailContent() {
                 <IconCoin className="w-4 h-4 text-arena-accent" />
               </div>
             </div>
-            <div className="flex items-end gap-1.5">
-              <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
-                {(agent.stats?.totalEarnings || 0).toFixed(2)}
+            <div className="flex items-end gap-1.5 min-w-0">
+              <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none truncate">
+                {formatEarnings(agent.stats?.totalEarnings || 0)}
               </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPHA</span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5 shrink-0">ALPHA</span>
             </div>
           </div>
 
