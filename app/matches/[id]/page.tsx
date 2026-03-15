@@ -6,10 +6,11 @@ import Link from "next/link";
 import { api, getExplorerTxUrl } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
+import AgentAvatar from "@/components/ui/AgentAvatar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import type { Match, Chain, BettingInfo, BettingPoolResponse, UserBets } from "@/lib/types";
-import { normalizeMatchAgents, formatRelativeTime } from "@/lib/utils";
+import { normalizeMatchAgents, formatRelativeTime, formatEarnings } from "@/lib/utils";
 
 const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
 const PLAYER_GRADIENTS = [
@@ -345,7 +346,7 @@ function BettingPanel({ match }: { match: Match }) {
             {/* Pool total + percentages */}
             <div className="flex items-center justify-between mt-1">
               <span className="text-[10px] font-mono text-arena-muted">{pctA.toFixed(1)}%</span>
-              <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {totalPool.toFixed(2)} ALPHA</span>
+              <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA</span>
               <span className="text-[10px] font-mono text-arena-muted">{pctB.toFixed(1)}%</span>
             </div>
 
@@ -435,7 +436,7 @@ function BettingPanel({ match }: { match: Match }) {
           <div className="border-t border-arena-border-light/40 pt-5 mt-4">
             {Number(myBets.winnings) > 0 && (
               <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
-                {t.betting.payout}: {(Number(myBets.winnings) * 0.95).toFixed(2)} ALPHA
+                {t.betting.payout}: {formatEarnings(Number(myBets.winnings) * 0.95)} ALPHA
               </p>
             )}
             <Button onClick={handleClaim} disabled={claiming} className="w-full">
@@ -453,10 +454,10 @@ function BettingPanel({ match }: { match: Match }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
-                    <span className="text-xs text-arena-text">{userOnA.toFixed(2)} ALPHA {t.betting.onAgent} {nameA}</span>
+                    <span className="text-xs text-arena-text">{formatEarnings(userOnA)} ALPHA {t.betting.onAgent} {nameA}</span>
                   </div>
                   {myBets?.potential?.winIfA != null && Number(myBets.potential.winIfA) > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{(Number(myBets.potential.winIfA) * 0.95).toFixed(2)}</span>
+                    <span className="text-[10px] font-mono text-arena-success">+{formatEarnings(Number(myBets.potential.winIfA) * 0.95)}</span>
                   )}
                 </div>
               )}
@@ -464,10 +465,10 @@ function BettingPanel({ match }: { match: Match }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
-                    <span className="text-xs text-arena-text">{userOnB.toFixed(2)} ALPHA {t.betting.onAgent} {nameB}</span>
+                    <span className="text-xs text-arena-text">{formatEarnings(userOnB)} ALPHA {t.betting.onAgent} {nameB}</span>
                   </div>
                   {myBets?.potential?.winIfB != null && Number(myBets.potential.winIfB) > 0 && (
-                    <span className="text-[10px] font-mono text-arena-success">+{(Number(myBets.potential.winIfB) * 0.95).toFixed(2)}</span>
+                    <span className="text-[10px] font-mono text-arena-success">+{formatEarnings(Number(myBets.potential.winIfB) * 0.95)}</span>
                   )}
                 </div>
               )}
@@ -731,12 +732,14 @@ export default function MatchDetailPage() {
               {/* Agent A - Right-aligned */}
               <div className="flex-1 flex flex-col items-end max-w-[200px]">
                 <div className="relative mb-2">
-                  <div
-                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${PLAYER_GRADIENTS[0]} flex items-center justify-center shrink-0`}
-                    style={{ boxShadow: `0 4px 14px ${PLAYER_COLORS[0]}35, inset 0 1px 0 rgba(255,255,255,0.25)` }}
-                  >
-                    <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-sm">{agents[0].agentName.charAt(0).toUpperCase()}</span>
-                  </div>
+                  <AgentAvatar
+                    name={agents[0].agentName}
+                    size="w-14 h-14 sm:w-16 sm:h-16"
+                    textSize="text-xl sm:text-2xl"
+                    gradient={PLAYER_GRADIENTS[0]}
+                    rounded="rounded-2xl"
+                    shadow={`0 4px 14px ${PLAYER_COLORS[0]}35, inset 0 1px 0 rgba(255,255,255,0.25)`}
+                  />
                   {winnerAgent?.agentId === agents[0].agentId && (
                     <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-arena-accent flex items-center justify-center shadow-md">
                       <IconCrown className="w-3.5 h-3.5 text-white" />
@@ -779,12 +782,14 @@ export default function MatchDetailPage() {
               {/* Agent B - Left-aligned */}
               <div className="flex-1 flex flex-col items-start max-w-[200px]">
                 <div className="relative mb-2">
-                  <div
-                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${PLAYER_GRADIENTS[1]} flex items-center justify-center shrink-0`}
-                    style={{ boxShadow: `0 4px 14px ${PLAYER_COLORS[1]}35, inset 0 1px 0 rgba(255,255,255,0.25)` }}
-                  >
-                    <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-sm">{agents[1].agentName.charAt(0).toUpperCase()}</span>
-                  </div>
+                  <AgentAvatar
+                    name={agents[1].agentName}
+                    size="w-14 h-14 sm:w-16 sm:h-16"
+                    textSize="text-xl sm:text-2xl"
+                    gradient={PLAYER_GRADIENTS[1]}
+                    rounded="rounded-2xl"
+                    shadow={`0 4px 14px ${PLAYER_COLORS[1]}35, inset 0 1px 0 rgba(255,255,255,0.25)`}
+                  />
                   {winnerAgent?.agentId === agents[1].agentId && (
                     <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-arena-accent flex items-center justify-center shadow-md">
                       <IconCrown className="w-3.5 h-3.5 text-white" />
@@ -833,12 +838,13 @@ export default function MatchDetailPage() {
                     className="flex items-center gap-2.5 bg-white/50 border border-white/60 rounded-xl px-3 py-2.5"
                   >
                     <div className="relative shrink-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${PLAYER_GRADIENTS[idx % PLAYER_GRADIENTS.length]} flex items-center justify-center`}
-                        style={{ boxShadow: `0 3px 10px ${PLAYER_COLORS[idx % PLAYER_COLORS.length]}35` }}
-                      >
-                        <span className="text-base font-bold text-white drop-shadow-sm">{agent.agentName.charAt(0).toUpperCase()}</span>
-                      </div>
+                      <AgentAvatar
+                        name={agent.agentName}
+                        size="w-10 h-10"
+                        textSize="text-base"
+                        gradient={PLAYER_GRADIENTS[idx % PLAYER_GRADIENTS.length]}
+                        shadow={`0 3px 10px ${PLAYER_COLORS[idx % PLAYER_COLORS.length]}35`}
+                      />
                       {winnerAgent?.agentId === agent.agentId && (
                         <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-arena-accent flex items-center justify-center shadow-md">
                           <IconCrown className="w-3 h-3 text-white" />
@@ -972,14 +978,13 @@ export default function MatchDetailPage() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="relative">
-                        <div
-                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${PLAYER_GRADIENTS[idx] || PLAYER_GRADIENTS[0]} flex items-center justify-center shrink-0`}
-                          style={{ boxShadow: `0 3px 10px ${PLAYER_COLORS[idx] || PLAYER_COLORS[0]}35, inset 0 1px 0 rgba(255,255,255,0.25)` }}
-                        >
-                          <span className="text-lg font-extrabold text-white drop-shadow-sm">
-                            {agent.agentName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        <AgentAvatar
+                          name={agent.agentName}
+                          size="w-12 h-12"
+                          textSize="text-lg"
+                          gradient={PLAYER_GRADIENTS[idx] || PLAYER_GRADIENTS[0]}
+                          shadow={`0 3px 10px ${PLAYER_COLORS[idx] || PLAYER_COLORS[0]}35, inset 0 1px 0 rgba(255,255,255,0.25)`}
+                        />
                         {isWinner && (
                           <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-arena-accent flex items-center justify-center shadow-sm">
                             <IconCrown className="w-3 h-3 text-white" />

@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
-import { formatElo, formatWinRate } from "@/lib/utils";
+import { formatElo, formatWinRate, formatEarnings, formatUsdEquivalent } from "@/lib/utils";
 import { useLanguage, agentPlural } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
-import { formatUsdEquivalent } from "@/lib/utils";
 import type { LeaderboardAgent, LeaderboardUser } from "@/lib/types";
 
 type Tab = "agents" | "users";
@@ -128,16 +127,8 @@ function CrownIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Avatar with initial ───────────────────────────────────── */
-function Avatar({ name, gradientFrom, size = "w-12 h-12", textSize = "text-lg" }: { name: string; gradientFrom: string; size?: string; textSize?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>
-        {name.charAt(0).toUpperCase()}
-      </span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Stat row inside modals ───────────────────────────────── */
 function StatRow({ label, value, accentColor }: { label: string; value: string | number; accentColor?: string }) {
@@ -252,7 +243,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
         <StatRow label={t.common.wins} value={d.wins} accentColor="text-emerald-600" />
         <StatRow label={t.common.losses} value={d.losses} accentColor="text-rose-600" />
         <StatRow label={t.common.draws} value={d.draws} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${agent.totalEarnings.toFixed(2)} ALPHA`} accentColor="text-arena-accent" />
+        <StatRow label={t.leaderboard.totalEarnings} value={`${formatEarnings(agent.totalEarnings)} ALPHA`} accentColor="text-arena-accent" />
       </div>
 
       <div>
@@ -280,14 +271,14 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
           <div className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</div>
         </div>
         <div className="text-right shrink-0">
-          <div className={`text-2xl font-extrabold font-mono tabular-nums ${rc.text}`}>{user.totalEarnings.toFixed(2)}</div>
+          <div className={`text-2xl font-extrabold font-mono tabular-nums ${rc.text}`}>{formatEarnings(user.totalEarnings)}</div>
           <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
         </div>
       </div>
 
       <div className="bg-arena-bg-light rounded-xl px-4">
         <StatRow label={t.leaderboard.agentsDeployed} value={user.agentCount} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${user.totalEarnings.toFixed(2)} ALPHA`} accentColor="text-arena-accent" />
+        <StatRow label={t.leaderboard.totalEarnings} value={`${formatEarnings(user.totalEarnings)} ALPHA`} accentColor="text-arena-accent" />
       </div>
     </div>
   );
@@ -385,7 +376,7 @@ export default function LeaderboardPage() {
               <div className="text-[10px] uppercase tracking-wider text-arena-muted">Avg {t.common.elo}</div>
             </div>
             <div className="text-center">
-              <div className="text-xl sm:text-2xl font-extrabold text-arena-accent font-mono tabular-nums">{totalEarnings.toFixed(0)}</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(totalEarnings)}</div>
               <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
               {(() => { const usd = formatUsdEquivalent(totalEarnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
             </div>
@@ -494,9 +485,9 @@ export default function LeaderboardPage() {
                       )}
 
                       {/* Avatar */}
-                      <Avatar
+                      <AgentAvatar
                         name={agent.name}
-                        gradientFrom={c.avatarBg}
+                        gradient={c.avatarBg}
                         size={place === 1 ? "w-16 h-16" : "w-12 h-12"}
                         textSize={place === 1 ? "text-2xl" : "text-lg"}
                       />
@@ -559,7 +550,7 @@ export default function LeaderboardPage() {
                     style={{ animationDelay: `${i * 0.1}s`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar name={agent.name} gradientFrom={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
+                      <AgentAvatar name={agent.name} gradient={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
@@ -577,7 +568,7 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-arena-border-light/40">
                       <MiniFormDots form={d.form} />
-                      <span className="text-xs text-arena-accent font-bold tabular-nums">{agent.totalEarnings.toFixed(2)} ALPHA</span>
+                      <span className="text-xs text-arena-accent font-bold tabular-nums">{formatEarnings(agent.totalEarnings)} ALPHA</span>
                     </div>
                   </div>
                 );
@@ -613,7 +604,7 @@ export default function LeaderboardPage() {
                           </span>
                         </div>
                         <div className="col-span-3 flex items-center gap-3 min-w-0">
-                          <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={agent.name} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="font-semibold text-arena-text-bright text-sm truncate group-hover:text-arena-primary transition-colors">{agent.name}</span>
@@ -638,7 +629,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="col-span-2 text-right">
                           <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {agent.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
+                            {formatEarnings(agent.totalEarnings)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
                           </span>
                         </div>
                       </div>
@@ -652,7 +643,7 @@ export default function LeaderboardPage() {
                           <span className="text-base font-extrabold font-mono w-7 text-center shrink-0 tabular-nums text-arena-muted-light">
                             {agent.rank}
                           </span>
-                          <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={agent.name} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <span className="flex items-center gap-1.5 min-w-0">
@@ -665,7 +656,7 @@ export default function LeaderboardPage() {
                             </div>
                             <div className="flex items-center justify-between mt-1">
                               <span className="text-xs text-arena-muted">{agent.ownerUsername}</span>
-                              <span className="text-xs text-arena-accent font-semibold tabular-nums">{agent.totalEarnings.toFixed(2)} ALPHA</span>
+                              <span className="text-xs text-arena-accent font-semibold tabular-nums">{formatEarnings(agent.totalEarnings)} ALPHA</span>
                             </div>
                           </div>
                         </div>
@@ -707,9 +698,9 @@ export default function LeaderboardPage() {
                         </div>
                       )}
 
-                      <Avatar
+                      <AgentAvatar
                         name={user.username}
-                        gradientFrom={c.avatarBg}
+                        gradient={c.avatarBg}
                         size={place === 1 ? "w-16 h-16" : "w-12 h-12"}
                         textSize={place === 1 ? "text-2xl" : "text-lg"}
                       />
@@ -719,7 +710,7 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className={`text-3xl font-extrabold font-mono leading-none ${c.accent} tabular-nums`} style={{ letterSpacing: "-0.02em" }}>
-                        {user.totalEarnings.toFixed(2)}
+                        {formatEarnings(user.totalEarnings)}
                       </div>
                       <div className="text-[10px] uppercase tracking-widest text-arena-muted mt-1 mb-4">ALPHA {t.leaderboard.totalEarnings}</div>
 
@@ -746,7 +737,7 @@ export default function LeaderboardPage() {
                     style={{ animationDelay: `${i * 0.1}s`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar name={user.username} gradientFrom={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
+                      <AgentAvatar name={user.username} gradient={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
@@ -755,7 +746,7 @@ export default function LeaderboardPage() {
                         <span className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</span>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className={`text-xl font-extrabold font-mono ${pc.accent} tabular-nums`}>{user.totalEarnings.toFixed(2)}</div>
+                        <div className={`text-xl font-extrabold font-mono ${pc.accent} tabular-nums`}>{formatEarnings(user.totalEarnings)}</div>
                         <div className="text-[10px] text-arena-muted">ALPHA</div>
                       </div>
                     </div>
@@ -788,7 +779,7 @@ export default function LeaderboardPage() {
                           </span>
                         </div>
                         <div className="col-span-4 flex items-center gap-3">
-                          <Avatar name={user.username} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={user.username} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <span className="font-semibold text-arena-text-bright text-sm group-hover:text-arena-primary transition-colors">{user.username}</span>
                         </div>
                         <div className="col-span-3 text-center text-sm text-arena-muted tabular-nums">
@@ -796,7 +787,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="col-span-4 text-right">
                           <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
+                            {formatEarnings(user.totalEarnings)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
                           </span>
                         </div>
                       </div>
@@ -810,14 +801,14 @@ export default function LeaderboardPage() {
                           <span className="text-base font-extrabold font-mono w-7 text-center shrink-0 tabular-nums text-arena-muted-light">
                             {user.rank}
                           </span>
-                          <Avatar name={user.username} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={user.username} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="flex-1 min-w-0">
                             <span className="font-semibold text-arena-text-bright text-sm">{user.username}</span>
                             <div className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</div>
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-sm font-bold text-arena-accent tabular-nums">
-                              {user.totalEarnings.toFixed(2)} <span className="text-xs font-medium">ALPHA</span>
+                              {formatEarnings(user.totalEarnings)} <span className="text-xs font-medium">ALPHA</span>
                             </div>
                           </div>
                         </div>

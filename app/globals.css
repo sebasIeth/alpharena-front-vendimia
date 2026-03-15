@@ -489,6 +489,140 @@
   }
 }
 
+/* ── Agent sprite animation (3x3 spritesheet) ── */
+@keyframes sprite-cycle {
+  0%      { background-position: 0%    0%; }
+  11.11%  { background-position: 50%   0%; }
+  22.22%  { background-position: 100%  0%; }
+  33.33%  { background-position: 0%    50%; }
+  44.44%  { background-position: 50%   50%; }
+  55.55%  { background-position: 100%  50%; }
+  66.66%  { background-position: 0%    100%; }
+  77.77%  { background-position: 50%   100%; }
+  88.88%  { background-position: 100%  100%; }
+  100%    { background-position: 0%    0%; }
+}
+.agent-sprite {
+  background-size: 300% 300%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: sprite-cycle 1.8s steps(1) infinite;
+}
+
+/* ── Poker casino chip buttons ── */
+.poker-chip-btn {
+  padding: 8px 22px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.poker-chip-btn:active {
+  transform: translateY(1px);
+  box-shadow: none !important;
+}
+@media (min-width: 640px) {
+  .poker-chip-btn {
+    padding: 10px 28px;
+    font-size: 12px;
+  }
+}
+
+/* Fold — dark grey */
+.poker-chip-fold {
+  background: linear-gradient(to bottom, #5a5a5a, #3a3a3a);
+  border-color: #6e6e6e;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.poker-chip-fold:hover {
+  background: linear-gradient(to bottom, #6a6a6a, #484848);
+}
+
+/* Check — cool blue */
+.poker-chip-check {
+  background: linear-gradient(to bottom, #2e6ea6, #1b4d78);
+  border-color: #4a90c4;
+  box-shadow: 0 3px 6px rgba(27, 77, 120, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.poker-chip-check:hover {
+  background: linear-gradient(to bottom, #3a80bb, #245d8a);
+}
+
+/* Call — casino green */
+.poker-chip-call {
+  background: linear-gradient(to bottom, #1a8a4a, #0e5e30);
+  border-color: #2aad62;
+  box-shadow: 0 3px 6px rgba(14, 94, 48, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.poker-chip-call:hover {
+  background: linear-gradient(to bottom, #22a05a, #14723c);
+}
+
+/* All-In — purple */
+.poker-chip-allin {
+  background: linear-gradient(to bottom, #7c3aed, #5522b0);
+  border-color: #9d6af0;
+  box-shadow: 0 3px 6px rgba(85, 34, 176, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.poker-chip-allin:hover {
+  background: linear-gradient(to bottom, #8b4ff0, #6630c8);
+}
+
+/* Raise — gold/amber */
+.poker-chip-raise {
+  background: linear-gradient(to bottom, #c88a15, #8e6010);
+  border-color: #e0a82a;
+  box-shadow: 0 3px 6px rgba(142, 96, 16, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.poker-chip-raise:hover {
+  background: linear-gradient(to bottom, #d99a20, #a07018);
+}
+
+/* ── Poker raise slider ── */
+.poker-raise-track {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+  cursor: pointer;
+}
+.poker-raise-track::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #f5c030, #c88a15);
+  border: 2px solid #f5d060;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.poker-raise-track::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.poker-raise-track::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #f5c030, #c88a15);
+  border: 2px solid #f5d060;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+.poker-raise-track::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -7,7 +7,7 @@ import type { Match, Move, PokerCard, BettingPoolResponse } from "@/lib/types";
 import ChessBoard from "./ChessBoard";
 import PokerBoard from "./PokerBoard";
 import Badge from "@/components/ui/Badge";
-import { formatDate, formatRelativeTime, normalizeMatchAgents } from "@/lib/utils";
+import { formatDate, formatRelativeTime, normalizeMatchAgents, formatEarnings } from "@/lib/utils";
 
 interface MatchViewerProps {
   match: Match;
@@ -1062,7 +1062,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-arena-text">Bets</h3>
                 <span className="text-[10px] font-mono text-arena-muted">
-                  {bettingPool.pool.totalPool.toFixed(2)} ALPHA
+                  {formatEarnings(bettingPool.pool.totalPool)} ALPHA
                 </span>
               </div>
 
@@ -1096,7 +1096,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <span className="text-arena-text truncate max-w-[100px]">{agents[0]?.agentName || "Agent A"}</span>
                   </div>
                   <span className="font-mono text-arena-muted">
-                    {bettingPool.pool.totalBetsA.toFixed(2)} <span className="text-[10px]">({bettingPool.pool.percentA}%)</span>
+                    {formatEarnings(bettingPool.pool.totalBetsA)} <span className="text-[10px]">({bettingPool.pool.percentA}%)</span>
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1105,7 +1105,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <span className="text-arena-text truncate max-w-[100px]">{agents[1]?.agentName || "Agent B"}</span>
                   </div>
                   <span className="font-mono text-arena-muted">
-                    {bettingPool.pool.totalBetsB.toFixed(2)} <span className="text-[10px]">({bettingPool.pool.percentB}%)</span>
+                    {formatEarnings(bettingPool.pool.totalBetsB)} <span className="text-[10px]">({bettingPool.pool.percentB}%)</span>
                   </span>
                 </div>
               </div>

@@ -44,6 +44,15 @@ export function formatWinRate(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
 }
 
+export function formatEarnings(num: number): string {
+  const abs = Math.abs(num);
+  const sign = num < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 100_000) return `${sign}${(abs / 1_000).toFixed(0)}K`;
+  if (abs >= 10_000) return `${sign}${(abs / 1_000).toFixed(1)}K`;
+  return num.toFixed(2);
+}
+
 export function formatStake(amount: number): string {
   return amount.toFixed(2);
 }

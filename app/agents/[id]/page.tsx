@@ -18,6 +18,7 @@ import {
   formatRelativeTime,
   normalizeMatchAgents,
   formatUsdEquivalent,
+  formatEarnings,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match, Chain } from "@/lib/types";
@@ -124,14 +125,8 @@ function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
    SUB-COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-/* ── Avatar ── */
-function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
-  return (
-    <div className={`${size} rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 120 }: { rate: number; size?: number }) {
@@ -496,7 +491,7 @@ function AgentDetailContent() {
             {/* Left: avatar + info */}
             <div className="flex items-start gap-5">
               <div className="relative">
-                <Avatar name={agent.name} size="w-20 h-20" textSize="text-3xl" gradient="from-arena-primary to-arena-accent" />
+                <AgentAvatar name={agent.name} size="w-20 h-20" textSize="text-3xl" gradient="from-arena-primary to-arena-accent" rounded="rounded-2xl" />
                 {isLive && (
                   <span className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-arena-success border-2 border-white">
                     <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
@@ -704,11 +699,11 @@ function AgentDetailContent() {
                 <IconCoin className="w-4 h-4 text-arena-accent" />
               </div>
             </div>
-            <div className="flex items-end gap-1.5">
-              <span className="text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">
-                {(agent.stats?.totalEarnings || 0).toFixed(2)}
+            <div className="flex items-end gap-1.5 min-w-0">
+              <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none truncate">
+                {formatEarnings(agent.stats?.totalEarnings || 0)}
               </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5">ALPHA</span>
+              <span className="text-[10px] text-arena-muted font-mono mb-0.5 shrink-0">ALPHA</span>
             </div>
           </div>
 
@@ -939,7 +934,7 @@ function AgentDetailContent() {
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     {msg.role === "agent" && (
-                      <Avatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" gradient="from-arena-primary to-arena-primary-dark" />
+                      <AgentAvatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" rounded="rounded-lg" />
                     )}
                     <div
                       className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
@@ -954,7 +949,7 @@ function AgentDetailContent() {
                 ))}
                 {chatSending && (
                   <div className="flex justify-start">
-                    <Avatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" gradient="from-arena-primary to-arena-primary-dark" />
+                    <AgentAvatar name={agent.name} size="w-7 h-7" textSize="text-[10px]" rounded="rounded-lg" />
                     <div className="bg-white border border-arena-border-light px-4 py-2.5 rounded-2xl rounded-bl-md text-sm text-arena-muted ml-2">
                       <span className="inline-flex gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-arena-muted animate-bounce" style={{ animationDelay: "0s" }} />

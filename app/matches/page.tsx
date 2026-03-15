@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import AgentAvatar from "@/components/ui/AgentAvatar";
 import { formatRelativeTime, normalizeMatchAgents, formatUsdEquivalent } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Match, MatchAgent, PokerPlayer, Chain } from "@/lib/types";
@@ -133,14 +134,13 @@ function AgentColumn({
     <div className="flex-1 flex flex-col items-center min-w-0">
       {/* Avatar with optional crown */}
       <div className="relative mb-1.5">
-        <div
-          className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}
-          style={{ boxShadow: `0 3px 10px ${color}35, inset 0 1px 0 rgba(255,255,255,0.25)` }}
-        >
-          <span className="text-sm font-bold text-white drop-shadow-sm">
-            {agent.agentName.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        <AgentAvatar
+          name={agent.agentName}
+          size="w-11 h-11"
+          textSize="text-sm"
+          gradient={gradient}
+          shadow={`0 3px 10px ${color}35, inset 0 1px 0 rgba(255,255,255,0.25)`}
+        />
         {isWinner && (
           <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-arena-accent flex items-center justify-center shadow-sm">
             <IconCrown className="w-3 h-3 text-white" />
@@ -253,14 +253,14 @@ function PokerPlayerRow({
     >
       {/* Position + Avatar */}
       <div className="relative shrink-0">
-        <div
-          className={`w-7 h-7 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}
-          style={{ boxShadow: `0 2px 6px ${color}20` }}
-        >
-          <span className="text-[10px] font-bold text-white drop-shadow-sm">
-            {agent.agentName.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        <AgentAvatar
+          name={agent.agentName}
+          size="w-7 h-7"
+          textSize="text-[10px]"
+          gradient={gradient}
+          rounded="rounded-lg"
+          shadow={`0 2px 6px ${color}20`}
+        />
         {isWinner && (
           <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-arena-accent flex items-center justify-center">
             <IconCrown className="w-2.5 h-2.5 text-white" />

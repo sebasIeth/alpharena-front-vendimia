@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useLanguage } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { formatEarnings } from "@/lib/utils";
 import CountdownTimer from "./CountdownTimer";
 import type { ScheduledMatchResponse, BettingInfo, BettingPoolResponse } from "@/lib/types";
 
@@ -48,30 +49,8 @@ function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-/* ── Player avatar (circular, with initial) ── */
-function PlayerAvatar({
-  name,
-  color,
-  size = "w-11 h-11",
-  textSize = "text-base",
-}: {
-  name: string;
-  color: string;
-  size?: string;
-  textSize?: string;
-}) {
-  return (
-    <div
-      className={`${size} rounded-full flex items-center justify-center ${textSize} font-bold text-white shrink-0 shadow-lg`}
-      style={{
-        background: color,
-        boxShadow: `0 4px 14px ${color}40`,
-      }}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
+/* ── Player avatar ── */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Format date/time ── */
 function formatMatchTime(dateStr: string): string {
@@ -234,7 +213,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             <div className="flex items-center justify-between">
               {/* Player A */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <PlayerAvatar name={nameA} color={colorA} />
+                <AgentAvatar name={nameA} bgColor={colorA} rounded="rounded-full" shadow={`0 4px 14px ${colorA}40`} />
                 <div className="min-w-0">
                   <div className="text-white font-bold text-base sm:text-lg truncate">
                     {nameA}
@@ -252,7 +231,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
 
               {/* Player B */}
               <div className="flex items-center gap-3 min-w-0 flex-1 flex-row-reverse text-right">
-                <PlayerAvatar name={nameB} color={colorB} />
+                <AgentAvatar name={nameB} bgColor={colorB} rounded="rounded-full" shadow={`0 4px 14px ${colorB}40`} />
                 <div className="min-w-0">
                   <div className="text-white font-bold text-base sm:text-lg truncate">
                     {nameB}
@@ -268,11 +247,13 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide">
               {agents.map((agent) => (
                 <div key={agent.agentId} className="flex items-center gap-2.5 shrink-0">
-                  <PlayerAvatar
+                  <AgentAvatar
                     name={agent.name}
-                    color={agent.color || PLAYER_COLORS[0]}
+                    bgColor={agent.color || PLAYER_COLORS[0]}
                     size="w-9 h-9"
                     textSize="text-sm"
+                    rounded="rounded-full"
+                    shadow={`0 4px 14px ${agent.color || PLAYER_COLORS[0]}40`}
                   />
                   <div>
                     <div className="text-white text-sm font-medium whitespace-nowrap">
@@ -292,7 +273,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             <div className="flex items-center justify-between mb-1">
               <span className="text-white/40 text-[10px] font-mono">{nameA}</span>
               <span className="text-white/30 text-[10px] font-mono font-semibold">
-                {t.betting.totalPool}: {totalPool.toFixed(2)} ALPHA
+                {t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA
               </span>
               <span className="text-white/40 text-[10px] font-mono">{nameB}</span>
             </div>

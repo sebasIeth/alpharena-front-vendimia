@@ -178,43 +178,43 @@ function ActionBar({
     <div className="space-y-3 pt-3 poker-slide-up">
       <div className="flex flex-wrap items-center justify-center gap-2">
         {legalActions.canFold && (
-          <button onClick={() => onAction({ action: "fold" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-500/90 text-white text-xs sm:text-sm font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "fold" })} className="poker-chip-btn poker-chip-fold">
             {t.poker.fold}
           </button>
         )}
         {legalActions.canCheck && (
-          <button onClick={() => onAction({ action: "check" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-blue-500/90 text-white text-xs sm:text-sm font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "check" })} className="poker-chip-btn poker-chip-check">
             {t.poker.check}
           </button>
         )}
         {legalActions.canCall && (
-          <button onClick={() => onAction({ action: "call" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-emerald-500/90 text-white text-xs sm:text-sm font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "call" })} className="poker-chip-btn poker-chip-call">
             {t.poker.call} {legalActions.callAmount}
           </button>
         )}
         {legalActions.canAllIn && (
-          <button onClick={() => onAction({ action: "all_in" })} className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs sm:text-sm font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/20 active:scale-95">
+          <button onClick={() => onAction({ action: "all_in" })} className="poker-chip-btn poker-chip-allin">
             ALL IN {legalActions.allInAmount}
           </button>
         )}
       </div>
 
       {legalActions.canRaise && min < max && (
-        <div className="bg-black/20 rounded-xl px-4 py-3 space-y-2">
+        <div className="bg-black/30 rounded-2xl px-4 py-3 space-y-2 border border-white/5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/40 uppercase tracking-wider font-mono">{t.poker.raise}</span>
-            <span className="text-sm font-bold text-amber-300 font-mono tabular-nums">{raiseAmt}</span>
+            <span className="text-[10px] text-white/40 uppercase tracking-[0.15em] font-mono font-bold">{t.poker.raise}</span>
+            <span className="text-sm font-extrabold text-amber-300 font-mono tabular-nums">{raiseAmt}</span>
           </div>
-          <input type="range" min={min} max={max} value={raiseAmt} onChange={(e) => setRaiseAmt(Number(e.target.value))} className="w-full accent-amber-400 h-2" />
+          <input type="range" min={min} max={max} value={raiseAmt} onChange={(e) => setRaiseAmt(Number(e.target.value))} className="poker-raise-track w-full" />
           <div className="flex items-center justify-between gap-2">
             <div className="flex gap-1">
               {presets.map((p) => (
-                <button key={p.label} onClick={() => setRaiseAmt(p.value)} className="px-2 py-1 rounded-lg bg-white/5 text-white/60 text-[10px] font-mono hover:bg-white/10 transition-colors">
+                <button key={p.label} onClick={() => setRaiseAmt(p.value)} className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/50 text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white/70 transition-colors">
                   {p.label}
                 </button>
               ))}
             </div>
-            <button onClick={() => onAction({ action: "raise", amount: raiseAmt })} className="px-5 py-2 rounded-xl bg-amber-500/90 text-white text-sm font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 active:scale-95">
+            <button onClick={() => onAction({ action: "raise", amount: raiseAmt })} className="poker-chip-btn poker-chip-raise">
               {t.poker.raise} {raiseAmt}
             </button>
           </div>

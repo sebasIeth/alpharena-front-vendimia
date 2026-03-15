@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api, getExplorerTxUrl } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
+import { formatEarnings } from "@/lib/utils";
 import ScheduledMatches from "@/components/scheduled/ScheduledMatches";
 import Button from "@/components/ui/Button";
 import type { PendingClaim, Chain } from "@/lib/types";
@@ -62,7 +63,7 @@ export default function BetsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-arena-bg">
+    <div className="min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* ── Page Header ── */}
         <div
@@ -124,11 +125,11 @@ export default function BetsPage() {
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-arena-muted font-mono">
-                        {t.betting.yourTotal}: {Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0).toFixed(2)} ALPHA
+                        {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} ALPHA
                       </span>
                       {claim.winnings > 0 && (
                         <span className="text-xs font-semibold text-arena-success font-mono">
-                          +{(Number(claim.winnings) * 0.95).toFixed(2)} ALPHA
+                          +{formatEarnings(Number(claim.winnings) * 0.95)} ALPHA
                         </span>
                       )}
                       <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${

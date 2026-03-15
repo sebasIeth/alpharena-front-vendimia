@@ -9,7 +9,7 @@ import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatWinRate, formatElo, formatRelativeTime } from "@/lib/utils";
+import { formatWinRate, formatElo, formatRelativeTime, formatEarnings } from "@/lib/utils";
 import type { Agent, Chain } from "@/lib/types";
 
 /* ── Chain Badge ── */
@@ -98,14 +98,8 @@ function IconRobot({ className = "w-6 h-6" }: { className?: string }) {
    SUB-COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-/* ── Avatar ── */
-function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 72 }: { rate: number; size?: number }) {
@@ -230,7 +224,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
           {/* Avatar + info */}
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="relative">
-              <Avatar name={agent.name} size="w-16 h-16" textSize="text-2xl" gradient="from-arena-primary to-arena-accent" />
+              <AgentAvatar name={agent.name} size="w-16 h-16" textSize="text-2xl" gradient="from-arena-primary to-arena-accent" />
               {isLive && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-arena-success border-2 border-white">
                   <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
@@ -287,7 +281,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
             {/* Earnings */}
             <div className="text-center hidden sm:block">
               <div className="text-xl font-extrabold font-mono text-arena-accent tabular-nums">
-                {(agent.stats?.totalEarnings || 0).toFixed(2)}
+                {formatEarnings(agent.stats?.totalEarnings || 0)}
               </div>
               <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">ALPHA</div>
             </div>
@@ -327,7 +321,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative">
-          <Avatar
+          <AgentAvatar
             name={agent.name}
             size="w-11 h-11"
             textSize="text-base"
@@ -398,7 +392,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
         <span className="font-mono font-bold text-arena-accent tabular-nums">
-          {(agent.stats?.totalEarnings || 0).toFixed(2)} ALPHA
+          {formatEarnings(agent.stats?.totalEarnings || 0)} ALPHA
         </span>
       </div>
     </div>
@@ -615,7 +609,7 @@ function AgentsContent() {
 
               <DashStat
                 label={t.common.earnings}
-                value={summary.earnings.toFixed(2)}
+                value={formatEarnings(summary.earnings)}
                 sub="ALPHA"
                 icon={<IconCoin className="w-4 h-4" />}
                 accentColor="bg-arena-accent"

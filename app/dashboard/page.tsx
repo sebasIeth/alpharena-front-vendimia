@@ -18,6 +18,7 @@ import {
   formatElo,
   normalizeMatchAgents,
   formatUsdEquivalent,
+  formatEarnings,
   truncateAddress,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
@@ -116,14 +117,8 @@ function IconSend({ className = "w-4 h-4" }: { className?: string }) {
    SUB-COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-/* ── Avatar with initial ── */
-function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`} style={{ boxShadow: "0 2px 8px rgba(91, 79, 207, 0.25), inset 0 1px 0 rgba(255,255,255,0.2)" }}>
-      <span className={`${textSize} font-extrabold text-white drop-shadow-sm`}>{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
@@ -478,7 +473,7 @@ function DashboardContent() {
                   <IconCoin className="w-3.5 h-3.5 text-arena-accent" />
                 </div>
                 <div>
-                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{stats.earnings.toFixed(2)}</span>
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(stats.earnings)}</span>
                   <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">ALPHA</span>
                 </div>
               </div>
@@ -549,7 +544,7 @@ function DashboardContent() {
           />
           <DashStat
             label={t.dashboard.totalEarnings}
-            value={stats.earnings.toFixed(2)}
+            value={formatEarnings(stats.earnings)}
             sub="ALPHA"
             icon={<IconCoin className="w-4 h-4" />}
             accentColor="bg-arena-accent"
@@ -584,9 +579,9 @@ function DashboardContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 sm:gap-8">
               <WinRateRing rate={stats.winRate} />
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 min-w-0 space-y-4">
                 {/* WLD Bar */}
                 <div>
                   <WLDBar wins={stats.wins} losses={stats.losses} draws={stats.draws} height="h-3" />
@@ -610,18 +605,18 @@ function DashboardContent() {
                 </div>
 
                 {/* Quick stats row */}
-                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-arena-border-light/40">
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.matches}</div>
-                    <div className="text-xl font-extrabold text-arena-text-bright font-mono tabular-nums">{stats.total}</div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-3 border-t border-arena-border-light/40 min-w-0">
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.matches}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-text-bright font-mono tabular-nums truncate">{stats.total}</div>
                   </div>
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">Best {t.common.elo}</div>
-                    <div className="text-xl font-extrabold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestElo)}</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">Best {t.common.elo}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-primary font-mono tabular-nums truncate">{formatElo(stats.bestElo)}</div>
                   </div>
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
-                    <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{stats.earnings.toFixed(2)}</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-accent font-mono tabular-nums truncate">{formatEarnings(stats.earnings)}</div>
                   </div>
                 </div>
               </div>
@@ -641,7 +636,7 @@ function DashboardContent() {
               </div>
 
               <div className="flex items-center gap-4 mb-5">
-                <Avatar
+                <AgentAvatar
                   name={stats.bestAgent.name}
                   size="w-14 h-14"
                   textSize="text-xl"
@@ -676,7 +671,7 @@ function DashboardContent() {
                 </div>
                 <div>
                   <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
-                  <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{(stats.bestAgent.stats?.totalEarnings || 0).toFixed(2)}</div>
+                  <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(stats.bestAgent.stats?.totalEarnings || 0)}</div>
                 </div>
               </div>
 
@@ -887,11 +882,11 @@ function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-arena-muted font-mono">
-                      {t.betting.yourTotal}: {Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0).toFixed(2)} ALPHA
+                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} ALPHA
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">
-                        +{(Number(claim.winnings) * 0.95).toFixed(2)} ALPHA
+                        +{formatEarnings(Number(claim.winnings) * 0.95)} ALPHA
                       </span>
                     )}
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
@@ -1040,7 +1035,7 @@ function DashboardContent() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative">
-                        <Avatar
+                        <AgentAvatar
                           name={agent.name}
                           size="w-10 h-10"
                           textSize="text-sm"
