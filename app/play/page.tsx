@@ -491,10 +491,12 @@ function PlayContent() {
         if (data.pokerPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerPlayerIndex as number);
         if (data.pokerAction) {
           const action = data.pokerAction as { type: string; amount?: number };
+          const side = data.side as string | undefined;
+          const pIdx = (data.pokerPlayerIndex as number) ?? (side === "a" ? 0 : side === "b" ? 1 : 0);
           setPokerActionHistory((prev) => [...prev, {
             type: action.type,
             amount: action.amount,
-            playerIndex: (data.pokerPlayerIndex as number) ?? 0,
+            playerIndex: pIdx,
             street: (data.pokerStreet as string) || "preflop",
           }]);
         }
@@ -839,10 +841,11 @@ function PlayContent() {
     }
     if (gameType === "poker") {
       // Build players array from backend N-player data
+      const seatNames: Record<number, string> = { 0: playerA, 1: playerB };
       const onlinePlayers = pokerPlayers.length > 0
         ? pokerPlayers.map((p, i) => ({
             id: p.playerId ?? `p${i}`,
-            name: p.name ?? (p.seatIndex === pokerSeatIndex ? "YOU" : `Player ${i + 1}`),
+            name: p.name || seatNames[p.seatIndex] || (p.seatIndex === pokerSeatIndex ? "YOU" : `Player ${p.seatIndex + 1}`),
             seatIndex: p.seatIndex,
             stack: p.stack,
             currentBet: p.currentBet,

@@ -565,7 +565,7 @@ export default function PokerBoard({
                 {actionHistory.slice(isMobile ? -3 : -6).map((a, i) => (
                   <div key={i} className="text-[8px] sm:text-[10px] font-mono flex items-center gap-1 sm:gap-1.5">
                     <span className={a.playerIndex === humanPlayerIndex ? "text-blue-300" : "text-red-300"}>
-                      {players[a.playerIndex]?.name ?? `P${a.playerIndex}`}
+                      {players[a.playerIndex]?.name || `Player ${(a.playerIndex ?? 0) + 1}`}
                     </span>
                     <span className="text-white/70">
                       {a.type}{a.amount != null ? ` (${a.amount})` : ""}
