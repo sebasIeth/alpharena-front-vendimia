@@ -233,6 +233,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     return 0;
   });
   const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
+  const [pokerHoleCards, setPokerHoleCards] = useState<Record<number, PokerCard[]>>({});
+  const [pokerShowdownResult, setPokerShowdownResult] = useState<any>(null);
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
@@ -460,14 +462,29 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
         if (data.score) setScore(data.score);
         // Poker-specific (N-player)
-        if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards);
+        if (Array.isArray(data.pokerCommunityCards)) setPokerCommunityCards(data.pokerCommunityCards);
         if (data.pokerPot != null) setPokerPot(data.pokerPot);
         if (data.pokerStreet) setPokerStreet(data.pokerStreet);
         if (data.pokerHandNumber != null) {
           setPokerHandNumber((prev: number) => {
-            if ((data.pokerHandNumber as number) > prev) setPokerActionHistory([]);
+            if ((data.pokerHandNumber as number) > prev) {
+              setPokerActionHistory([]);
+              setPokerShowdownResult(null);
+              setPokerHoleCards({});
+            }
             return data.pokerHandNumber as number;
           });
+        }
+        // Showdown: extract hole cards + result
+        if (data.pokerShowdownResult) {
+          setPokerShowdownResult(data.pokerShowdownResult);
+          if (data.pokerPlayers) {
+            const hcMap: Record<number, PokerCard[]> = {};
+            (data.pokerPlayers as any[]).forEach((p: any) => {
+              if (p.holeCards?.length) hcMap[p.seatIndex] = p.holeCards;
+            });
+            setPokerHoleCards(hcMap);
+          }
         }
         if (data.pokerPlayers) {
           const incoming = data.pokerPlayers as typeof pokerPlayers;
@@ -594,14 +611,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               // Extract poker state from polled match data
               const pk = updated.pokerState as any;
               if (pk && typeof pk === "object") {
-                if (pk.communityCards) setPokerCommunityCards(pk.communityCards);
+                if (Array.isArray(pk.communityCards)) setPokerCommunityCards(pk.communityCards);
                 if (pk.pot != null) setPokerPot(pk.pot);
                 if (pk.street) setPokerStreet(pk.street);
                 if (pk.handNumber != null) {
                   setPokerHandNumber((prev: number) => {
-                    if ((pk.handNumber as number) > prev) setPokerActionHistory([]);
+                    if ((pk.handNumber as number) > prev) {
+                      setPokerActionHistory([]);
+                      setPokerShowdownResult(null);
+                      setPokerHoleCards({});
+                    }
                     return pk.handNumber as number;
                   });
+                }
+                // Extract hole cards from polling for showdown display
+                if (pk.showdownResult) {
+                  setPokerShowdownResult(pk.showdownResult);
+                  const hcMap: Record<number, PokerCard[]> = {};
+                  if (pk.players?.a?.holeCards?.length) hcMap[0] = pk.players.a.holeCards;
+                  if (pk.players?.b?.holeCards?.length) hcMap[1] = pk.players.b.holeCards;
+                  if (Object.keys(hcMap).length > 0) setPokerHoleCards(hcMap);
                 }
                 if (pk.dealerIndex != null) setPokerDealerIndex(pk.dealerIndex);
                 else if (pk.dealerSide) setPokerDealerIndex(pk.dealerSide === "b" ? 1 : 0);
@@ -754,6 +783,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   pot?: number;
                   street?: string;
                   handNumber?: number;
+                  showdownResult?: any;
                   dealerIndex?: number;
                 } : null;
 
@@ -775,7 +805,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         isDealer: p.isDealer,
                         isHuman: false,
                         isAgent: p.isAgent ?? true,
-                        holeCards: isReplay ? (replayP?.holeCards as PokerCard[] | undefined) : undefined,
+                        holeCards: pokerHoleCards[p.seatIndex] ?? (isReplay && savedState?.showdownResult ? (replayP?.holeCards as PokerCard[] | undefined) : undefined),
                       };
                     })
                   : replayPlayers
@@ -791,7 +821,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       isDealer: rp.isDealer ?? false,
                       isHuman: false,
                       isAgent: true,
-                      holeCards: rp.holeCards as PokerCard[] | undefined,
+                      holeCards: savedState?.showdownResult ? (rp.holeCards as PokerCard[] | undefined) : undefined,
                     }))
                   : agents.map((a, i) => ({
                       id: a.agentId ?? `p${i}`,
@@ -815,6 +845,22 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const displayHandNumber = pokerHandNumber > 0 ? pokerHandNumber : (isReplay && savedState?.handNumber ? savedState.handNumber : pokerHandNumber);
                 const displayDealer = pokerDealerIndex > 0 ? pokerDealerIndex : (isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex);
 
+                // Convert backend showdown format to PokerBoard format
+                let convertedShowdown = null;
+                if (pokerShowdownResult) {
+                  const sr = pokerShowdownResult;
+                  const winnerIdx = sr.winnerSide === "a" ? 0 : 1;
+                  const loserIdx = winnerIdx === 0 ? 1 : 0;
+                  convertedShowdown = {
+                    winners: [{ playerIndex: winnerIdx, handEval: { rank: sr.winnerHand?.rank ?? 0, description: sr.winnerHand?.description ?? "Winner" } as any }],
+                    pots: [{ amount: displayPot, winnerIndices: [winnerIdx] }],
+                    playerHands: new Map([
+                      [winnerIdx, { rank: sr.winnerHand?.rank ?? 0, description: sr.winnerHand?.description ?? "" } as any],
+                      ...(sr.loserHand ? [[loserIdx, { rank: sr.loserHand.rank ?? 0, description: sr.loserHand.description ?? "" } as any] as [number, any]] : []),
+                    ]),
+                  };
+                }
+
                 return (
                   <PokerBoard
                     communityCards={displayCommunity}
@@ -826,6 +872,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     currentPlayerIndex={pokerCurrentPlayerIndex}
                     dealerIndex={displayDealer}
                     actionHistory={pokerActionHistory}
+                    showdownResult={convertedShowdown}
                   />
                 );
               })()

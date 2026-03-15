@@ -294,7 +294,7 @@ function PlayerSeat({
         style={{ maxWidth: cardSize.infoMin }}
       >
         <span className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${player.isAgent ? "bg-yellow-400" : "bg-green-400"}`} />
-        <span className="truncate max-w-[32px] sm:max-w-[56px] md:max-w-[80px]">{player.name}{player.isAgent ? "(A)" : ""}</span>
+        <span className="truncate max-w-[52px] sm:max-w-[80px] md:max-w-[110px]">{player.name}{player.isAgent ? "(A)" : ""}</span>
         {player.isDealer && <DealerChip />}
         {player.isHuman && (
           <span className="hidden sm:inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>

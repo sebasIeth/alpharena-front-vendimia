@@ -142,6 +142,12 @@ function PlayContent() {
   useEffect(() => { mySideRef.current = mySide; }, [mySide]);
   useEffect(() => { pokerPlayersRef.current = pokerPlayers; }, [pokerPlayers]);
 
+  // Derive pokerSeatIndex from mySide for heads-up poker (side "a" = seat 0, "b" = seat 1)
+  useEffect(() => {
+    if (mySide === "a") setPokerSeatIndex(0);
+    else if (mySide === "b") setPokerSeatIndex(1);
+  }, [mySide]);
+
   const fetchBalance = useCallback(async () => {
     try {
       const data = await api.playBalance(selectedChain);
@@ -382,8 +388,8 @@ function PlayContent() {
         }
         if (data.pokerActionHistory) setPokerActionHistory(data.pokerActionHistory as { type: string; amount?: number; playerIndex: number; street: string }[]);
 
-        // Active player's seat (whose turn it is)
-        const activeSeat = (data.pokerCurrentPlayerIndex ?? data.pokerSeatIndex) as number | undefined;
+        // Active player's seat (whose turn it is) — derive from side if not explicit
+        const activeSeat = (data.pokerCurrentPlayerIndex ?? data.pokerSeatIndex ?? (side === "a" ? 0 : side === "b" ? 1 : undefined)) as number | undefined;
         if (activeSeat != null) setPokerCurrentPlayerIndex(activeSeat);
 
         // Update player list and determine our own seat via playerId match
@@ -408,9 +414,10 @@ function PlayContent() {
         }
 
         // Determine if this turn event is for US
+        // For poker: try seat matching first (N-player), fall back to side matching (heads-up)
         const isPoker = data.gameType === "poker" || (data.pokerPlayers && !boardData);
         const isForMe = isPoker
-          ? mySeat != null && activeSeat != null && mySeat === activeSeat
+          ? (mySeat != null && activeSeat != null && mySeat === activeSeat) || (side != null && side === mySideRef.current)
           : side != null && side === mySideRef.current;
 
         if (isForMe) {
