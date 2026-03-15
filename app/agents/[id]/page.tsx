@@ -126,7 +126,7 @@ function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
    ═══════════════════════════════════════════════════════ */
 
 /* ── Avatar ── (shared component) */
-import AgentAvatar from "@/components/ui/AgentAvatar";
+import AgentAvatar, { SPRITE_KEYS, getAgentSprite } from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 120 }: { rate: number; size?: number }) {
@@ -183,6 +183,7 @@ function AgentDetailContent() {
     openclawUrl: "",
     openclawToken: "",
     openclawAgentId: "",
+    avatarKey: "",
     chess: true,
     poker: true,
   });
@@ -222,12 +223,14 @@ function AgentDetailContent() {
         if (agentRes.status === "fulfilled") {
           const a = agentRes.value.agent;
           setAgent(a);
+          const savedAvatar = localStorage.getItem(`agent_avatar_${a.id || agentId}`);
           setEditForm({
             name: a.name,
             endpointUrl: a.endpointUrl || "",
             openclawUrl: a.openclawUrl || "",
             openclawToken: "",
             openclawAgentId: a.openclawAgentId || "",
+            avatarKey: savedAvatar || "",
             chess: a.gameTypes.includes("chess"),
             poker: a.gameTypes.includes("poker"),
           });
@@ -373,6 +376,11 @@ function AgentDetailContent() {
       } else {
         if (editForm.endpointUrl.trim()) updatePayload.endpointUrl = editForm.endpointUrl.trim();
       }
+      if (editForm.avatarKey) {
+        localStorage.setItem(`agent_avatar_${agentId}`, editForm.avatarKey);
+      } else {
+        localStorage.removeItem(`agent_avatar_${agentId}`);
+      }
       const data = await api.updateAgent(agentId, updatePayload as any);
       setAgent(data.agent);
       setEditing(false);
@@ -491,7 +499,7 @@ function AgentDetailContent() {
             {/* Left: avatar + info */}
             <div className="flex items-start gap-5">
               <div className="relative">
-                <AgentAvatar name={agent.name} size="w-20 h-20" textSize="text-3xl" gradient="from-arena-primary to-arena-accent" rounded="rounded-2xl" />
+                <AgentAvatar name={agent.name} agentId={agent.id || agentId} size="w-20 h-20" rounded="rounded-2xl" />
                 {isLive && (
                   <span className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-arena-success border-2 border-white">
                     <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
@@ -590,15 +598,33 @@ function AgentDetailContent() {
               <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-xl px-4 py-3 text-sm">{editError}</div>
             )}
             <Input label={t.common.name} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-            {agent.type === "openclaw" ? (
+            {agent.type === "openclaw" && (
               <>
                 <Input label={t.agentDetail.openclawUrlLabel} placeholder="http://your-vps.com:64936" value={editForm.openclawUrl} onChange={(e) => setEditForm({ ...editForm, openclawUrl: e.target.value })} helperText={t.agentDetail.openclawUrlHelper} />
                 <Input label={t.agentDetail.gatewayTokenLabel} type="password" placeholder="Token from ~/.openclaw/openclaw.json" value={editForm.openclawToken} onChange={(e) => setEditForm({ ...editForm, openclawToken: e.target.value })} helperText={t.agentDetail.gatewayTokenHelper} />
                 <Input label={t.agentDetail.agentIdLabel} placeholder="main" value={editForm.openclawAgentId} onChange={(e) => setEditForm({ ...editForm, openclawAgentId: e.target.value })} helperText={t.createAgent.agentIdHelper} />
               </>
-            ) : (
-              <Input label={t.createAgent.endpointUrl} value={editForm.endpointUrl} onChange={(e) => setEditForm({ ...editForm, endpointUrl: e.target.value })} />
             )}
+            {/* Avatar picker */}
+            <div>
+              <label className="block text-sm font-medium text-arena-text mb-2">Avatar</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {SPRITE_KEYS.map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, avatarKey: key })}
+                    className={`w-11 h-11 rounded-xl overflow-hidden agent-sprite transition-all ${
+                      (editForm.avatarKey === key) || (!editForm.avatarKey && getAgentSprite(agent.name) === `/agents/${key}.webp`)
+                        ? "ring-2 ring-arena-primary ring-offset-2 scale-110"
+                        : "opacity-50 hover:opacity-80 hover:scale-105"
+                    }`}
+                    style={{ backgroundImage: `url('/agents/${key}.webp')` }}
+                    title={key}
+                  />
+                ))}
+              </div>
+            </div>
             <label className="flex items-center gap-3">
               <input type="checkbox" checked disabled className="w-4 h-4 accent-arena-primary" />
               <span className="text-sm text-arena-text">Chess</span>

@@ -31,6 +31,8 @@ const SIZES: Record<string, { box: string; w: number; h: number }> = {
 /* ── AgentAvatar ──────────────────────────────────────── */
 interface AgentAvatarProps {
   name: string;
+  /** Agent ID — if provided, checks localStorage for custom avatar */
+  agentId?: string;
   /** Preset size or tailwind classes (e.g. "w-10 h-10") */
   size?: string;
   rounded?: string;
@@ -45,12 +47,19 @@ interface AgentAvatarProps {
 
 export default function AgentAvatar({
   name,
+  agentId,
   size = "md",
   rounded = "rounded-xl",
   shadow,
   animated = true,
 }: AgentAvatarProps) {
-  const sprite = getAgentSprite(name);
+  let sprite = getAgentSprite(name);
+  if (agentId && typeof window !== "undefined") {
+    const saved = localStorage.getItem(`agent_avatar_${agentId}`);
+    if (saved && SPRITE_KEYS.includes(saved as any)) {
+      sprite = `/agents/${saved}.webp`;
+    }
+  }
   const preset = SIZES[size];
   const boxClass = preset ? preset.box : size;
 
