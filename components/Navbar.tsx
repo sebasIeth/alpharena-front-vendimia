@@ -175,39 +175,11 @@ export default function Navbar() {
                   {link.icon}
                 </span>
                 {link.label}
-                {/* Active indicator dot */}
                 {isActive(link.href) && (
                   <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-arena-primary" />
                 )}
               </Link>
             ))}
-
-            {/* Separator */}
-            {isAuthenticated && (
-              <div className="w-px h-5 bg-arena-border-light mx-1.5" />
-            )}
-
-            {isAuthenticated &&
-              authLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={classNames(
-                    "relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
-                    isActive(link.href)
-                      ? "text-arena-primary"
-                      : "text-arena-muted hover:text-arena-text hover:bg-arena-card-hover"
-                  )}
-                >
-                  <span className={isActive(link.href) ? "text-arena-primary" : "text-arena-muted-light"}>
-                    {link.icon}
-                  </span>
-                  {link.label}
-                  {isActive(link.href) && (
-                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-arena-primary" />
-                  )}
-                </Link>
-              ))}
           </div>
 
           {/* ── Right section ─────────────────────────── */}
