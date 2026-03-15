@@ -5,66 +5,52 @@ import React from "react";
 /* ── Sprite mapping ───────────────────────────────────── */
 const SPRITE_KEYS = ["claude", "codex", "deepseek", "gemini", "minimax", "openclaw", "qwen"] as const;
 
-function getAgentSprite(name: string): string | null {
+function getAgentSprite(name: string): string {
   const lower = name.toLowerCase();
+  // Exact model match first
   for (const key of SPRITE_KEYS) {
     if (lower.includes(key)) return `/agents/${key}.webp`;
   }
-  return null;
+  // Deterministic assignment based on name hash
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  const idx = ((hash % SPRITE_KEYS.length) + SPRITE_KEYS.length) % SPRITE_KEYS.length;
+  return `/agents/${SPRITE_KEYS[idx]}.webp`;
 }
 
 /* ── AgentAvatar ──────────────────────────────────────── */
 interface AgentAvatarProps {
   name: string;
   size?: string;
-  textSize?: string;
-  gradient?: string;
   rounded?: string;
   shadow?: string;
-  /** Solid bg color — used instead of gradient when provided */
+  /** Unused legacy props — kept for drop-in compat */
+  textSize?: string;
+  gradient?: string;
   bgColor?: string;
 }
 
 export default function AgentAvatar({
   name,
   size = "w-10 h-10",
-  textSize = "text-base",
-  gradient = "from-arena-primary to-arena-primary-dark",
   rounded = "rounded-xl",
   shadow,
-  bgColor,
 }: AgentAvatarProps) {
   const sprite = getAgentSprite(name);
 
-  if (sprite) {
-    return (
-      <div
-        className={`${size} ${rounded} overflow-hidden shrink-0 bg-arena-bg-light`}
-        style={shadow ? { boxShadow: shadow } : undefined}
-      >
-        <img
-          src={sprite}
-          alt={name}
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
-      </div>
-    );
-  }
-
-  // Fallback: letter avatar
-  const bgClass = bgColor ? "" : `bg-gradient-to-br ${gradient}`;
   return (
     <div
-      className={`${size} ${rounded} ${bgClass} flex items-center justify-center shrink-0 shadow-arena-sm`}
-      style={{
-        ...(bgColor ? { background: bgColor } : {}),
-        ...(shadow ? { boxShadow: shadow } : {}),
-      }}
+      className={`${size} ${rounded} overflow-hidden shrink-0 bg-arena-bg-light`}
+      style={shadow ? { boxShadow: shadow } : undefined}
     >
-      <span className={`${textSize} font-extrabold text-white drop-shadow-sm`}>
-        {name.charAt(0).toUpperCase()}
-      </span>
+      <img
+        src={sprite}
+        alt={name}
+        className="w-full h-full object-cover"
+        draggable={false}
+      />
     </div>
   );
 }
