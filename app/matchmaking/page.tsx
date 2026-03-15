@@ -760,7 +760,7 @@ function MatchmakingContent() {
                 <p className="text-arena-muted mb-6 max-w-sm mx-auto leading-relaxed text-sm">
                   {t.matchmaking.noIdleAgents}
                 </p>
-                <a href="/agents/new">
+                <a href="/docs">
                   <Button size="lg">
                     {t.matchmaking.createAgent}
                   </Button>

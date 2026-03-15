@@ -445,7 +445,7 @@ function EmptyState({ t }: { t: any }) {
       </div>
 
       <div className="text-center opacity-0 animate-fade-up" style={{ animationDelay: "0.55s", animationFillMode: "both" }}>
-        <Link href="/agents/new">
+        <Link href="/docs">
           <Button size="lg">
             <span className="flex items-center gap-2">
               <IconPlus className="w-4 h-4" />
@@ -547,7 +547,7 @@ function AgentsContent() {
             <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright mb-1">{t.agents.title}</h1>
             <p className="text-arena-muted text-sm">{t.agents.subtitle}</p>
           </div>
-          <Link href="/agents/new">
+          <Link href="/docs">
             <Button>
               <span className="flex items-center gap-2">
                 <IconPlus className="w-4 h-4" />
