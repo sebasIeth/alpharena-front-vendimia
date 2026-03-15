@@ -873,6 +873,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   };
                 }
 
+                // Build matchResult for completed matches
+                const pokerMatchResult = match.status === "completed" && match.winnerId
+                  ? {
+                      winnerName: agents.find(a => a.agentId === match.winnerId)?.agentName
+                        ?? (match.winnerId === "a" ? agents[0]?.agentName : match.winnerId === "b" ? agents[1]?.agentName : undefined)
+                        ?? "Winner",
+                      reason: typeof match.result === "string" ? match.result : (match.result as any)?.reason,
+                    }
+                  : null;
+
                 return (
                   <PokerBoard
                     communityCards={displayCommunity}
@@ -885,6 +895,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     dealerIndex={displayDealer}
                     actionHistory={pokerActionHistory}
                     showdownResult={convertedShowdown}
+                    matchResult={pokerMatchResult}
                   />
                 );
               })()

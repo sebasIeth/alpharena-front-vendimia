@@ -143,6 +143,7 @@ interface PokerBoardProps {
   legalActions?: PokerLegalActions | null;
   onAction?: (action: { action: string; amount?: number }) => void;
   showdownResult?: ShowdownResult | null;
+  matchResult?: { winnerName: string; reason?: string } | null;
 }
 
 /* ── Action Bar ───────────────────────────────────── */
@@ -233,6 +234,7 @@ function PlayerSeat({
   isShowdown,
   isWinner,
   hideCards,
+  forceCardBacks,
 }: {
   player: PlayerViewInfo;
   position: { x: number; y: number };
@@ -242,6 +244,7 @@ function PlayerSeat({
   isShowdown: boolean;
   isWinner: boolean;
   hideCards?: boolean;
+  forceCardBacks?: boolean;
 }) {
   const isTop = position.y < 45;
 
@@ -264,7 +267,7 @@ function PlayerSeat({
               </div>
             );
           })
-        : !player.hasFolded && !player.isEliminated
+        : (forceCardBacks || (!player.hasFolded && !player.isEliminated))
         ? [0, 1].map(i => (
             <div
               key={i}
@@ -286,7 +289,8 @@ function PlayerSeat({
         ${isActive && !isShowdown ? "bg-black/60 ring-2 ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)] poker-seat-active" : ""}
         ${!isActive && !(isShowdown && isWinner) ? "bg-black/50" : ""}
         ${player.hasFolded && !player.isEliminated ? "opacity-40" : ""}
-        ${player.isEliminated ? "opacity-20 grayscale" : ""}
+        ${player.isEliminated && !forceCardBacks ? "opacity-20 grayscale" : ""}
+        ${player.isEliminated && forceCardBacks ? "opacity-60" : ""}
       `}
       style={{ minWidth: cardSize.infoMin }}
     >
@@ -399,10 +403,12 @@ export default function PokerBoard({
   legalActions,
   onAction,
   showdownResult,
+  matchResult,
 }: PokerBoardProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
 
+  const isMatchOver = !!matchResult;
   const isShowdown = !!showdownResult;
   const winnerIndices = new Set(showdownResult?.winners.map(w => w.playerIndex) ?? []);
 
@@ -477,6 +483,25 @@ export default function PokerBoard({
             )}
           </div>
 
+          {/* ── Match Over overlay ── */}
+          {isMatchOver && matchResult && (
+            <div className="absolute inset-[5%] rounded-[50%] z-30 flex items-center justify-center pointer-events-none">
+              <div className="bg-black/70 backdrop-blur-sm rounded-2xl px-6 py-4 text-center shadow-2xl ring-1 ring-white/10 pointer-events-auto max-w-[80%]">
+                <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-widest font-mono mb-1">Game Over</div>
+                <div className="text-base sm:text-xl font-display font-bold text-amber-300 flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z" />
+                    <path d="M5 19a1 1 0 011-1h12a1 1 0 011 1v1a1 1 0 01-1 1H6a1 1 0 01-1-1v-1z" />
+                  </svg>
+                  {matchResult.winnerName}
+                </div>
+                {matchResult.reason && (
+                  <div className="text-[10px] sm:text-xs text-white/40 font-mono mt-1 capitalize">{matchResult.reason}</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Player seats ── */}
           {players.map((player, idx) => {
             const visualIndex = (idx - humanPlayerIndex + players.length) % players.length;
@@ -489,11 +514,12 @@ export default function PokerBoard({
                 player={player}
                 position={pos}
                 cardSize={cardSize}
-                isActive={idx === currentPlayerIndex && !isShowdown}
+                isActive={idx === currentPlayerIndex && !isShowdown && !isMatchOver}
                 showCards={showCards}
                 isShowdown={isShowdown}
                 isWinner={winnerIndices.has(idx)}
                 hideCards={player.isHuman}
+                forceCardBacks={isMatchOver}
               />
             );
           })}
