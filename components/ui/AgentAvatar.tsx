@@ -3,10 +3,10 @@
 import React from "react";
 
 /* ── Sprite mapping ───────────────────────────────────── */
-const SPRITE_KEYS = ["claude", "codex", "deepseek", "gemini", "minimax", "openclaw", "qwen"] as const;
+export const SPRITE_KEYS = ["claude", "codex", "deepseek", "gemini", "minimax", "openclaw", "qwen"] as const;
 export type AgentSpriteType = (typeof SPRITE_KEYS)[number];
 
-function getAgentSprite(name: string): string {
+export function getAgentSprite(name: string): string {
   const lower = name.toLowerCase();
   for (const key of SPRITE_KEYS) {
     if (lower.includes(key)) return `/agents/${key}.webp`;

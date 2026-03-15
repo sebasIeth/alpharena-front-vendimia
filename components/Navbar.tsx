@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 import { classNames } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
+import AgentAvatar, { SPRITE_KEYS, getAgentSprite } from "@/components/ui/AgentAvatar";
 
 /* ── SVG Icons ─────────────────────────────────────────── */
 function IconSwords({ className = "w-4 h-4" }: { className?: string }) {
@@ -72,14 +73,8 @@ function IconChevronDown({ className = "w-3.5 h-3.5" }: { className?: string }) 
   );
 }
 
-/* ── User avatar ───────────────────────────────────────── */
-function UserAvatar({ name, size = "w-8 h-8" }: { name: string; size?: string }) {
-  return (
-    <div className={`${size} rounded-lg bg-gradient-to-br from-arena-primary to-arena-primary-dark flex items-center justify-center shrink-0`}>
-      <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar storage key ─────────────────────────────────── */
+const AVATAR_KEY = "arena_avatar";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -89,6 +84,27 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { lang, setLang, t } = useLanguage();
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [avatarSprite, setAvatarSprite] = useState<string | null>(null);
+
+  // Load saved avatar from localStorage (or derive from username)
+  useEffect(() => {
+    const saved = localStorage.getItem(AVATAR_KEY);
+    if (saved && SPRITE_KEYS.includes(saved as any)) {
+      setAvatarSprite(`/agents/${saved}.webp`);
+    } else if (user?.username) {
+      setAvatarSprite(getAgentSprite(user.username));
+    }
+  }, [user?.username]);
+
+  const pickAvatar = (key: string) => {
+    localStorage.setItem(AVATAR_KEY, key);
+    setAvatarSprite(`/agents/${key}.webp`);
+  };
+
+  // Resolved sprite name for highlighting current selection
+  const currentSpriteKey = SPRITE_KEYS.find(
+    (k) => avatarSprite === `/agents/${k}.webp`
+  );
 
   useEffect(() => {
     initialize();
@@ -243,7 +259,11 @@ export default function Navbar() {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-arena-card-hover transition-all duration-200 border border-transparent hover:border-arena-border-light"
                 >
-                  <UserAvatar name={user?.username || "U"} />
+                  {avatarSprite ? (
+                    <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 agent-sprite" style={{ backgroundImage: `url('${avatarSprite}')` }} />
+                  ) : (
+                    <AgentAvatar name={user?.username || "U"} size="xs" rounded="rounded-lg" />
+                  )}
                   <span className="text-sm font-medium text-arena-text-bright max-w-[100px] truncate">
                     {user?.username}
                   </span>
@@ -256,11 +276,32 @@ export default function Navbar() {
                     {/* User info */}
                     <div className="px-4 py-3 border-b border-arena-border-light/60">
                       <div className="flex items-center gap-2.5">
-                        <UserAvatar name={user?.username || "U"} />
+                        {avatarSprite ? (
+                          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 agent-sprite" style={{ backgroundImage: `url('${avatarSprite}')` }} />
+                        ) : (
+                          <AgentAvatar name={user?.username || "U"} size="xs" rounded="rounded-lg" />
+                        )}
                         <div className="min-w-0">
                           <div className="text-sm font-semibold text-arena-text-bright truncate">{user?.username}</div>
                           <div className="text-[10px] text-arena-muted font-mono truncate">{user?.email || t.nav.signedInAs}</div>
                         </div>
+                      </div>
+                      {/* Avatar picker */}
+                      <div className="flex items-center gap-1.5 mt-3">
+                        {SPRITE_KEYS.map((key) => (
+                          <button
+                            key={key}
+                            onClick={() => pickAvatar(key)}
+                            className={classNames(
+                              "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all",
+                              currentSpriteKey === key
+                                ? "ring-2 ring-arena-primary ring-offset-1 scale-110"
+                                : "opacity-60 hover:opacity-100 hover:scale-105"
+                            )}
+                            style={{ backgroundImage: `url('/agents/${key}.webp')` }}
+                            title={key}
+                          />
+                        ))}
                       </div>
                     </div>
 
@@ -424,11 +465,32 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 px-3 py-2.5">
-                    <UserAvatar name={user?.username || "U"} />
+                    {avatarSprite ? (
+                      <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 agent-sprite" style={{ backgroundImage: `url('${avatarSprite}')` }} />
+                    ) : (
+                      <AgentAvatar name={user?.username || "U"} size="xs" rounded="rounded-lg" />
+                    )}
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-arena-text-bright truncate">{user?.username}</div>
                       <div className="text-[10px] text-arena-muted">{t.nav.signedInAs}</div>
                     </div>
+                  </div>
+                  {/* Avatar picker (mobile) */}
+                  <div className="flex items-center gap-1.5 px-3 py-2">
+                    {SPRITE_KEYS.map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => pickAvatar(key)}
+                        className={classNames(
+                          "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all",
+                          currentSpriteKey === key
+                            ? "ring-2 ring-arena-primary ring-offset-1 scale-110"
+                            : "opacity-60 hover:opacity-100 hover:scale-105"
+                        )}
+                        style={{ backgroundImage: `url('/agents/${key}.webp')` }}
+                        title={key}
+                      />
+                    ))}
                   </div>
                   <button
                     onClick={logout}
