@@ -123,7 +123,7 @@ function formatMoveDisplay(
     const action = md.pokerAction || md.action || md.moveData?.pokerAction;
     if (action) {
       const type = typeof action === "string" ? action : action.type || action;
-      const amount = typeof action === "object" ? action.amount : md.amount;
+      const amount = typeof action === "object" ? action.amount : (md.pokerAmount ?? md.amount);
       return { text: amount != null ? `${type} (${amount})` : String(type) };
     }
     return { text: "action" };

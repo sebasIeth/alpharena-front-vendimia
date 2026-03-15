@@ -584,9 +584,19 @@ export default function MatchDetailPage() {
 
   const handleMatchUpdate = useCallback((updatedMatch: Match) => {
     const raw = updatedMatch as any;
-    setMatch({
-      ...updatedMatch,
-      id: updatedMatch.id || raw._id || matchId,
+    setMatch((prev) => {
+      const base = prev ?? {} as Match;
+      return {
+        ...base,
+        ...updatedMatch,
+        // Preserve fields that partial WS events (match:end) don't include
+        gameType: updatedMatch.gameType || base.gameType,
+        agents: updatedMatch.agents || base.agents,
+        createdAt: updatedMatch.createdAt || base.createdAt,
+        updatedAt: updatedMatch.updatedAt || base.updatedAt,
+        id: updatedMatch.id || raw._id || base.id || matchId,
+        winnerId: updatedMatch.winnerId || raw.winner || raw.result?.winnerId || raw.result?.winner || base.winnerId,
+      };
     });
   }, [matchId]);
 
