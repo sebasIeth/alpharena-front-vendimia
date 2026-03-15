@@ -585,9 +585,9 @@ function DashboardContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 sm:gap-8">
               <WinRateRing rate={stats.winRate} />
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 min-w-0 space-y-4">
                 {/* WLD Bar */}
                 <div>
                   <WLDBar wins={stats.wins} losses={stats.losses} draws={stats.draws} height="h-3" />
@@ -611,18 +611,18 @@ function DashboardContent() {
                 </div>
 
                 {/* Quick stats row */}
-                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-arena-border-light/40">
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.matches}</div>
-                    <div className="text-xl font-extrabold text-arena-text-bright font-mono tabular-nums">{stats.total}</div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-3 border-t border-arena-border-light/40 min-w-0">
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.matches}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-text-bright font-mono tabular-nums truncate">{stats.total}</div>
                   </div>
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">Best {t.common.elo}</div>
-                    <div className="text-xl font-extrabold text-arena-primary font-mono tabular-nums">{formatElo(stats.bestElo)}</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">Best {t.common.elo}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-primary font-mono tabular-nums truncate">{formatElo(stats.bestElo)}</div>
                   </div>
-                  <div>
-                    <div className="text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
-                    <div className="text-xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(stats.earnings)}</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-arena-muted uppercase tracking-wider font-semibold">{t.common.earnings}</div>
+                    <div className="text-base sm:text-xl font-extrabold text-arena-accent font-mono tabular-nums truncate">{formatEarnings(stats.earnings)}</div>
                   </div>
                 </div>
               </div>
