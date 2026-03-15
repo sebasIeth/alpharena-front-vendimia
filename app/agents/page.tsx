@@ -98,14 +98,8 @@ function IconRobot({ className = "w-6 h-6" }: { className?: string }) {
    SUB-COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-/* ── Avatar ── */
-function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 72 }: { rate: number; size?: number }) {
@@ -230,7 +224,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
           {/* Avatar + info */}
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="relative">
-              <Avatar name={agent.name} size="w-16 h-16" textSize="text-2xl" gradient="from-arena-primary to-arena-accent" />
+              <AgentAvatar name={agent.name} size="w-16 h-16" textSize="text-2xl" gradient="from-arena-primary to-arena-accent" />
               {isLive && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-arena-success border-2 border-white">
                   <span className="absolute inset-0 rounded-full bg-arena-success animate-ping opacity-60" />
@@ -327,7 +321,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative">
-          <Avatar
+          <AgentAvatar
             name={agent.name}
             size="w-11 h-11"
             textSize="text-base"

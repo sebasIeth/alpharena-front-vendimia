@@ -127,16 +127,8 @@ function CrownIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Avatar with initial ───────────────────────────────────── */
-function Avatar({ name, gradientFrom, size = "w-12 h-12", textSize = "text-lg" }: { name: string; gradientFrom: string; size?: string; textSize?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center shrink-0 shadow-arena-sm`}>
-      <span className={`${textSize} font-extrabold text-white`}>
-        {name.charAt(0).toUpperCase()}
-      </span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Stat row inside modals ───────────────────────────────── */
 function StatRow({ label, value, accentColor }: { label: string; value: string | number; accentColor?: string }) {
@@ -493,9 +485,9 @@ export default function LeaderboardPage() {
                       )}
 
                       {/* Avatar */}
-                      <Avatar
+                      <AgentAvatar
                         name={agent.name}
-                        gradientFrom={c.avatarBg}
+                        gradient={c.avatarBg}
                         size={place === 1 ? "w-16 h-16" : "w-12 h-12"}
                         textSize={place === 1 ? "text-2xl" : "text-lg"}
                       />
@@ -558,7 +550,7 @@ export default function LeaderboardPage() {
                     style={{ animationDelay: `${i * 0.1}s`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar name={agent.name} gradientFrom={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
+                      <AgentAvatar name={agent.name} gradient={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
@@ -612,7 +604,7 @@ export default function LeaderboardPage() {
                           </span>
                         </div>
                         <div className="col-span-3 flex items-center gap-3 min-w-0">
-                          <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={agent.name} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="font-semibold text-arena-text-bright text-sm truncate group-hover:text-arena-primary transition-colors">{agent.name}</span>
@@ -651,7 +643,7 @@ export default function LeaderboardPage() {
                           <span className="text-base font-extrabold font-mono w-7 text-center shrink-0 tabular-nums text-arena-muted-light">
                             {agent.rank}
                           </span>
-                          <Avatar name={agent.name} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={agent.name} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <span className="flex items-center gap-1.5 min-w-0">
@@ -706,9 +698,9 @@ export default function LeaderboardPage() {
                         </div>
                       )}
 
-                      <Avatar
+                      <AgentAvatar
                         name={user.username}
-                        gradientFrom={c.avatarBg}
+                        gradient={c.avatarBg}
                         size={place === 1 ? "w-16 h-16" : "w-12 h-12"}
                         textSize={place === 1 ? "text-2xl" : "text-lg"}
                       />
@@ -745,7 +737,7 @@ export default function LeaderboardPage() {
                     style={{ animationDelay: `${i * 0.1}s`, animationFillMode: "both" }}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar name={user.username} gradientFrom={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
+                      <AgentAvatar name={user.username} gradient={pc.avatarBg} size="w-11 h-11" textSize="text-base" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`${pc.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{pc.label}</span>
@@ -787,7 +779,7 @@ export default function LeaderboardPage() {
                           </span>
                         </div>
                         <div className="col-span-4 flex items-center gap-3">
-                          <Avatar name={user.username} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={user.username} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <span className="font-semibold text-arena-text-bright text-sm group-hover:text-arena-primary transition-colors">{user.username}</span>
                         </div>
                         <div className="col-span-3 text-center text-sm text-arena-muted tabular-nums">
@@ -809,7 +801,7 @@ export default function LeaderboardPage() {
                           <span className="text-base font-extrabold font-mono w-7 text-center shrink-0 tabular-nums text-arena-muted-light">
                             {user.rank}
                           </span>
-                          <Avatar name={user.username} gradientFrom="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
+                          <AgentAvatar name={user.username} gradient="from-arena-primary to-arena-primary-dark" size="w-9 h-9" textSize="text-sm" />
                           <div className="flex-1 min-w-0">
                             <span className="font-semibold text-arena-text-bright text-sm">{user.username}</span>
                             <div className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</div>

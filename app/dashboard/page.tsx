@@ -117,14 +117,8 @@ function IconSend({ className = "w-4 h-4" }: { className?: string }) {
    SUB-COMPONENTS
    ═══════════════════════════════════════════════════════ */
 
-/* ── Avatar with initial ── */
-function Avatar({ name, size = "w-10 h-10", textSize = "text-base", gradient = "from-arena-primary to-arena-primary-dark" }: { name: string; size?: string; textSize?: string; gradient?: string }) {
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`} style={{ boxShadow: "0 2px 8px rgba(91, 79, 207, 0.25), inset 0 1px 0 rgba(255,255,255,0.2)" }}>
-      <span className={`${textSize} font-extrabold text-white drop-shadow-sm`}>{name.charAt(0).toUpperCase()}</span>
-    </div>
-  );
-}
+/* ── Avatar ── (shared component) */
+import AgentAvatar from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
@@ -642,7 +636,7 @@ function DashboardContent() {
               </div>
 
               <div className="flex items-center gap-4 mb-5">
-                <Avatar
+                <AgentAvatar
                   name={stats.bestAgent.name}
                   size="w-14 h-14"
                   textSize="text-xl"
@@ -1041,7 +1035,7 @@ function DashboardContent() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative">
-                        <Avatar
+                        <AgentAvatar
                           name={agent.name}
                           size="w-10 h-10"
                           textSize="text-sm"

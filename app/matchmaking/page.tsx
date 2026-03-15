@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import AgentAvatar from "@/components/ui/AgentAvatar";
 import { PageSpinner } from "@/components/ui/Spinner";
 import { formatElo, formatUsdEquivalent } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
@@ -142,11 +143,14 @@ function AgentCard({
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-            selected ? "bg-arena-primary text-white" : "bg-arena-bg text-arena-primary"
-          }`}>
-            {agent.name.charAt(0).toUpperCase()}
-          </div>
+          <AgentAvatar
+            name={agent.name}
+            size="w-8 h-8"
+            textSize="text-sm"
+            rounded="rounded-lg"
+            bgColor={selected ? "#5B4FCF" : undefined}
+            gradient={selected ? undefined : "from-arena-primary/10 to-arena-primary/10"}
+          />
           <div>
             <div className="font-semibold text-arena-text text-sm leading-tight">{agent.name}</div>
             <div className="text-[10px] text-arena-muted font-mono">{formatElo(agent.elo)} ELO</div>
@@ -637,11 +641,13 @@ function MatchmakingContent() {
                         key={ca.agentId}
                         className="bg-arena-bg border border-arena-border-light rounded-xl px-4 py-2 flex items-center gap-2.5"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-arena-primary/10 flex items-center justify-center">
-                          <span className="text-xs font-bold text-arena-primary">
-                            {(ca.name || ca.agentId).charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        <AgentAvatar
+                          name={ca.name || ca.agentId}
+                          size="w-7 h-7"
+                          textSize="text-xs"
+                          rounded="rounded-lg"
+                          gradient="from-arena-primary/10 to-arena-primary/10"
+                        />
                         <div className="text-left">
                           <span className="text-sm text-arena-text font-medium block leading-tight">
                             {ca.name || ca.agentId.slice(0, 8)}
