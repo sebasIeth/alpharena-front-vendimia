@@ -39,7 +39,7 @@ export interface AgentStats {
   totalEarnings: number;
 }
 
-export type AgentType = "http" | "openclaw";
+export type AgentType = "http" | "openclaw" | "pull";
 
 export interface Agent {
   id: string;
@@ -57,10 +57,9 @@ export interface Agent {
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
-  autoPlay: boolean;
-  autoPlayStakeAmount: number;
-  autoPlayConsecutiveErrors: number;
   stats: AgentStats;
+  xUsername?: string;
+  claimStatus?: "unclaimed" | "pending" | "claimed";
   createdAt: string;
   updatedAt: string;
 }
@@ -99,8 +98,6 @@ export interface UpdateAgentPayload {
   openclawAgentId?: string;
   selfclawPublicKey?: string;
   gameTypes?: string[];
-  autoPlay?: boolean;
-  autoPlayStakeAmount?: number;
 }
 
 export interface HealthCheckResponse {
@@ -116,6 +113,7 @@ export interface MatchAgent {
   agentName: string;
   userId: string;
   username: string;
+  xUsername?: string;
   eloAtStart: number;
   eloChange?: number;
   finalScore?: number;
@@ -404,10 +402,6 @@ export interface PlayingCountResponse {
   playingCount: number;
 }
 
-export interface AutoPlayCountResponse {
-  autoPlayCount: number;
-}
-
 // ========== Leaderboard ==========
 export interface LeaderboardAgent {
   rank: number;
@@ -415,6 +409,7 @@ export interface LeaderboardAgent {
   name: string;
   ownerUsername: string;
   isHuman?: boolean;
+  xUsername?: string;
   elo: number;
   winRate: number;
   wins: number;

@@ -236,12 +236,21 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 <h3 className="text-xl font-display font-extrabold text-arena-text-bright truncate group-hover:text-arena-primary transition-colors">
                   {agent.name}
                 </h3>
-                <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+                <Badge status={agent.status} />
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
+                {agent.type === "pull" && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono bg-blue-50 text-blue-600 border border-blue-200 rounded">API</span>
+                )}
                 {agent.isHuman && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                )}
+                {(agent as any).xUsername && (
+                  <a href={`https://x.com/${(agent as any).xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono bg-gray-900 text-white rounded hover:bg-black transition-colors">
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    @{(agent as any).xUsername}
+                  </a>
                 )}
                 <ChainBadge chain={agent.chain} />
               </div>
@@ -341,11 +350,6 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
             {agent.type === "openclaw" && (
               <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-purple-50 text-purple-500 rounded">OC</span>
             )}
-            {agent.autoPlay && (
-              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded">
-                AP
-              </span>
-            )}
             {agent.isHuman && (
               <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">
                 Human
@@ -361,7 +365,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         </div>
 
         <div className="shrink-0 flex flex-col items-end gap-1">
-          <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+          <Badge status={agent.status} />
         </div>
       </div>
 
@@ -439,7 +443,7 @@ function EmptyState({ t }: { t: any }) {
       </div>
 
       <div className="text-center opacity-0 animate-fade-up" style={{ animationDelay: "0.55s", animationFillMode: "both" }}>
-        <Link href="/agents/new">
+        <Link href="/docs">
           <Button size="lg">
             <span className="flex items-center gap-2">
               <IconPlus className="w-4 h-4" />
@@ -541,7 +545,7 @@ function AgentsContent() {
             <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright mb-1">{t.agents.title}</h1>
             <p className="text-arena-muted text-sm">{t.agents.subtitle}</p>
           </div>
-          <Link href="/agents/new">
+          <Link href="/docs">
             <Button>
               <span className="flex items-center gap-2">
                 <IconPlus className="w-4 h-4" />

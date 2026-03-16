@@ -213,7 +213,7 @@ function DashStat({ label, value, sub, icon, accentColor, delay, children }: {
 function OnboardingState({ t }: { t: any }) {
   const steps = [
     { num: "01", title: t.home.step1Title, desc: t.home.step1Desc, done: true },
-    { num: "02", title: t.home.step2Title, desc: t.home.step2Desc, href: "/agents/new", cta: t.dashboard.createAgent },
+    { num: "02", title: t.home.step2Title, desc: t.home.step2Desc, href: "/docs", cta: t.dashboard.createAgent },
     { num: "03", title: t.home.step3Title, desc: t.home.step3Desc, href: "/matchmaking", cta: t.dashboard.joinQueue },
     { num: "04", title: t.home.step4Title, desc: t.home.step4Desc },
   ];
@@ -352,7 +352,7 @@ function DashboardContent() {
 
   const stats = useMemo(() => {
     const active = agents.filter((a) => a.status === "in_match").length;
-    const queued = agents.filter((a) => a.status === "queued" || (a.autoPlay && a.status === "idle")).length;
+    const queued = agents.filter((a) => a.status === "queued").length;
     const earnings = agents.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
     const bestElo = agents.length > 0 ? Math.max(...agents.map((a) => a.elo || 0)) : 0;
     const wins = agents.reduce((s, a) => s + (a.stats?.wins || 0), 0);
@@ -428,7 +428,7 @@ function DashboardContent() {
 
             {/* CTAs */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <Link href="/agents/new">
+              <Link href="/docs">
                 <Button>
                   <span className="flex items-center gap-2">
                     <IconPlus className="w-4 h-4" />
@@ -953,7 +953,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
             {
-              href: "/agents/new",
+              href: "/docs",
               icon: <IconPlus />,
               label: t.dashboard.createAgent,
               desc: t.dashboard.deployNew,
@@ -1064,7 +1064,7 @@ function DashboardContent() {
                       {agent.status === "idle" && (
                         <span className="w-1.5 h-1.5 rounded-full bg-arena-muted-light idle-pulse" />
                       )}
-                      <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+                      <Badge status={agent.status} />
                     </div>
                   </div>
 
@@ -1113,7 +1113,7 @@ function DashboardContent() {
               <p className="text-sm text-arena-muted mb-6 max-w-xs mx-auto">
                 {hasAgents ? t.matchmaking.subtitle : t.agents.noAgentsDesc}
               </p>
-              <Link href={hasAgents ? "/matchmaking" : "/agents/new"}>
+              <Link href={hasAgents ? "/matchmaking" : "/docs"}>
                 <Button variant="secondary" size="sm">
                   {hasAgents ? t.dashboard.startFirst : t.dashboard.createAgent}
                 </Button>
