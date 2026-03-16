@@ -236,7 +236,7 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 <h3 className="text-xl font-display font-extrabold text-arena-text-bright truncate group-hover:text-arena-primary transition-colors">
                   {agent.name}
                 </h3>
-                <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+                <Badge status={agent.status} />
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
@@ -350,11 +350,6 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
             {agent.type === "openclaw" && (
               <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-purple-50 text-purple-500 rounded">OC</span>
             )}
-            {agent.autoPlay && (
-              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded">
-                AP
-              </span>
-            )}
             {agent.isHuman && (
               <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">
                 Human
@@ -370,7 +365,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         </div>
 
         <div className="shrink-0 flex flex-col items-end gap-1">
-          <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+          <Badge status={agent.status} />
         </div>
       </div>
 

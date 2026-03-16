@@ -18,7 +18,6 @@ import type {
   QueueSize,
   QueueListResponse,
   PlayingCountResponse,
-  AutoPlayCountResponse,
   LeaderboardAgent,
   LeaderboardUser,
   AgentStatsResponse,
@@ -256,10 +255,6 @@ class ApiClient {
 
   async getPlayingCount(): Promise<PlayingCountResponse> {
     return this.get<PlayingCountResponse>("/matchmaking/playing-count", false);
-  }
-
-  async getAutoPlayCount(): Promise<AutoPlayCountResponse> {
-    return this.get<AutoPlayCountResponse>("/matchmaking/auto-play-count", false);
   }
 
   // ========== Matches ==========

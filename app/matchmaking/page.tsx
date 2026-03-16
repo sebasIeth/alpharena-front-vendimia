@@ -253,7 +253,6 @@ function MatchmakingContent() {
   const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
   const [queueSize, setQueueSize] = useState<number | null>(null);
   const [playingCount, setPlayingCount] = useState<number | null>(null);
-  const [autoPlayCount, setAutoPlayCount] = useState<number | null>(null);
   const [queueList, setQueueList] = useState<QueueListEntry[]>([]);
 
   // Backend countdown state (broadcast via WebSocket)
@@ -305,18 +304,16 @@ function MatchmakingContent() {
     return () => { cancelled = true; };
   }, [selectedAgentId]);
 
-  // Fetch queue size, playing count, auto-play count, queue list
+  // Fetch queue size, playing count, queue list
   useEffect(() => {
     async function fetchQueueStats() {
       try {
-        const [sizeRes, playingRes, autoPlayRes, queueListRes] = await Promise.allSettled([
+        const [sizeRes, playingRes, queueListRes] = await Promise.allSettled([
           api.getQueueSize(gameType),
           api.getPlayingCount(),
-          api.getAutoPlayCount(),
           api.getQueueList(gameType),
         ]);
         if (playingRes.status === "fulfilled") setPlayingCount(playingRes.value.playingCount);
-        if (autoPlayRes.status === "fulfilled") setAutoPlayCount(autoPlayRes.value.autoPlayCount);
         if (queueListRes.status === "fulfilled") {
           const list = queueListRes.value.queue || [];
           setQueueList(list);
@@ -545,14 +542,6 @@ function MatchmakingContent() {
                   </div>
                   <div className="text-[10px] text-arena-muted uppercase tracking-wider font-mono">
                     {t.matchmaking.playingNow}
-                  </div>
-                </div>
-                <div className="text-center pl-4 border-l border-arena-border-light">
-                  <div className="text-2xl font-extrabold font-mono tabular-nums text-amber-500">
-                    {autoPlayCount !== null ? autoPlayCount : "-"}
-                  </div>
-                  <div className="text-[10px] text-arena-muted uppercase tracking-wider font-mono">
-                    {t.matchmaking.autoPlayActive}
                   </div>
                 </div>
                 {queuedAgents.length > 0 && (

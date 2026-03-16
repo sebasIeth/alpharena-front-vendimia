@@ -195,9 +195,6 @@ function AgentDetailContent() {
   const [chatSending, setChatSending] = useState(false);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto-play state
-  const [autoPlayToggling, setAutoPlayToggling] = useState(false);
-
   // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -396,19 +393,6 @@ function AgentDetailContent() {
     }
   };
 
-  const handleAutoPlayToggle = async () => {
-    if (!agent || autoPlayToggling) return;
-    setAutoPlayToggling(true);
-    try {
-      const data = await api.updateAgent(agentId, { autoPlay: !agent.autoPlay });
-      setAgent(data.agent);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to toggle auto-play.");
-    } finally {
-      setAutoPlayToggling(false);
-    }
-  };
-
   React.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
@@ -504,16 +488,11 @@ function AgentDetailContent() {
                   <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-arena-text-bright">
                     {agent.name}
                   </h1>
-                  <Badge status={agent.autoPlay && agent.status === "idle" ? "auto-play" : agent.status} />
+                  <Badge status={agent.status} />
                   <ChainBadge chain={agent.chain} />
                   {walletAddress && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-arena-bg text-arena-muted border border-arena-border-light rounded truncate max-w-[120px]" title={walletAddress}>
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </span>
-                  )}
-                  {agent.autoPlay && (
-                    <span className="px-2 py-0.5 text-xs font-mono bg-arena-primary/10 text-arena-primary border border-arena-primary/20 rounded font-medium">
-                      Auto-Play
                     </span>
                   )}
                   {agent.isHuman && (
@@ -850,50 +829,6 @@ function AgentDetailContent() {
             </p>
           )}
         </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
-          AUTO-PLAY
-          ═══════════════════════════════════════════════════ */}
-      <div
-        className="bg-white border border-arena-border-light rounded-2xl p-5 shadow-arena-sm mb-8 opacity-0 animate-fade-up"
-        style={{ animationDelay: "0.3s", animationFillMode: "both" }}
-      >
-        <CardTitle className="mb-4">Auto-Play</CardTitle>
-
-        <div className="flex items-center gap-4">
-          {/* Toggle */}
-          <button
-            onClick={handleAutoPlayToggle}
-            disabled={autoPlayToggling || agent.status === "disabled" || agent.gameTypes.length === 0}
-            className={`px-5 py-2 rounded-full text-sm font-semibold font-mono transition-all ${
-              agent.autoPlay
-                ? "bg-arena-primary text-white shadow-sm"
-                : "bg-arena-bg border border-arena-border-light text-arena-muted"
-            } ${
-              (autoPlayToggling || agent.status === "disabled" || agent.gameTypes.length === 0)
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:opacity-80 cursor-pointer"
-            }`}
-          >
-            {autoPlayToggling ? "..." : agent.autoPlay ? "ON" : "OFF"}
-          </button>
-        </div>
-
-        {/* Error counter */}
-        {agent.autoPlayConsecutiveErrors > 0 && (
-          <div className="mt-4">
-            {agent.autoPlayConsecutiveErrors >= 3 ? (
-              <div className="bg-arena-danger/10 border border-arena-danger/30 text-arena-danger rounded-lg px-3 py-2 text-sm">
-                Auto-play was disabled due to 3 consecutive errors.
-              </div>
-            ) : (
-              <p className="text-sm text-amber-500">
-                Consecutive errors: {agent.autoPlayConsecutiveErrors}/3
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════

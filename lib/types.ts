@@ -57,9 +57,6 @@ export interface Agent {
   gameTypes: string[];
   elo: number;
   status: "idle" | "queued" | "in_match" | "disabled";
-  autoPlay: boolean;
-  autoPlayStakeAmount: number;
-  autoPlayConsecutiveErrors: number;
   stats: AgentStats;
   xUsername?: string;
   claimStatus?: "unclaimed" | "pending" | "claimed";
@@ -101,8 +98,6 @@ export interface UpdateAgentPayload {
   openclawAgentId?: string;
   selfclawPublicKey?: string;
   gameTypes?: string[];
-  autoPlay?: boolean;
-  autoPlayStakeAmount?: number;
 }
 
 export interface HealthCheckResponse {
@@ -404,10 +399,6 @@ export interface QueueListResponse {
 
 export interface PlayingCountResponse {
   playingCount: number;
-}
-
-export interface AutoPlayCountResponse {
-  autoPlayCount: number;
 }
 
 // ========== Leaderboard ==========
