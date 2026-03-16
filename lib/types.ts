@@ -113,6 +113,7 @@ export interface MatchAgent {
   agentName: string;
   userId: string;
   username: string;
+  xUsername?: string;
   eloAtStart: number;
   eloChange?: number;
   finalScore?: number;

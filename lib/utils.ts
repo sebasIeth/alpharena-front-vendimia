@@ -155,6 +155,7 @@ export function normalizeMatchAgents(agents: any, pokerPlayers?: any[]): {
   agentName: string;
   userId: string;
   username: string;
+  xUsername?: string;
   eloAtStart: number;
   eloChange?: number;
   finalScore?: number;
@@ -165,6 +166,7 @@ export function normalizeMatchAgents(agents: any, pokerPlayers?: any[]): {
       agentName: p.agentName || p.name || "Agent",
       userId: p.userId || "",
       username: p.username || "",
+      xUsername: p.xUsername,
       eloAtStart: p.eloAtStart ?? 0,
       eloChange: p.eloChange,
       finalScore: p.finalScore,
@@ -181,6 +183,7 @@ export function normalizeMatchAgents(agents: any, pokerPlayers?: any[]): {
           agentName: val.agentName || val.name || "Agent",
           userId: val.userId || "",
           username: val.username || val.ownerUsername || "",
+          xUsername: val.xUsername,
           eloAtStart: val.eloAtStart ?? val.elo ?? 0,
           eloChange: val.eloChange,
           finalScore: val.finalScore,

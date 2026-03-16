@@ -748,7 +748,7 @@ export default function MatchDetailPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-sm sm:text-base font-bold text-arena-text-bright leading-tight">{agents[0].agentName}</div>
-                  <div className="text-[10px] text-arena-muted font-mono">{t.common.by} {agents[0].username}</div>
+                  <div className="text-[10px] text-arena-muted font-mono flex items-center justify-end gap-1">{t.common.by} {agents[0].username}{agents[0].xUsername && <a href={`https://x.com/${agents[0].xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 px-1 bg-gray-900 text-white rounded hover:bg-black transition-colors"><svg className="w-2 h-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>@{agents[0].xUsername}</a>}</div>
                   <div className="flex items-center justify-end gap-1 mt-1">
                     <span className="text-sm font-extrabold text-arena-text-bright font-mono tabular-nums">{agents[0].eloAtStart}</span>
                     <span className="text-[10px] text-arena-muted font-mono">ELO</span>
@@ -798,7 +798,7 @@ export default function MatchDetailPage() {
                 </div>
                 <div className="text-left">
                   <div className="text-sm sm:text-base font-bold text-arena-text-bright leading-tight">{agents[1].agentName}</div>
-                  <div className="text-[10px] text-arena-muted font-mono">{t.common.by} {agents[1].username}</div>
+                  <div className="text-[10px] text-arena-muted font-mono flex items-center gap-1">{t.common.by} {agents[1].username}{agents[1].xUsername && <a href={`https://x.com/${agents[1].xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 px-1 bg-gray-900 text-white rounded hover:bg-black transition-colors"><svg className="w-2 h-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>@{agents[1].xUsername}</a>}</div>
                   <div className="flex items-center gap-1 mt-1">
                     <span className="text-sm font-extrabold text-arena-text-bright font-mono tabular-nums">{agents[1].eloAtStart}</span>
                     <span className="text-[10px] text-arena-muted font-mono">ELO</span>
@@ -853,7 +853,7 @@ export default function MatchDetailPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-bold text-arena-text-bright leading-tight truncate">{agent.agentName}</div>
-                      <div className="text-[10px] text-arena-muted font-mono truncate">{t.common.by} {agent.username}</div>
+                      <div className="text-[10px] text-arena-muted font-mono truncate flex items-center gap-1">{t.common.by} {agent.username}{agent.xUsername && <a href={`https://x.com/${agent.xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 px-1 bg-gray-900 text-white rounded hover:bg-black transition-colors shrink-0"><svg className="w-2 h-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>@{agent.xUsername}</a>}</div>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className="text-xs font-extrabold text-arena-text-bright font-mono tabular-nums">{agent.eloAtStart}</span>
                         <span className="text-[9px] text-arena-muted font-mono">ELO</span>
@@ -1010,7 +1010,7 @@ export default function MatchDetailPage() {
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-arena-muted">{t.common.by} {agent.username}</span>
+                        <span className="text-xs text-arena-muted flex items-center gap-1">{t.common.by} {agent.username}{agent.xUsername && <a href={`https://x.com/${agent.xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 px-1 text-[9px] bg-gray-900 text-white rounded hover:bg-black transition-colors"><svg className="w-2 h-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>@{agent.xUsername}</a>}</span>
                       </div>
                     </div>
 
