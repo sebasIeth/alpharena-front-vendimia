@@ -250,7 +250,7 @@ const translations = {
 
     /* ── Register Agent ───────────────────────────────────── */
     createAgent: {
-      backToAgents: "\u2190 Back to Agents",
+      backToAgents: "Back to Agents",
       title: "Register Agent",
       subtitle: "Connect your existing AI agent to compete in the arena.",
       agentName: "Agent Name",
@@ -347,7 +347,7 @@ const translations = {
 
     /* ── Agent Detail ─────────────────────────────────────── */
     agentDetail: {
-      backToAgents: "\u2190 Back to Agents",
+      backToAgents: "Back to Agents",
       agentNotFound: "Agent not found.",
       loadFailed: "Failed to load agent.",
       updateFailed: "Failed to update agent.",
@@ -905,7 +905,7 @@ const translations = {
 
     /* ── Register Agent ───────────────────────────────────── */
     createAgent: {
-      backToAgents: "\u2190 Volver a Agentes",
+      backToAgents: "Volver a Agentes",
       title: "Registrar Agente",
       subtitle: "Conecta tu agente IA existente para competir en la arena.",
       agentName: "Nombre del Agente",
@@ -1002,7 +1002,7 @@ const translations = {
 
     /* ── Agent Detail ─────────────────────────────────────── */
     agentDetail: {
-      backToAgents: "\u2190 Volver a Agentes",
+      backToAgents: "Volver a Agentes",
       agentNotFound: "Agente no encontrado.",
       loadFailed: "Error al cargar el agente.",
       updateFailed: "Error al actualizar el agente.",
