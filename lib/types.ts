@@ -39,7 +39,7 @@ export interface AgentStats {
   totalEarnings: number;
 }
 
-export type AgentType = "http" | "openclaw";
+export type AgentType = "http" | "openclaw" | "pull";
 
 export interface Agent {
   id: string;
@@ -61,6 +61,8 @@ export interface Agent {
   autoPlayStakeAmount: number;
   autoPlayConsecutiveErrors: number;
   stats: AgentStats;
+  xUsername?: string;
+  claimStatus?: "unclaimed" | "pending" | "claimed";
   createdAt: string;
   updatedAt: string;
 }
@@ -415,6 +417,7 @@ export interface LeaderboardAgent {
   name: string;
   ownerUsername: string;
   isHuman?: boolean;
+  xUsername?: string;
   elo: number;
   winRate: number;
   wins: number;

@@ -240,8 +240,17 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
                 {agent.type === "openclaw" && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OC</span>
                 )}
+                {agent.type === "pull" && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono bg-blue-50 text-blue-600 border border-blue-200 rounded">API</span>
+                )}
                 {agent.isHuman && (
                   <span className="px-1.5 py-0.5 text-[10px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
+                )}
+                {(agent as any).xUsername && (
+                  <a href={`https://x.com/${(agent as any).xUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono bg-gray-900 text-white rounded hover:bg-black transition-colors">
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    @{(agent as any).xUsername}
+                  </a>
                 )}
                 <ChainBadge chain={agent.chain} />
               </div>

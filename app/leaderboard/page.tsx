@@ -10,6 +10,16 @@ import type { LeaderboardAgent, LeaderboardUser } from "@/lib/types";
 
 type Tab = "agents" | "users";
 
+function XBadge({ username }: { username?: string | null }) {
+  if (!username) return null;
+  return (
+    <a href={`https://x.com/${username}`} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-0.5 px-1 py-0 text-[9px] font-mono bg-gray-900 text-white rounded hover:bg-black transition-colors">
+      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+      @{username}
+    </a>
+  );
+}
+
 // ── Normalize backend responses ──────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeAgent(raw: any, index: number): LeaderboardAgent {
@@ -31,6 +41,7 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
     draws,
     totalMatches,
     totalEarnings: raw.totalEarnings ?? stats.totalEarnings ?? 0,
+    xUsername: raw.xUsername ?? null,
   };
 }
 
@@ -228,6 +239,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
             {agent.isHuman && (
               <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
             )}
+            <XBadge username={agent.xUsername} />
           </div>
           <div className="text-xs text-arena-muted">{t.common.by} {agent.ownerUsername}</div>
         </div>
@@ -511,6 +523,7 @@ export default function LeaderboardPage() {
                         {agent.isHuman && (
                           <span className="shrink-0 px-1.5 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
                         )}
+                        <XBadge username={agent.xUsername} />
                       </div>
                       <div className="text-xs text-arena-muted mt-0.5 truncate w-full">{t.common.by} {agent.ownerUsername}</div>
 
@@ -558,6 +571,7 @@ export default function LeaderboardPage() {
                           {agent.isHuman && (
                             <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
                           )}
+                          <XBadge username={agent.xUsername} />
                         </div>
                         <span className="text-xs text-arena-muted">{t.common.by} {agent.ownerUsername}</span>
                       </div>
@@ -611,6 +625,7 @@ export default function LeaderboardPage() {
                               {agent.isHuman && (
                                 <span className="shrink-0 px-1 py-0 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded">Human</span>
                               )}
+                              <XBadge username={agent.xUsername} />
                             </div>
                             <div className="text-xs text-arena-muted truncate">{agent.ownerUsername}</div>
                           </div>
