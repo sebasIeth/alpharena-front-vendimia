@@ -281,13 +281,26 @@ export interface BettingContracts {
 
 export type OnChainBettingState = "none" | "escrowed" | "settled" | "refunded";
 
+export interface AgentPool {
+  agentId: string;
+  totalBets: number;
+  betCount: number;
+  percent: number;
+  odds: number;
+}
+
 export interface BettingPoolData {
-  totalBetsA: number;
-  totalBetsB: number;
   totalPool: number;
   netPool?: number;
   noContest: boolean;
+  agents?: AgentPool[];
+  /** @deprecated use agents[] */
+  totalBetsA: number;
+  /** @deprecated use agents[] */
+  totalBetsB: number;
+  /** @deprecated use agents[] */
   percentA: number;
+  /** @deprecated use agents[] */
   percentB: number;
 }
 

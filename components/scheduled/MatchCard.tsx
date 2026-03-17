@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { formatEarnings } from "@/lib/utils";
 import CountdownTimer from "./CountdownTimer";
-import type { ScheduledMatchResponse, BettingInfo, BettingPoolResponse } from "@/lib/types";
+import type { ScheduledMatchResponse, BettingInfo, BettingPoolResponse, AgentPool } from "@/lib/types";
 
 /* ══════════════════════════════════════════════════════════
    GAME CONFIG — gradients, accents, icons per game type
@@ -18,23 +18,26 @@ const GAME_CONFIG: Record<
     icon: string;
     label: string;
     accentColor: string;
-    gradient: string;
-    liveGradient: string;
+    badgeBg: string;
+    badgeText: string;
+    liveBorder: string;
   }
 > = {
   chess: {
     icon: "\u265F",
     label: "CHESS",
-    accentColor: "#8B7FD4",
-    gradient: "from-[#1a1a2e] to-[#16213e]",
-    liveGradient: "from-[#2a1520] to-[#1a1025]",
+    accentColor: "#5B4FCF",
+    badgeBg: "bg-arena-primary/10",
+    badgeText: "text-arena-primary",
+    liveBorder: "ring-red-400/30",
   },
   poker: {
     icon: "\u2660",
     label: "POKER",
     accentColor: "#4CAF7D",
-    gradient: "from-[#1a2e1a] to-[#162e21]",
-    liveGradient: "from-[#2a1520] to-[#1a1025]",
+    badgeBg: "bg-emerald-500/10",
+    badgeText: "text-emerald-600",
+    liveBorder: "ring-red-400/30",
   },
 };
 
@@ -92,7 +95,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
   const [bettingInfo, setBettingInfo] = useState<BettingInfo | null>(null);
   const [poolResp, setPoolResp] = useState<BettingPoolResponse | null>(null);
   const [showBetting, setShowBetting] = useState(false);
-  const [betOnA, setBetOnA] = useState(true);
+  const [selectedAgentIdx, setSelectedAgentIdx] = useState(0);
   const [betAmount, setBetAmount] = useState("");
   const [placing, setPlacing] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -128,7 +131,7 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
     setPlacing(true);
     setMsg(null);
     try {
-      const selectedAgentId = betOnA ? agents[0]?.agentId : agents[1]?.agentId;
+      const selectedAgentId = agents[selectedAgentIdx]?.agentId;
       await api.placeBet(match.matchId, selectedAgentId, amount);
       setMsg({ type: "success", text: t.betting.betPlaced });
       setBetAmount("");
@@ -143,11 +146,15 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
   // Pool data
   const pool = poolResp?.pool ?? bettingInfo?.betting?.pool;
   const totalPool = Number(pool?.totalPool ?? 0);
-  const pctA = Number(pool?.percentA ?? 50);
-  const pctB = Number(pool?.percentB ?? 50);
   const bettingOpen = bettingInfo?.betting?.open ?? poolResp?.bettingOpen ?? false;
-  const oddsA = bettingInfo?.betting?.odds?.a != null ? Number(bettingInfo.betting.odds.a) : null;
-  const oddsB = bettingInfo?.betting?.odds?.b != null ? Number(bettingInfo.betting.odds.b) : null;
+
+  // Agent pool data — build a lookup by agentId from pool.agents[]
+  const agentPools: AgentPool[] = pool?.agents ?? [];
+  const agentPoolMap = useMemo(() => {
+    const map = new Map<string, AgentPool>();
+    for (const ap of agentPools) map.set(ap.agentId, ap);
+    return map;
+  }, [agentPools]);
 
   // Agent names
   const agents = match.agents || [];
@@ -162,10 +169,11 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
     <div
       className={`
         group relative overflow-hidden rounded-xl
-        bg-gradient-to-br ${isLive ? config.liveGradient : config.gradient}
-        border ${isLive ? "border-red-500/20" : "border-white/10"}
-        hover:border-white/20 hover:-translate-y-0.5
-        hover:shadow-xl hover:shadow-purple-500/5
+        bg-white/80 backdrop-blur-sm
+        border border-arena-border-light/40
+        ${isLive ? "ring-2 ring-red-400/20" : ""}
+        hover:border-arena-primary/30 hover:-translate-y-0.5
+        hover:shadow-lg hover:shadow-arena-primary/5
         transition-all duration-300 ease-out
         opacity-0 animate-fade-up
       `}
@@ -173,12 +181,12 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
     >
       {/* ── LIVE top glow bar ── */}
       {isLive && (
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-orange-500 to-red-500 animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-orange-400 to-red-500 animate-pulse" />
       )}
 
       {/* ── Left accent bar ── */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1"
+        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
         style={{ backgroundColor: isLive ? "#E84855" : config.accentColor }}
       />
 
@@ -186,22 +194,21 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
         {/* ── Top row: game type badge + date ── */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="text-base leading-none" style={{ color: config.accentColor }}>
-              {config.icon}
-            </span>
-            <span
-              className="text-[10px] font-mono font-bold uppercase tracking-[0.15em]"
-              style={{ color: config.accentColor }}
-            >
-              {config.label}
-            </span>
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${config.badgeBg}`}>
+              <span className={`text-sm leading-none ${config.badgeText}`}>
+                {config.icon}
+              </span>
+              <span className={`text-[10px] font-mono font-bold uppercase tracking-[0.15em] ${config.badgeText}`}>
+                {config.label}
+              </span>
+            </div>
             {agents.length > 2 && (
-              <span className="text-white/20 text-[10px] font-mono">
+              <span className="text-arena-muted text-[10px] font-mono">
                 {agents.length} players
               </span>
             )}
           </div>
-          <span className="text-white/30 text-xs font-mono">
+          <span className="text-arena-muted text-xs font-mono">
             {formatMatchTime(match.scheduledAt)}
           </span>
         </div>
@@ -213,30 +220,30 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             <div className="flex items-center justify-between">
               {/* Player A */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <AgentAvatar name={nameA} bgColor={colorA} rounded="rounded-full" shadow={`0 4px 14px ${colorA}40`} />
+                <AgentAvatar name={nameA} bgColor={colorA} rounded="rounded-full" shadow={`0 4px 14px ${colorA}25`} />
                 <div className="min-w-0">
-                  <div className="text-white font-bold text-base sm:text-lg truncate">
+                  <div className="text-arena-text-bright font-bold text-base sm:text-lg truncate">
                     {nameA}
                   </div>
-                  <div className="text-white/30 text-[11px] font-mono">
+                  <div className="text-arena-muted text-[11px] font-mono">
                     {eloA} ELO
                   </div>
                 </div>
               </div>
 
               {/* VS badge */}
-              <div className="shrink-0 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-3">
-                <span className="text-white/30 text-xs font-display italic">vs</span>
+              <div className="shrink-0 w-10 h-10 rounded-full bg-arena-primary/5 border border-arena-border-light/50 flex items-center justify-center mx-3">
+                <span className="text-arena-muted text-xs font-display italic">vs</span>
               </div>
 
               {/* Player B */}
               <div className="flex items-center gap-3 min-w-0 flex-1 flex-row-reverse text-right">
-                <AgentAvatar name={nameB} bgColor={colorB} rounded="rounded-full" shadow={`0 4px 14px ${colorB}40`} />
+                <AgentAvatar name={nameB} bgColor={colorB} rounded="rounded-full" shadow={`0 4px 14px ${colorB}25`} />
                 <div className="min-w-0">
-                  <div className="text-white font-bold text-base sm:text-lg truncate">
+                  <div className="text-arena-text-bright font-bold text-base sm:text-lg truncate">
                     {nameB}
                   </div>
-                  <div className="text-white/30 text-[11px] font-mono">
+                  <div className="text-arena-muted text-[11px] font-mono">
                     {eloB} ELO
                   </div>
                 </div>
@@ -256,10 +263,10 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
                     shadow={`0 4px 14px ${agent.color || PLAYER_COLORS[0]}40`}
                   />
                   <div>
-                    <div className="text-white text-sm font-medium whitespace-nowrap">
+                    <div className="text-arena-text-bright text-sm font-medium whitespace-nowrap">
                       {agent.name}
                     </div>
-                    <div className="text-white/25 text-[10px] font-mono">{agent.elo}</div>
+                    <div className="text-arena-muted text-[10px] font-mono">{agent.elo}</div>
                   </div>
                 </div>
               ))}
@@ -267,48 +274,74 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
           )}
         </div>
 
-        {/* ── Betting pool bar (when matchId exists and pool > 0) ── */}
-        {match.matchId && totalPool > 0 && (
+        {/* ── Betting pool info ── */}
+        {match.matchId && (
           <div className="mb-3 px-1">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-white/40 text-[10px] font-mono">{nameA}</span>
-              <span className="text-white/30 text-[10px] font-mono font-semibold">
+            {/* Total pool header */}
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-arena-muted text-[10px] font-mono font-semibold">
                 {t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA
               </span>
-              <span className="text-white/40 text-[10px] font-mono">{nameB}</span>
             </div>
-            <div className="flex h-1.5 rounded-full overflow-hidden bg-white/5">
-              <div
-                className="transition-all duration-500"
-                style={{ width: `${pctA}%`, backgroundColor: PLAYER_COLORS[0] }}
-              />
-              <div className="w-px bg-white/20 shrink-0" />
-              <div
-                className="transition-all duration-500"
-                style={{ width: `${pctB}%`, backgroundColor: PLAYER_COLORS[1] }}
-              />
-            </div>
-            <div className="flex items-center justify-between mt-0.5">
-              <span className="text-white/25 text-[9px] font-mono">{pctA.toFixed(0)}%</span>
-              {oddsA != null && oddsB != null && (
-                <span className="text-white/20 text-[9px] font-mono">
-                  {oddsA.toFixed(2)}x · {oddsB.toFixed(2)}x
-                </span>
-              )}
-              <span className="text-white/25 text-[9px] font-mono">{pctB.toFixed(0)}%</span>
-            </div>
+
+            {/* Per-agent breakdown */}
+            {agents.length > 0 && (
+              <div className="space-y-1.5">
+                {agents.map((agent, i) => {
+                  const ap = agentPoolMap.get(agent.agentId);
+                  const bets = ap?.totalBets ?? 0;
+                  const pct = ap?.percent ?? 0;
+                  const odds = ap?.odds ?? 0;
+                  const color = agent.color || PLAYER_COLORS[i % PLAYER_COLORS.length];
+                  return (
+                    <div key={agent.agentId}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="text-arena-text-bright text-[11px] font-mono font-semibold truncate max-w-[100px]">
+                            {agent.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-semibold" style={{ color }}>
+                            {formatEarnings(bets)} ALPHA
+                          </span>
+                          {totalPool > 0 && (
+                            <span className="text-arena-muted/70 text-[9px] font-mono w-8 text-right">
+                              {pct.toFixed(0)}%
+                            </span>
+                          )}
+                          {odds > 0 && (
+                            <span className="text-arena-muted/50 text-[9px] font-mono w-10 text-right">
+                              {odds.toFixed(2)}x
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Mini bar */}
+                      <div className="h-1 rounded-full overflow-hidden bg-black/[0.06]">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: totalPool > 0 ? `${pct}%` : "0%", backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
         {/* ── Bottom row: countdown + stake + actions ── */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/5">
+        <div className="flex items-center justify-between pt-3 border-t border-arena-border-light/30">
           {/* Countdown */}
           <CountdownTimer countdown={countdown} />
 
           {/* Stake */}
           <div className="flex items-center gap-1.5">
-            <span className="text-yellow-500 text-xs">&#9672;</span>
-            <span className="text-white/50 text-xs font-mono font-medium">
+            <span className="text-arena-accent text-xs">&#9672;</span>
+            <span className="text-arena-muted text-xs font-mono font-medium">
               {(match.stakeAmount ?? 0).toLocaleString()} ALPHA
             </span>
           </div>
@@ -333,13 +366,13 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
             {match.matchId ? (
               <Link
                 href={`/matches/${match.matchId}`}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-all group/btn"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-arena-primary/5 hover:bg-arena-primary/10 text-arena-text-bright/70 hover:text-arena-text-bright text-sm font-medium transition-all group/btn"
               >
                 {isLive ? t.betting.watchLive : "Watch"}
                 <IconArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
               </Link>
             ) : (
-              <span className="px-4 py-1.5 rounded-lg bg-white/5 text-white/30 text-sm font-medium cursor-default">
+              <span className="px-4 py-1.5 rounded-lg bg-black/[0.03] text-arena-muted text-sm font-medium cursor-default">
                 {t.betting.upcoming}
               </span>
             )}
@@ -348,35 +381,38 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
 
         {/* ── Inline betting form (expanded) ── */}
         {showBetting && match.matchId && bettingOpen && (
-          <div className="mt-4 pt-4 border-t border-white/5 animate-fade-up" style={{ animationDuration: "0.2s" }}>
+          <div className="mt-4 pt-4 border-t border-arena-border-light/30 animate-fade-up" style={{ animationDuration: "0.2s" }}>
             {!isLoggedIn ? (
-              <p className="text-sm text-white/40 text-center py-2">{t.betting.loginToBet}</p>
+              <p className="text-sm text-arena-muted text-center py-2">{t.betting.loginToBet}</p>
             ) : (
               <div className="space-y-3">
                 {/* Agent selector */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setBetOnA(true)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all border ${
-                      betOnA
-                        ? "bg-red-500/15 border-red-500/30 text-red-400"
-                        : "bg-white/5 border-white/10 text-white/40 hover:border-red-400/30"
-                    }`}
-                  >
-                    <div>{nameA}</div>
-                    {oddsA != null && <div className="text-[10px] font-mono opacity-70">{oddsA.toFixed(2)}x</div>}
-                  </button>
-                  <button
-                    onClick={() => setBetOnA(false)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all border ${
-                      !betOnA
-                        ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
-                        : "bg-white/5 border-white/10 text-white/40 hover:border-blue-400/30"
-                    }`}
-                  >
-                    <div>{nameB}</div>
-                    {oddsB != null && <div className="text-[10px] font-mono opacity-70">{oddsB.toFixed(2)}x</div>}
-                  </button>
+                <div className={`grid gap-2 ${agents.length <= 2 ? "grid-cols-2" : agents.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                  {agents.map((agent, i) => {
+                    const isSelected = selectedAgentIdx === i;
+                    const color = agent.color || PLAYER_COLORS[i % PLAYER_COLORS.length];
+                    const ap = agentPoolMap.get(agent.agentId);
+                    const odds = ap?.odds ?? 0;
+                    return (
+                      <button
+                        key={agent.agentId}
+                        onClick={() => setSelectedAgentIdx(i)}
+                        className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all border ${
+                          isSelected
+                            ? "border-opacity-30 bg-opacity-10"
+                            : "bg-black/[0.03] border-arena-border-light/40 text-arena-muted hover:border-opacity-30"
+                        }`}
+                        style={isSelected ? {
+                          backgroundColor: `${color}15`,
+                          borderColor: `${color}50`,
+                          color,
+                        } : undefined}
+                      >
+                        <div className="truncate">{agent.name}</div>
+                        {odds > 0 && <div className="text-[10px] font-mono opacity-70">{odds.toFixed(2)}x</div>}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Amount + Place button */}
@@ -389,9 +425,9 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
                       value={betAmount}
                       onChange={(e) => setBetAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono placeholder:text-white/20 focus:outline-none focus:border-arena-accent/50 pr-16"
+                      className="w-full px-3 py-2 bg-white/60 border border-arena-border-light/50 rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/40 focus:outline-none focus:border-arena-accent/50 pr-16"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/30 font-mono">ALPHA</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">ALPHA</span>
                   </div>
                   <button
                     onClick={handlePlaceBet}
@@ -401,12 +437,33 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
                     {placing ? t.betting.placing : t.betting.placeBet}
                   </button>
                 </div>
-                <p className="text-[10px] text-white/20 font-mono">{t.betting.minBet}</p>
+                {/* Potential winnings estimate */}
+                {(() => {
+                  const amt = parseFloat(betAmount) || 0;
+                  if (amt < 0.01) return null;
+                  const selectedAgent = agents[selectedAgentIdx];
+                  const ap = selectedAgent ? agentPoolMap.get(selectedAgent.agentId) : undefined;
+                  const agentBets = ap?.totalBets ?? 0;
+                  const newAgentBets = agentBets + amt;
+                  const newTotalPool = totalPool + amt;
+                  const potentialWin = (amt / newAgentBets) * newTotalPool * 0.95;
+                  return (
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] text-arena-muted/60 font-mono">{t.betting.minBet}</span>
+                      <span className="text-[11px] font-mono font-semibold text-arena-success">
+                        {t.betting.potentialWin}: ~{formatEarnings(potentialWin)} ALPHA
+                      </span>
+                    </div>
+                  );
+                })()}
+                {!(parseFloat(betAmount) >= 0.01) && (
+                  <p className="text-[10px] text-arena-muted/60 font-mono">{t.betting.minBet}</p>
+                )}
 
                 {/* Feedback */}
                 {msg && (
                   <div className={`p-2 rounded-lg text-xs font-medium ${
-                    msg.type === "success" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                    msg.type === "success" ? "bg-green-500/10 text-green-700" : "bg-red-500/10 text-red-600"
                   }`}>
                     {msg.text}
                   </div>

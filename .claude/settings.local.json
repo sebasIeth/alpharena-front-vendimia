@@ -22,7 +22,9 @@
       "Bash(grep:*)",
       "Bash(find:*)",
       "WebFetch(domain:api.alpharena.ai)",
-      "Bash(./deploy.sh:*)"
+      "Bash(./deploy.sh:*)",
+      "Bash(mongosh:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

@@ -93,7 +93,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
   }, [fetchMatches]);
 
   const isMatchLive = (m: ScheduledMatchResponse) =>
-    m.status === "starting" || (!!m.matchId && m.status !== "completed" && m.status !== "cancelled");
+    m.status === "starting" || (!!m.matchId && !["pending", "completed", "cancelled"].includes(m.status));
 
   const filtered = useMemo(() => {
     return matches.filter((m) => {

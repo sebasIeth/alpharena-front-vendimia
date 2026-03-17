@@ -42,10 +42,10 @@ export default function CountdownTimer({ countdown }: CountdownTimerProps) {
   const isUrgent = totalSeconds <= 600;
 
   const colorClass = isCritical
-    ? "text-red-400"
+    ? "text-red-500"
     : isUrgent
-    ? "text-amber-400"
-    : "text-white/60";
+    ? "text-amber-500"
+    : "text-arena-muted";
 
   const pulseClass = isCritical ? "animate-pulse" : "";
 
