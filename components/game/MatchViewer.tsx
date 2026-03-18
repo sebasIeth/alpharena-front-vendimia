@@ -30,22 +30,56 @@ const SIDE_COLORS: Record<string, string> = {
   d: "#8B5CF6",
 };
 
+// Chess piece names from board values
+const CHESS_PIECE_NAMES: Record<number, string> = {
+  1: "Peón", 2: "Caballo", 3: "Alfil", 4: "Torre", 5: "Dama", 6: "Rey",
+  7: "Peón", 8: "Caballo", 9: "Alfil", 10: "Torre", 11: "Dama", 12: "Rey",
+};
+
+/** Convert UCI string like "e2e4" to descriptive format like "Peón e2→e4" */
+function formatChessUci(uci: string, board?: any): string {
+  if (!uci || uci.length < 4) return uci || "?";
+  const from = uci.slice(0, 2);
+  const to = uci.slice(2, 4);
+  const promo = uci.length > 4 ? uci[4] : null;
+
+  // Try to identify the piece from the board state
+  let pieceName = "";
+  if (board) {
+    const grid = Array.isArray(board) && Array.isArray(board[0]) ? board : board?.grid;
+    if (grid) {
+      const col = from.charCodeAt(0) - 97; // a=0, b=1, ...
+      const row = 8 - parseInt(from[1]);    // 1=row7, 8=row0
+      if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+        const val = grid[row]?.[col];
+        if (val && CHESS_PIECE_NAMES[val]) pieceName = CHESS_PIECE_NAMES[val];
+      }
+    }
+  }
+
+  const moveText = `${from}→${to}`;
+  const promoText = promo ? ` =${promo.toUpperCase()}` : "";
+  return pieceName ? `${pieceName} ${moveText}${promoText}` : `${moveText}${promoText}`;
+}
+
 // Format move data for display
 function formatMoveDisplay(
   moveData: Record<string, unknown>,
   gameType?: string,
+  boardBefore?: any,
 ): { text: string; phase?: string } {
   const md = moveData as any;
 
-  // Chess: show UCI move notation
+  // Chess: show descriptive notation
   if (gameType === "chess") {
-    const move = md.move || md.uci || md.san || md.notation;
-    if (typeof move === "string") return { text: move };
+    const uci = md.chessMove || md.move || md.uci || md.uciMove || md.san || md.notation;
+    if (typeof uci === "string") return { text: formatChessUci(uci, boardBefore) };
     // Try to extract from raw JSON
     if (md.raw && typeof md.raw === "string") {
       try {
         const parsed = JSON.parse(md.raw);
-        if (parsed.move) return { text: parsed.move };
+        const m = parsed.move || parsed.uciMove || parsed.chessMove;
+        if (m) return { text: formatChessUci(m, boardBefore) };
       } catch { /* ignore */ }
     }
     // Fallback: array [from, to]
@@ -93,6 +127,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [thinkingSide, setThinkingSide] = useState<string | null>(null);
   const [score, setScore] = useState<Record<string, number> | null>(null);
+  const [viewers, setViewers] = useState(0);
+  const [viewerFlash, setViewerFlash] = useState(false);
+  const prevViewersRef = useRef(0);
   // Poker-specific state — initialize from match.pokerState if available
   // Backend stores players as { a: {...}, b: {...} }, convert to array
   const initPoker = match.pokerState && typeof match.pokerState === "object" ? match.pokerState as any : null;
@@ -133,10 +170,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
   const [pokerHoleCards, setPokerHoleCards] = useState<Record<number, PokerCard[]>>({});
   const [pokerShowdownResult, setPokerShowdownResult] = useState<any>(null);
+  // Per-hand hole cards archive: handNumber → { seatIndex → cards }
+  const [pokerHandCardsArchive, setPokerHandCardsArchive] = useState<Record<number, Record<number, PokerCard[]>>>(() => {
+    // Initialize from match.pokerState if available (completed match)
+    if (initPoker?.showdownResult && initPoker?.handNumber && initPoker?.players) {
+      const hcMap: Record<number, PokerCard[]> = {};
+      if (Array.isArray(initPoker.players)) {
+        initPoker.players.forEach((p: any) => { if (p.holeCards?.length) hcMap[p.seatIndex ?? 0] = p.holeCards; });
+      } else {
+        if (initPoker.players.a?.holeCards?.length) hcMap[0] = initPoker.players.a.holeCards;
+        if (initPoker.players.b?.holeCards?.length) hcMap[1] = initPoker.players.b.holeCards;
+      }
+      if (Object.keys(hcMap).length > 0) return { [initPoker.handNumber]: hcMap };
+    }
+    return {};
+  });
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(800);
+  const [isLiveMode, setIsLiveMode] = useState(true); // live scrubbing for active matches
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const movesEndRef = useRef<HTMLDivElement>(null);
@@ -157,6 +210,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     agents.forEach((a, idx) => {
       const side = ["a", "b", "c", "d"][idx] || String(idx);
       map.set(a.agentId, { name: a.agentName, side });
+    });
+    return map;
+  }, [agents]);
+
+  // Lookup by side (for WS moves that don't have agentId)
+  const sideLookup = React.useMemo(() => {
+    const map = new Map<string, { name: string; side: string }>();
+    agents.forEach((a, idx) => {
+      const side = ["a", "b", "c", "d"][idx] || String(idx);
+      map.set(side, { name: a.agentName, side });
     });
     return map;
   }, [agents]);
@@ -183,20 +246,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
   // Replay: the board to display (override when stepping through moves)
   const displayBoard = useMemo(() => {
-    if (replayStep >= 0 && replayStep < moves.length) {
+    if (!isLiveMode && replayStep >= 0 && replayStep < moves.length) {
       const board = moves[replayStep].boardStateAfter;
       if (board && board.length > 0) return board;
     }
     return extractBoard(currentBoard || match.boardState || (match as any).currentBoard);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replayStep, moves, currentBoard, match.boardState]);
+  }, [replayStep, isLiveMode, moves, currentBoard, match.boardState]);
 
   // Replay: current move info for display
   const replayMoveInfo = useMemo(() => {
     if (replayStep < 0 || replayStep >= moves.length) return null;
     const move = moves[replayStep];
-    const info = agentLookup.get(move.agentId);
-    const { text } = formatMoveDisplay(move.moveData, match.gameType);
+    const info = agentLookup.get(move.agentId) || (move.side ? sideLookup.get(move.side) : undefined);
+    const boardBefore = replayStep > 0 ? moves[replayStep - 1].boardStateAfter : null;
+    const { text } = formatMoveDisplay(move.moveData, match.gameType, boardBefore);
     return { agentName: info?.name || "Agent", side: info?.side || move.side || "a", text, moveNumber: move.moveNumber ?? move.turnNumber };
   }, [replayStep, moves, agentLookup, match.gameType]);
 
@@ -250,6 +314,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
         if (initialThoughts.length > 0) {
           setThoughts(initialThoughts);
+        }
+
+        // Load poker hand histories for rewind
+        if (match.gameType === "poker") {
+          try {
+            const { match: fullMatch } = await api.getMatch(matchId);
+            const histories = (fullMatch as any)?.pokerHandHistories;
+            if (Array.isArray(histories) && histories.length > 0) {
+              const archive: Record<number, Record<number, PokerCard[]>> = {};
+              for (const h of histories) {
+                if (!h.handNumber || !h.holeCards) continue;
+                const hcMap: Record<number, PokerCard[]> = {};
+                if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
+                if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
+                if (Object.keys(hcMap).length > 0) archive[h.handNumber] = hcMap;
+              }
+              setPokerHandCardsArchive(prev => ({ ...prev, ...archive }));
+            }
+          } catch { /* ignore */ }
         }
 
         // Auto-start replay for completed matches with board data
@@ -321,10 +404,40 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
       if (type === "match:move" || type === "match:state") {
         const grid = extractBoard(data);
+
+        if (type === "match:move") {
+          setThinkingSide(null);
+          // Append move to history from WS data
+          if (data.moveNumber != null && data.side) {
+            const wsMove: Move = {
+              id: `ws-${data.moveNumber}-${data.side}`,
+              _id: `ws-${data.moveNumber}-${data.side}`,
+              matchId: matchId,
+              agentId: "",
+              side: data.side as string,
+              moveNumber: data.moveNumber as number,
+              turnNumber: data.moveNumber as number,
+              moveData: {
+                chessMove: data.chessMove,
+                move: data.move,
+                pokerAction: data.pokerAction,
+                pokerHandNumber: data.pokerHandNumber,
+              } as any,
+              boardStateAfter: grid || [],
+              scoreAfter: data.score || {},
+              thinkingTimeMs: (data.thinkingTimeMs as number) || 0,
+              timestamp: new Date().toISOString(),
+            };
+            setMoves((prev) => {
+              if (prev.some((m) => m.moveNumber === wsMove.moveNumber && m.side === wsMove.side)) return prev;
+              return [...prev, wsMove];
+            });
+          }
+        }
+
         if (grid) {
           setCurrentBoard({ grid } as any);
         }
-        if (type === "match:move") setThinkingSide(null);
 
         if (data.score) setScore(data.score);
         // Poker-specific (N-player)
@@ -342,6 +455,19 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             return data.pokerHandNumber as number;
           });
         }
+        // Archive hand result (fold or showdown) — always has hole cards for rewind
+        if (data.pokerHandResult) {
+          const hr = data.pokerHandResult as any;
+          if (hr.handNumber && hr.holeCards) {
+            const hcMap: Record<number, PokerCard[]> = {};
+            if (hr.holeCards.a?.length) hcMap[0] = hr.holeCards.a;
+            if (hr.holeCards.b?.length) hcMap[1] = hr.holeCards.b;
+            if (Object.keys(hcMap).length > 0) {
+              setPokerHandCardsArchive(prev => ({ ...prev, [hr.handNumber]: hcMap }));
+            }
+          }
+        }
+
         // Showdown: extract hole cards + result
         if (data.pokerShowdownResult) {
           setPokerShowdownResult(data.pokerShowdownResult);
@@ -351,6 +477,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               if (p.holeCards?.length) hcMap[p.seatIndex] = p.holeCards;
             });
             setPokerHoleCards(hcMap);
+            // Archive hole cards for this hand so we can reveal them on rewind
+            const handNum = (data.pokerHandNumber as number) ?? pokerHandNumber;
+            if (handNum > 0 && Object.keys(hcMap).length > 0) {
+              setPokerHandCardsArchive(prev => ({ ...prev, [handNum]: hcMap }));
+            }
           }
         }
         if (data.pokerPlayers) {
@@ -426,6 +557,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         });
       }
 
+      if (type === "match:viewers" || (type === "match:state" && data.viewers != null)) {
+        setViewers(data.viewers as number);
+      }
+
       if (type === "match:end") {
         onMatchUpdateRef.current?.(data);
       }
@@ -465,6 +600,22 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           if (matchRes.status === "fulfilled") {
             const updated = matchRes.value.match;
             if (updated) {
+              // Load poker hand histories for rewind
+              const histories = (updated as any).pokerHandHistories;
+              if (Array.isArray(histories) && histories.length > 0) {
+                setPokerHandCardsArchive(prev => {
+                  const next = { ...prev };
+                  for (const h of histories) {
+                    if (!h.handNumber || !h.holeCards) continue;
+                    const hcMap: Record<number, PokerCard[]> = {};
+                    if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
+                    if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
+                    if (Object.keys(hcMap).length > 0) next[h.handNumber] = hcMap;
+                  }
+                  return next;
+                });
+              }
+
               const grid = extractBoard(updated);
               if (grid) {
                 setCurrentBoard({ grid } as any);
@@ -495,7 +646,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   const hcMap: Record<number, PokerCard[]> = {};
                   if (pk.players?.a?.holeCards?.length) hcMap[0] = pk.players.a.holeCards;
                   if (pk.players?.b?.holeCards?.length) hcMap[1] = pk.players.b.holeCards;
-                  if (Object.keys(hcMap).length > 0) setPokerHoleCards(hcMap);
+                  if (Object.keys(hcMap).length > 0) {
+                    setPokerHoleCards(hcMap);
+                    const hn = pk.handNumber as number;
+                    if (hn > 0) setPokerHandCardsArchive(prev => ({ ...prev, [hn]: hcMap }));
+                  }
                 }
                 if (pk.dealerIndex != null) setPokerDealerIndex(pk.dealerIndex);
                 else if (pk.dealerSide) setPokerDealerIndex(pk.dealerSide === "b" ? 1 : 0);
@@ -587,6 +742,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.status, matchId]);
 
+  // Flash green when viewer count increases
+  useEffect(() => {
+    if (viewers > prevViewersRef.current && prevViewersRef.current >= 0) {
+      setViewerFlash(true);
+      const timer = setTimeout(() => setViewerFlash(false), 1200);
+      prevViewersRef.current = viewers;
+      return () => clearTimeout(timer);
+    }
+    prevViewersRef.current = viewers;
+  }, [viewers]);
+
   // Auto-scroll within containers only (don't jump the whole page)
   useEffect(() => {
     const el = movesEndRef.current?.parentElement;
@@ -604,15 +770,32 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Board Area */}
         <div className="lg:col-span-2">
-          <div className="bg-arena-card border border-arena-border rounded-xl p-4 sm:p-6">
+          <div className="dash-glass-card rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-arena-text">Board</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Badge status={match.status} />
                 {(match.status === "active" || match.status === "starting") && (
                   <span className="flex items-center gap-1 text-xs text-arena-success">
                     <span className="w-2 h-2 bg-arena-success rounded-full animate-pulse" />
                     {match.status === "starting" ? "STARTING" : "LIVE"}
+                  </span>
+                )}
+                {(match.status === "active" || match.status === "starting") && (
+                  <span
+                    className="flex items-center gap-1 text-xs font-medium"
+                    style={{
+                      color: viewerFlash ? "#22c55e" : undefined,
+                      transform: viewerFlash ? "scale(1.3)" : "scale(1)",
+                      transition: "all 0.3s ease",
+                      filter: viewerFlash ? "drop-shadow(0 0 6px rgba(34,197,94,0.7))" : "none",
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    {viewers}
                   </span>
                 )}
               </div>
@@ -641,9 +824,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 // For replays, use saved pokerState for hole cards
                 const replayPlayers = savedState?.players && Array.isArray(savedState.players) ? savedState.players : null;
 
+                // When rewinding in live match, find which hand the current step belongs to
+                const rewindHandNum = (!isLiveMode && replayStep >= 0 && moves[replayStep])
+                  ? ((moves[replayStep].moveData as any)?.pokerHandNumber ?? null)
+                  : null;
+                const rewindCards = rewindHandNum != null ? pokerHandCardsArchive[rewindHandNum] : null;
+
                 const spectatorPlayers = pokerPlayers.length > 0
                   ? pokerPlayers.map((p, i) => {
                       const replayP = replayPlayers ? replayPlayers.find(rp => rp.seatIndex === p.seatIndex) : null;
+                      // In rewind mode: show archived hole cards for completed hands
+                      // In live mode: only show current showdown cards
+                      let holeCards: PokerCard[] | undefined;
+                      if (!isLiveMode && rewindCards) {
+                        holeCards = rewindCards[p.seatIndex];
+                      } else if (isLiveMode || replayStep < 0) {
+                        holeCards = pokerHoleCards[p.seatIndex];
+                      } else if (isReplay && savedState?.showdownResult) {
+                        holeCards = replayP?.holeCards as PokerCard[] | undefined;
+                      }
                       return {
                         id: p.playerId ?? `p${i}`,
                         name: p.name ?? agents[p.seatIndex]?.agentName ?? `Player ${p.seatIndex + 1}`,
@@ -656,7 +855,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         isDealer: p.isDealer,
                         isHuman: false,
                         isAgent: p.isAgent ?? true,
-                        holeCards: pokerHoleCards[p.seatIndex] ?? (isReplay && savedState?.showdownResult ? (replayP?.holeCards as PokerCard[] | undefined) : undefined),
+                        holeCards,
                       };
                     })
                   : replayPlayers
@@ -757,9 +956,66 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               </div>
             )}
 
+            {/* ── Live Scrub Bar ── */}
+            {(match.status === "active" || match.status === "starting") && (
+              <div className="mt-4 dash-glass-card rounded-xl p-3 space-y-2">
+                {/* Timeline slider */}
+                {moves.length > 0 && (
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.max(0, moves.length - 1)}
+                      value={isLiveMode ? Math.max(0, moves.length - 1) : (replayStep >= 0 ? Math.min(replayStep, moves.length - 1) : Math.max(0, moves.length - 1))}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setReplayStep(val);
+                        if (val >= moves.length - 1) {
+                          setIsLiveMode(true);
+                        } else {
+                          setIsLiveMode(false);
+                        }
+                      }}
+                      className="w-full h-1.5 bg-arena-border/40 rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-500 [&::-webkit-slider-thumb]:shadow-lg
+                        [&::-webkit-slider-thumb]:shadow-red-500/30 [&::-webkit-slider-thumb]:cursor-pointer"
+                    />
+                  </div>
+                )}
+
+                {/* Bottom row: move info + LIVE button */}
+                <div className="flex items-center justify-between">
+                  <div className="text-arena-muted text-[11px] font-mono">
+                    {moves.length === 0 ? (
+                      <>Waiting for moves...</>
+                    ) : !isLiveMode && replayStep >= 0 ? (
+                      <>Move {replayStep + 1} / {moves.length}</>
+                    ) : (
+                      <>Move {moves.length}</>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsLiveMode(true);
+                      setReplayStep(-1);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      isLiveMode
+                        ? "bg-red-500 text-white shadow-sm shadow-red-500/20"
+                        : "bg-white text-red-500 border border-red-300 hover:bg-red-50"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? "bg-white animate-pulse" : "bg-red-500"}`} />
+                    LIVE
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* ── Replay Controls ── */}
             {canReplay && (
-              <div className="mt-4 bg-[#1a1a2e] border border-white/10 rounded-xl p-4 space-y-3">
+              <div className="mt-4 dash-glass-card rounded-xl p-4 space-y-3">
                 {/* Timeline slider */}
                 <div className="relative">
                   <input
@@ -768,7 +1024,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     max={moves.length - 1}
                     value={replayStep >= 0 ? replayStep : moves.length - 1}
                     onChange={(e) => { setReplayStep(parseInt(e.target.value)); setIsAutoPlaying(false); }}
-                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer
+                    className="w-full h-1.5 bg-arena-border/40 rounded-full appearance-none cursor-pointer
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-arena-primary [&::-webkit-slider-thumb]:shadow-lg
                       [&::-webkit-slider-thumb]:shadow-arena-primary/30 [&::-webkit-slider-thumb]:cursor-pointer"
@@ -781,7 +1037,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setReplayStep(0); setIsAutoPlaying(false); }}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="Start"
                     >⏮</button>
                     <button
@@ -789,7 +1045,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         setReplayStep(prev => Math.max(0, (prev < 0 ? moves.length - 1 : prev) - 1));
                         setIsAutoPlaying(false);
                       }}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="Step back"
                     >◀</button>
                     <button
@@ -803,10 +1059,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                           setIsAutoPlaying(!isAutoPlaying);
                         }
                       }}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all text-lg ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all text-lg border shadow-sm ${
                         isAutoPlaying
-                          ? "bg-arena-primary/20 text-arena-primary ring-1 ring-arena-primary/30"
-                          : "bg-arena-primary/10 hover:bg-arena-primary/20 text-arena-primary"
+                          ? "bg-arena-primary/15 text-arena-primary border-arena-primary/30"
+                          : "bg-white hover:bg-arena-primary/10 text-arena-primary/70 border-arena-border-light/40"
                       }`}
                       title={isAutoPlaying ? "Pause" : "Play"}
                     >{isAutoPlaying ? "⏸" : "▶"}</button>
@@ -815,23 +1071,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         setReplayStep(prev => Math.min(moves.length - 1, (prev < 0 ? moves.length - 1 : prev) + 1));
                         setIsAutoPlaying(false);
                       }}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="Step forward"
                     >▶</button>
                     <button
                       onClick={() => { setReplayStep(-1); setIsAutoPlaying(false); }}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all text-sm"
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="End"
                     >⏭</button>
                   </div>
 
                   {/* Move counter + info */}
                   <div className="flex-1 text-center min-w-0">
-                    <div className="text-white/80 text-xs font-mono font-semibold">
+                    <div className="text-arena-text text-xs font-mono font-semibold">
                       Move {replayStep >= 0 ? replayStep + 1 : moves.length} / {moves.length}
                     </div>
                     {replayMoveInfo && (
-                      <div className="text-white/40 text-[10px] font-mono truncate mt-0.5">
+                      <div className="text-arena-muted text-[10px] font-mono truncate mt-0.5">
                         <span style={{ color: SIDE_COLORS[replayMoveInfo.side] || "#8B5CF6" }}>
                           {replayMoveInfo.agentName}
                         </span>
@@ -845,7 +1101,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   <select
                     value={playbackSpeed}
                     onChange={(e) => setPlaybackSpeed(parseInt(e.target.value))}
-                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white/70 text-xs font-mono cursor-pointer focus:outline-none focus:border-arena-primary/50"
+                    className="bg-white text-arena-primary/70 text-[10px] font-mono font-semibold rounded-lg px-2.5 py-1.5 border border-arena-border-light/40 shadow-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-arena-primary/30 appearance-none"
+                    style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237c6dc7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center", paddingRight: "22px" }}
                   >
                     <option value={1600}>0.5x</option>
                     <option value={800}>1x</option>
@@ -918,7 +1175,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         {/* Sidebar: Players + Moves + Details */}
         <div className="space-y-4">
           {/* Players */}
-          <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+          <div className="dash-glass-card rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">Players</h3>
             <div className="space-y-3">
               {agents.map((agent, idx) => {
@@ -999,7 +1256,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           </div>
 
           {/* Move History */}
-          <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+          <div className="dash-glass-card rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">
               {match.gameType === "poker" ? "Hand History" : "Move History"}
             </h3>
@@ -1014,10 +1271,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 </div>
               ) : (
                 moves.map((move, idx) => {
-                  const info = agentLookup.get(move.agentId);
+                  const info = agentLookup.get(move.agentId) || (move.side ? sideLookup.get(move.side) : undefined);
                   const side = info?.side || move.side || "a";
-                  const { text: display } = formatMoveDisplay(move.moveData, match.gameType);
-                  const isActiveReplayMove = canReplay && replayStep === idx;
+                  const boardBefore = idx > 0 ? moves[idx - 1].boardStateAfter : null;
+                  const { text: display } = formatMoveDisplay(move.moveData, match.gameType, boardBefore);
+                  const isActiveReplayMove = (canReplay && replayStep === idx) || (!isLiveMode && replayStep === idx);
                   return (
                     <div
                       key={move.id || move._id || idx}
@@ -1027,7 +1285,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                           ? "bg-arena-primary/15 ring-1 ring-arena-primary/30"
                           : "bg-arena-bg hover:bg-arena-bg/80"
                       }`}
-                      onClick={() => { if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); } }}
+                      onClick={() => {
+                        if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); }
+                        else if (match.status === "active" || match.status === "starting") {
+                          setReplayStep(idx);
+                          setIsLiveMode(idx >= moves.length - 1);
+                        }
+                      }}
                     >
                       <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
                         #{move.moveNumber ?? move.turnNumber ?? idx + 1}
@@ -1058,7 +1322,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
           {/* Live Betting Pool */}
           {bettingPool && bettingPool.pool.totalPool > 0 && (
-            <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+            <div className="dash-glass-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-arena-text">Bets</h3>
                 <span className="text-[10px] font-mono text-arena-muted">
@@ -1113,7 +1377,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           )}
 
           {/* Match Details */}
-          <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+          <div className="dash-glass-card rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">Details</h3>
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
@@ -1141,7 +1405,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
       {/* Agent Thoughts — full width below the board */}
       {(match.status === "active" || thoughts.length > 0) && (
-        <div className="bg-arena-card border border-arena-border rounded-xl p-4">
+        <div className="dash-glass-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <h3 className="text-sm font-semibold text-arena-text">Agent Thoughts</h3>
             {match.status === "active" && (

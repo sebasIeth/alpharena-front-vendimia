@@ -126,6 +126,9 @@ function PlayContent() {
   // Result
   const [resultMessage, setResultMessage] = useState("");
   const [resultType, setResultType] = useState<"win" | "lose" | "draw">("draw");
+  const [viewers, setViewers] = useState(0);
+  const [viewerFlash, setViewerFlash] = useState(false);
+  const prevViewersRef = useRef(0);
 
   const socketRef = useRef<Socket | null>(null);
   const matchIdRef = useRef<string | null>(null);
@@ -414,8 +417,13 @@ function PlayContent() {
 
         // Determine if this turn event is for US
         // For poker: try seat matching first (N-player), fall back to side matching (heads-up)
+        // If mySide is not yet set (hand 1 race condition), accept the turn — the backend only sends
+        // match:your_turn to the correct player via resendPendingTurn
         const isPoker = data.gameType === "poker" || (data.pokerPlayers && !boardData);
-        const isForMe = isPoker
+        const mySideUnknown = mySideRef.current == null;
+        const isForMe = mySideUnknown
+          ? true // Accept — backend verified it's our turn before sending
+          : isPoker
           ? (mySeat != null && activeSeat != null && mySeat === activeSeat) || (side != null && side === mySideRef.current)
           : side != null && side === mySideRef.current;
 
@@ -499,6 +507,10 @@ function PlayContent() {
             street: (data.pokerStreet as string) || "preflop",
           }]);
         }
+      }
+
+      if (type === "match:viewers" || (type === "match:state" && data.viewers != null)) {
+        setViewers(data.viewers as number);
       }
 
       if (type === "match:state") {
@@ -627,7 +639,7 @@ function PlayContent() {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
-    const matchSocket = api.connectMatchSocket(mid);
+    const matchSocket = api.connectMatchSocket(mid, "player");
     if (!matchSocket) return;
     socketRef.current = matchSocket;
     attachMatchListeners(matchSocket);
@@ -652,7 +664,7 @@ function PlayContent() {
 
     // Restoring mid-match
     if (matchIdRef.current) {
-      const socket = api.connectMatchSocket(matchIdRef.current);
+      const socket = api.connectMatchSocket(matchIdRef.current, "player");
       if (!socket) return;
       socketRef.current = socket;
       attachMatchListeners(socket);
@@ -821,6 +833,17 @@ function PlayContent() {
     await api.playCancel().catch(() => {});
     resetState();
   };
+
+  // Flash green when viewer count increases
+  useEffect(() => {
+    if (viewers > prevViewersRef.current && prevViewersRef.current >= 0) {
+      setViewerFlash(true);
+      const timer = setTimeout(() => setViewerFlash(false), 1200);
+      prevViewersRef.current = viewers;
+      return () => clearTimeout(timer);
+    }
+    prevViewersRef.current = viewers;
+  }, [viewers]);
 
   // ── Board renderer ──
   const renderBoard = (interactive: boolean) => {
@@ -1136,7 +1159,24 @@ function PlayContent() {
               {/* Board */}
               <div className="lg:col-span-2 relative">
                 <Card>
-                  <div className="p-4 sm:p-6">{renderBoard(true)}</div>
+                  <div className="flex items-center justify-end px-4 pt-3 sm:px-6 sm:pt-4">
+                    <span
+                      className="flex items-center gap-1 text-xs font-medium"
+                      style={{
+                        color: viewerFlash ? "#22c55e" : undefined,
+                        transform: viewerFlash ? "scale(1.3)" : "scale(1)",
+                        transition: "all 0.3s ease",
+                        filter: viewerFlash ? "drop-shadow(0 0 6px rgba(34,197,94,0.7))" : "none",
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {viewers}
+                    </span>
+                  </div>
+                  <div className="p-4 sm:p-6 pt-2 sm:pt-2">{renderBoard(true)}</div>
                 </Card>
                 {turnExpired && phase === "playing" && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">

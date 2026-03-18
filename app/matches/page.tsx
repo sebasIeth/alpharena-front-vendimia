@@ -299,7 +299,7 @@ function PokerPlayerRow({
 }
 
 /* ── Match Card ── */
-function MatchCard({ match, index, priceUsd }: { match: Match; index: number; priceUsd: number | null }) {
+function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: number; priceUsd: number | null; viewers?: number }) {
   const { t } = useLanguage();
   const raw = match as any;
   const chain: Chain = match.chain || "base";
@@ -511,10 +511,21 @@ function MatchCard({ match, index, priceUsd }: { match: Match; index: number; pr
           </div>
 
           {isActive ? (
-            <span className="flex items-center gap-1 text-xs font-medium text-arena-primary group-hover:gap-1.5 transition-all">
-              {t.matchesList.watchMatch}
-              <IconArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </span>
+            <div className="flex items-center gap-3">
+              {(viewers != null && viewers > 0) && (
+                <span className="flex items-center gap-1 text-xs text-arena-text font-medium">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  {viewers}
+                </span>
+              )}
+              <span className="flex items-center gap-1 text-xs font-medium text-arena-primary group-hover:gap-1.5 transition-all">
+                {t.matchesList.watchMatch}
+                <IconArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </div>
           ) : (
             <span className="text-[10px] text-arena-muted">
               {formatRelativeTime(match.createdAt)}
@@ -552,6 +563,7 @@ export default function MatchesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewerCounts, setViewerCounts] = useState<Record<string, number>>({});
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [sortOpen, setSortOpen] = useState(false);
   const [chainFilter, setChainFilter] = useState<ChainFilter>("all");
@@ -596,6 +608,8 @@ export default function MatchesPage() {
       }));
       setTotalPages(data.pages || 1);
       setTotalCount(data.total || 0);
+      // Fetch viewer counts for active matches
+      api.getMatchViewers().then(setViewerCounts).catch(() => {});
     } catch (err) {
       if (!silent) setError(err instanceof Error ? err.message : t.matchesList.loadFailed);
     } finally {
@@ -854,7 +868,7 @@ export default function MatchesPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedActiveMatches.map((match, i) => (
-                  <MatchCard key={match.id} match={match} index={i} priceUsd={priceUsd} />
+                  <MatchCard key={match.id} match={match} index={i} priceUsd={priceUsd} viewers={viewerCounts[match.id]} />
                 ))}
               </div>
             </div>
@@ -875,7 +889,7 @@ export default function MatchesPage() {
           {/* ── Match Grid ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {(tab === "all" ? sortedOtherMatches : sortMatches(matches, sortKey)).map((match, i) => (
-              <MatchCard key={match.id} match={match} index={i + (tab === "all" ? sortedActiveMatches.length : 0)} priceUsd={priceUsd} />
+              <MatchCard key={match.id} match={match} index={i + (tab === "all" ? sortedActiveMatches.length : 0)} priceUsd={priceUsd} viewers={viewerCounts[match.id]} />
             ))}
           </div>
 

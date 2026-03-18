@@ -81,9 +81,10 @@ function formatMatchTime(dateStr: string): string {
 interface MatchCardProps {
   match: ScheduledMatchResponse;
   delay: number;
+  viewers?: number;
 }
 
-export default function MatchCard({ match, delay }: MatchCardProps) {
+export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
   const { t } = useLanguage();
   const config = GAME_CONFIG[match.gameType] || GAME_CONFIG.chess;
   const isChess = match.gameType === "chess";
@@ -360,6 +361,17 @@ export default function MatchCard({ match, delay }: MatchCardProps) {
               >
                 {t.betting.betNow}
               </button>
+            )}
+
+            {/* Viewers count */}
+            {viewers != null && viewers > 0 && (
+              <span className="flex items-center gap-1 text-xs text-arena-text font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {viewers}
+              </span>
             )}
 
             {/* Watch button — links to match when matchId exists */}

@@ -30,6 +30,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
   const { t } = useLanguage();
   const [matches, setMatches] = useState<ScheduledMatchResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewerCounts, setViewerCounts] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(
     initialGameType === "chess" ? "chess" : initialGameType === "poker" ? "poker" : "all"
   );
@@ -78,6 +79,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
         });
 
       setMatches([...scheduled, ...activeAsScheduled]);
+      api.getMatchViewers().then(setViewerCounts).catch(() => {});
     } catch {
       setMatches([]);
     } finally {
@@ -182,7 +184,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
       ) : (
         <div className="grid grid-cols-1 gap-4 max-w-2xl">
           {filtered.map((match, i) => (
-            <MatchCard key={match._id} match={match} delay={0.2 + i * 0.06} />
+            <MatchCard key={match._id} match={match} delay={0.2 + i * 0.06} viewers={match.matchId ? viewerCounts[match.matchId] : undefined} />
           ))}
         </div>
       )}

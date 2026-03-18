@@ -271,6 +271,10 @@ class ApiClient {
     return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`, false);
   }
 
+  async getMatchViewers(): Promise<Record<string, number>> {
+    return this.get<Record<string, number>>("/matches/viewers", false);
+  }
+
   async getActiveMatches(): Promise<{ matches: Match[] }> {
     return this.get<{ matches: Match[] }>("/matches/active", false);
   }
@@ -369,13 +373,13 @@ class ApiClient {
   }
 
   // ========== Socket.IO ==========
-  connectMatchSocket(matchId: string): Socket | null {
+  connectMatchSocket(matchId: string, role: "spectator" | "player" = "spectator"): Socket | null {
     if (typeof window === "undefined") return null;
     const token = this.getToken();
     // Dynamic import to avoid SSR issues with socket.io-client
     const { io } = require("socket.io-client");
     const socket: Socket = io(`${SOCKET_URL}/ws`, {
-      query: { token: token || "", matchId },
+      query: { token: token || "", matchId, role },
       transports: ["websocket", "polling"],
     });
     return socket;
