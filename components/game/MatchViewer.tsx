@@ -977,19 +977,24 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const curMdPlayers = curMd?.pokerPlayers as { a?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean }; b?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean } } | undefined;
 
                 // Get hole cards and community cards for the current hand from the archive
-                const rewindHandCards = curHandNum != null ? pokerHandCardsArchive[curHandNum] : null;
-                const archiveCommunity = curHandNum != null ? pokerHandCommunityArchive[curHandNum] : null;
+                // Try exact hand number first, then +1 and -1 (handles off-by-one in old matches)
+                const rewindHandCards = curHandNum != null
+                  ? (pokerHandCardsArchive[curHandNum] ?? pokerHandCardsArchive[curHandNum + 1] ?? pokerHandCardsArchive[curHandNum - 1] ?? null)
+                  : null;
+                const archiveCommunity = curHandNum != null
+                  ? (pokerHandCommunityArchive[curHandNum] ?? pokerHandCommunityArchive[curHandNum + 1] ?? pokerHandCommunityArchive[curHandNum - 1] ?? null)
+                  : null;
 
                 // Derive which community cards to show based on street
-                // preflop = 0 cards, flop = first 3, turn = first 4, river/showdown = all 5
                 const communityForStreet = (allCards: PokerCard[], street: string | undefined): PokerCard[] => {
-                  if (!street || street === "preflop") return [];
+                  if (street === "preflop") return [];
                   if (street === "flop") return allCards.slice(0, 3);
                   if (street === "turn") return allCards.slice(0, 4);
-                  return allCards; // river, showdown
+                  // If street is unknown, show all cards for this hand (better than nothing)
+                  return allCards;
                 };
 
-                // For replays, prefer saved state; detect fresh unplayed hand (match ended between hands)
+                // For replays, prefer saved state; detect fresh unplayed hand
                 const replayCommunity = isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards;
                 const replayStreet = isReplay && savedState?.street ? savedState.street : pokerStreet;
                 const replayHandNum = isReplay && savedState?.handNumber != null ? savedState.handNumber : pokerHandNumber;
@@ -997,10 +1002,24 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   (replayStreet === "preflop" || !replayStreet) &&
                   (!replayCommunity || replayCommunity.length === 0);
 
-                // When rewinding: prefer moveData community (new format), then archive sliced by street, then fallback
-                const displayCommunity = isRewinding
-                  ? (curMdCommunity ?? (archiveCommunity ? communityForStreet(archiveCommunity, curStreet) : (curStreet === "preflop" ? [] : replayCommunity)))
-                  : replayCommunity;
+                // Community cards during rewind:
+                // 1. New format: exact state from moveData (best)
+                // 2. Archive: hand's final community cards sliced by street
+                // 3. Empty for preflop when we know the street
+                let displayCommunity: PokerCard[];
+                if (!isRewinding) {
+                  displayCommunity = replayCommunity;
+                } else if (curMdCommunity && curMdCommunity.length >= 0) {
+                  // New format: exact community at this move
+                  displayCommunity = curMdCommunity;
+                } else if (archiveCommunity) {
+                  // Old format: use archive sliced by street
+                  displayCommunity = communityForStreet(archiveCommunity, curStreet);
+                } else {
+                  // No data available
+                  displayCommunity = [];
+                }
+
                 const displayPot = isRewinding
                   ? (curMdPot ?? 0)
                   : (isReplay && savedState?.pot != null ? savedState.pot : pokerPot);
