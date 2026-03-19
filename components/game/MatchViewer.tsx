@@ -951,7 +951,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const rewindHandNum = (!isLiveMode && replayStep >= 0 && moves[replayStep])
                   ? ((moves[replayStep].moveData as any)?.pokerHandNumber ?? null)
                   : null;
-                const rewindCards = rewindHandNum != null ? pokerHandCardsArchive[rewindHandNum] : null;
+                const rewindCards = rewindHandNum != null
+                  ? (pokerHandCardsArchive[rewindHandNum] ?? pokerHandCardsArchive[rewindHandNum + 1] ?? pokerHandCardsArchive[rewindHandNum - 1] ?? null)
+                  : null;
 
                 const spectatorPlayers = pokerPlayers.length > 0
                   ? pokerPlayers.map((p, i) => {
@@ -982,20 +984,29 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       };
                     })
                   : replayPlayers
-                  ? replayPlayers.map((rp, i) => ({
-                      id: rp.playerId ?? `p${i}`,
-                      name: agents[rp.seatIndex]?.agentName ?? `Player ${(rp.seatIndex ?? i) + 1}`,
-                      seatIndex: rp.seatIndex ?? i,
-                      stack: rp.stack ?? 0,
-                      currentBet: rp.currentBet ?? 0,
-                      hasFolded: rp.hasFolded ?? false,
-                      isAllIn: rp.isAllIn ?? false,
-                      isEliminated: rp.isEliminated ?? false,
-                      isDealer: rp.isDealer ?? false,
-                      isHuman: false,
-                      isAgent: true,
-                      holeCards: savedState?.showdownResult ? (rp.holeCards as PokerCard[] | undefined) : undefined,
-                    }))
+                  ? replayPlayers.map((rp, i) => {
+                      const seatIdx = rp.seatIndex ?? i;
+                      let holeCards: PokerCard[] | undefined;
+                      if (!isLiveMode && rewindCards) {
+                        holeCards = rewindCards[seatIdx];
+                      } else if (savedState?.showdownResult) {
+                        holeCards = rp.holeCards as PokerCard[] | undefined;
+                      }
+                      return {
+                        id: rp.playerId ?? `p${i}`,
+                        name: agents[seatIdx]?.agentName ?? `Player ${seatIdx + 1}`,
+                        seatIndex: seatIdx,
+                        stack: rp.stack ?? 0,
+                        currentBet: rp.currentBet ?? 0,
+                        hasFolded: rp.hasFolded ?? false,
+                        isAllIn: rp.isAllIn ?? false,
+                        isEliminated: rp.isEliminated ?? false,
+                        isDealer: rp.isDealer ?? false,
+                        isHuman: false,
+                        isAgent: true,
+                        holeCards,
+                      };
+                    })
                   : agents.map((a, i) => ({
                       id: a.agentId ?? `p${i}`,
                       name: a.agentName ?? `Player ${i + 1}`,
@@ -1008,7 +1019,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       isDealer: i === 0,
                       isHuman: false,
                       isAgent: true,
-                      holeCards: undefined as PokerCard[] | undefined,
+                      holeCards: (!isLiveMode && rewindCards) ? rewindCards[i] : undefined,
                     }));
 
                 // Determine if we're rewinding (not at the final state)
