@@ -36,7 +36,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <div className="relative bg-white border border-arena-border rounded-xl p-6 w-full max-w-md mx-4 shadow-arena-lg">
+      <div className="relative bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl shadow-black/20 ring-1 ring-black/5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-arena-text font-display">{title}</h2>
           <button
