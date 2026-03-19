@@ -8,15 +8,22 @@ import { normalizeMatchAgents } from "@/lib/utils";
 import MatchCard from "./MatchCard";
 
 /* ══════════════════════════════════════════════════════════
-   FILTER TABS
+   FILTER TABS & SORT OPTIONS
    ══════════════════════════════════════════════════════════ */
 type FilterTab = "all" | "chess" | "poker" | "live";
+type SortOption = "mostBets" | "mostViewers" | "soonest";
 
 const TABS: { key: FilterTab; label: string; icon?: string }[] = [
   { key: "all", label: "All" },
   { key: "chess", label: "Chess", icon: "\u265F" },
   { key: "poker", label: "Poker", icon: "\u2660" },
   { key: "live", label: "Live" },
+];
+
+const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
+  { key: "mostBets", label: "Most Bets", icon: "\uD83D\uDCB0" },
+  { key: "mostViewers", label: "Most Viewers", icon: "\uD83D\uDC41" },
+  { key: "soonest", label: "Soonest", icon: "\u23F1" },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -26,6 +33,8 @@ interface ScheduledMatchesProps {
   initialGameType?: string;
 }
 
+const ITEMS_PER_PAGE = 6;
+
 export default function ScheduledMatches({ initialGameType }: ScheduledMatchesProps) {
   const { t } = useLanguage();
   const [matches, setMatches] = useState<ScheduledMatchResponse[]>([]);
@@ -34,6 +43,9 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
   const [activeTab, setActiveTab] = useState<FilterTab>(
     initialGameType === "chess" ? "chess" : initialGameType === "poker" ? "poker" : "all"
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortOption>("mostBets");
+  const [poolTotals, setPoolTotals] = useState<Record<string, number>>({});
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -78,8 +90,23 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
           };
         });
 
-      setMatches([...scheduled, ...activeAsScheduled]);
+      const allMatches = [...scheduled, ...activeAsScheduled];
+      setMatches(allMatches);
       api.getMatchViewers().then(setViewerCounts).catch(() => {});
+
+      // Fetch betting pool totals for all matches with matchId
+      const matchIds = allMatches.map((m) => m.matchId).filter(Boolean) as string[];
+      if (matchIds.length > 0) {
+        Promise.all(
+          matchIds.map((mid) =>
+            api.getBettingPool(mid).then((res) => [mid, Number(res.pool?.totalPool ?? 0)] as const).catch(() => [mid, 0] as const)
+          )
+        ).then((results) => {
+          const totals: Record<string, number> = {};
+          for (const [mid, total] of results) totals[mid] = total;
+          setPoolTotals(totals);
+        });
+      }
     } catch {
       setMatches([]);
     } finally {
@@ -98,19 +125,45 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
     m.status === "starting" || (!!m.matchId && !["pending", "completed", "cancelled"].includes(m.status));
 
   const filtered = useMemo(() => {
-    return matches.filter((m) => {
-      // Hide cancelled
+    const list = matches.filter((m) => {
       if (m.status === "cancelled") return false;
       if (activeTab === "live") return isMatchLive(m);
       if (activeTab === "chess") return m.gameType === "chess";
       if (activeTab === "poker") return m.gameType === "poker";
       return true;
     });
-  }, [matches, activeTab]);
+
+    // Sort
+    return list.sort((a, b) => {
+      if (sortBy === "mostBets") {
+        const poolA = a.matchId ? (poolTotals[a.matchId] ?? 0) : 0;
+        const poolB = b.matchId ? (poolTotals[b.matchId] ?? 0) : 0;
+        return poolB - poolA;
+      }
+      if (sortBy === "mostViewers") {
+        const viewA = a.matchId ? (viewerCounts[a.matchId] ?? 0) : 0;
+        const viewB = b.matchId ? (viewerCounts[b.matchId] ?? 0) : 0;
+        return viewB - viewA;
+      }
+      // soonest
+      return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+    });
+  }, [matches, activeTab, sortBy, poolTotals, viewerCounts]);
 
   const liveCount = useMemo(
     () => matches.filter(isMatchLive).length,
     [matches]
+  );
+
+  // Reset page when tab or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedMatches = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   if (loading) {
@@ -176,17 +229,83 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
         })}
       </div>
 
+      {/* ── Sort buttons ── */}
+      <div className="flex items-center gap-1.5 mb-6">
+        <span className="text-[10px] font-mono text-arena-muted uppercase tracking-wider mr-1">Sort:</span>
+        {SORT_OPTIONS.map((opt) => {
+          const isActive = sortBy === opt.key;
+          return (
+            <button
+              key={opt.key}
+              onClick={() => setSortBy(opt.key)}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                border transition-all duration-200
+                ${
+                  isActive
+                    ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 shadow-sm"
+                    : "bg-white text-arena-muted border-arena-border-light/40 hover:text-arena-text hover:border-arena-primary/20"
+                }
+              `}
+            >
+              <span className="text-[11px]">{opt.icon}</span>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Match cards ── */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-arena-muted text-sm">
           {t.betting.noScheduledMatches}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 max-w-2xl">
-          {filtered.map((match, i) => (
-            <MatchCard key={match._id} match={match} delay={0.2 + i * 0.06} viewers={match.matchId ? viewerCounts[match.matchId] : undefined} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paginatedMatches.map((match, i) => (
+              <MatchCard key={match._id} match={match} delay={0.2 + i * 0.06} viewers={match.matchId ? viewerCounts[match.matchId] : undefined} />
+            ))}
+          </div>
+
+          {/* ── Pagination ── */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-arena-border bg-white hover:bg-arena-card-hover text-arena-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                &larr;
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const pageNum = idx + 1;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-lg text-sm transition-all ${
+                        currentPage === pageNum
+                          ? "bg-arena-text-bright text-white font-semibold shadow-sm"
+                          : "text-arena-muted hover:text-arena-text hover:bg-black/[0.04]"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-arena-border bg-white hover:bg-arena-card-hover text-arena-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                &rarr;
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
