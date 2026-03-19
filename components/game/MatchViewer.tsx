@@ -30,36 +30,70 @@ const SIDE_COLORS: Record<string, string> = {
   d: "#8B5CF6",
 };
 
-// Chess piece names from board values
-const CHESS_PIECE_NAMES: Record<number, string> = {
-  1: "Peón", 2: "Caballo", 3: "Alfil", 4: "Torre", 5: "Dama", 6: "Rey",
-  7: "Peón", 8: "Caballo", 9: "Alfil", 10: "Torre", 11: "Dama", 12: "Rey",
+// Chess piece symbols for algebraic notation
+const CHESS_PIECE_SYMBOL: Record<number, string> = {
+  1: "", 2: "N", 3: "B", 4: "R", 5: "Q", 6: "K",   // White pieces (pawn = empty)
+  7: "", 8: "N", 9: "B", 10: "R", 11: "Q", 12: "K", // Black pieces
+};
+const CHESS_PIECE_UNICODE: Record<number, string> = {
+  1: "\u2659", 2: "\u2658", 3: "\u2657", 4: "\u2656", 5: "\u2655", 6: "\u2654",
+  7: "\u265F", 8: "\u265E", 9: "\u265D", 10: "\u265C", 11: "\u265B", 12: "\u265A",
 };
 
-/** Convert UCI string like "e2e4" to descriptive format like "Peón e2→e4" */
+/** Convert UCI string like "e2e4" to algebraic-like format: "e4", "Nf3", "Bxe5" */
 function formatChessUci(uci: string, board?: any): string {
   if (!uci || uci.length < 4) return uci || "?";
   const from = uci.slice(0, 2);
   const to = uci.slice(2, 4);
   const promo = uci.length > 4 ? uci[4] : null;
 
-  // Try to identify the piece from the board state
-  let pieceName = "";
+  let pieceSymbol = "";
+  let pieceUnicode = "";
+  let isCapture = false;
+  let isPawn = false;
+
   if (board) {
     const grid = Array.isArray(board) && Array.isArray(board[0]) ? board : board?.grid;
     if (grid) {
-      const col = from.charCodeAt(0) - 97; // a=0, b=1, ...
-      const row = 8 - parseInt(from[1]);    // 1=row7, 8=row0
-      if (row >= 0 && row < 8 && col >= 0 && col < 8) {
-        const val = grid[row]?.[col];
-        if (val && CHESS_PIECE_NAMES[val]) pieceName = CHESS_PIECE_NAMES[val];
+      const fromCol = from.charCodeAt(0) - 97;
+      const fromRow = 8 - parseInt(from[1]);
+      const toCol = to.charCodeAt(0) - 97;
+      const toRow = 8 - parseInt(to[1]);
+
+      if (fromRow >= 0 && fromRow < 8 && fromCol >= 0 && fromCol < 8) {
+        const val = grid[fromRow]?.[fromCol];
+        if (val) {
+          pieceSymbol = CHESS_PIECE_SYMBOL[val] || "";
+          pieceUnicode = CHESS_PIECE_UNICODE[val] || "";
+          isPawn = val === 1 || val === 7;
+        }
       }
+      // Check if destination has a piece (capture)
+      if (toRow >= 0 && toRow < 8 && toCol >= 0 && toCol < 8) {
+        const destVal = grid[toRow]?.[toCol];
+        if (destVal && destVal !== 0) isCapture = true;
+      }
+      // En passant: pawn moving diagonally to empty square
+      if (isPawn && fromCol !== toCol && !isCapture) isCapture = true;
     }
   }
 
-  const moveText = `${from}→${to}`;
-  const promoText = promo ? ` =${promo.toUpperCase()}` : "";
-  return pieceName ? `${pieceName} ${moveText}${promoText}` : `${moveText}${promoText}`;
+  // Castling detection
+  if ((pieceSymbol === "K") && Math.abs(from.charCodeAt(0) - to.charCodeAt(0)) === 2) {
+    return to.charCodeAt(0) > from.charCodeAt(0) ? "O-O" : "O-O-O";
+  }
+
+  const captureStr = isCapture ? "x" : "";
+  const promoStr = promo ? `=${promo.toUpperCase()}` : "";
+
+  if (isPawn) {
+    // Pawn: "e4", "exd5", "e8=Q"
+    const fromFile = isCapture ? from[0] : "";
+    return `${fromFile}${captureStr}${to}${promoStr}`;
+  }
+
+  // Piece: "Nf3", "Bxe5", "Qd1"
+  return `${pieceSymbol}${captureStr}${to}${promoStr}`;
 }
 
 // Format move data for display
