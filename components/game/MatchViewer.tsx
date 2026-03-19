@@ -177,7 +177,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [thinkingSide, setThinkingSide] = useState<string | null>(
     // Initialize from match.currentTurn for active matches so spectators see the timer immediately
-    (match.status === "active" || match.status === "starting") ? (match.currentTurn || null) : null
+    (match.status === "active" || match.status === "starting") ? (match.currentTurn != null ? String(match.currentTurn) : null) : null
   );
   const [turnSecondsLeft, setTurnSecondsLeft] = useState<number | null>(null);
   const turnStartRef = useRef<number | null>(null);
