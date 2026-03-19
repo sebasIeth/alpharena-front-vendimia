@@ -420,6 +420,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
         // Auto-start replay for completed matches
         if (match.status === "completed" && fetchedMoves.length > 0) {
+          setIsLiveMode(false);
           setReplayStep(0);
           setIsAutoPlaying(true);
         }
@@ -1220,7 +1221,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     min={0}
                     max={moves.length - 1}
                     value={replayStep >= 0 ? replayStep : moves.length - 1}
-                    onChange={(e) => { setReplayStep(parseInt(e.target.value)); setIsAutoPlaying(false); }}
+                    onChange={(e) => { setIsLiveMode(false); setReplayStep(parseInt(e.target.value)); setIsAutoPlaying(false); }}
                     className="w-full h-1.5 bg-arena-border/40 rounded-full appearance-none cursor-pointer
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-arena-primary [&::-webkit-slider-thumb]:shadow-lg
@@ -1233,12 +1234,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   {/* Transport buttons */}
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => { setReplayStep(0); setIsAutoPlaying(false); }}
+                      onClick={() => { setIsLiveMode(false); setReplayStep(0); setIsAutoPlaying(false); }}
                       className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="Start"
                     >⏮</button>
                     <button
                       onClick={() => {
+                        setIsLiveMode(false);
                         setReplayStep(prev => Math.max(0, (prev < 0 ? moves.length - 1 : prev) - 1));
                         setIsAutoPlaying(false);
                       }}
@@ -1247,6 +1249,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     >◀</button>
                     <button
                       onClick={() => {
+                        setIsLiveMode(false);
                         if (replayStep < 0) setReplayStep(0);
                         // If at the end, restart
                         if (replayStep >= moves.length - 1) {
@@ -1265,6 +1268,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     >{isAutoPlaying ? "⏸" : "▶"}</button>
                     <button
                       onClick={() => {
+                        setIsLiveMode(false);
                         setReplayStep(prev => Math.min(moves.length - 1, (prev < 0 ? moves.length - 1 : prev) + 1));
                         setIsAutoPlaying(false);
                       }}
@@ -1272,7 +1276,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       title="Step forward"
                     >▶</button>
                     <button
-                      onClick={() => { setReplayStep(-1); setIsAutoPlaying(false); }}
+                      onClick={() => { setIsLiveMode(false); setReplayStep(-1); setIsAutoPlaying(false); }}
                       className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
                       title="End"
                     >⏭</button>
@@ -1544,7 +1548,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                             : isFold ? "bg-arena-bg/50 opacity-60 hover:opacity-80" : "bg-arena-bg hover:bg-arena-bg/80"
                         }`}
                         onClick={() => {
-                          if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); }
+                          if (canReplay) { setIsLiveMode(false); setReplayStep(idx); setIsAutoPlaying(false); }
                           else if (match.status === "active" || match.status === "starting") {
                             setReplayStep(idx);
                             setIsLiveMode(idx >= moves.length - 1);
