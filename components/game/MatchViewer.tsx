@@ -1024,7 +1024,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
                 // Determine if we're rewinding (not at the final state)
                 const isAtFinalState = replayStep < 0 || replayStep >= moves.length - 1;
-                const isRewinding = isReplay && !isAtFinalState && replayStep >= 0;
+                // Rewinding works for both completed (isReplay) AND live matches (when slider moved back)
+                const isRewinding = !isAtFinalState && replayStep >= 0 && !isLiveMode;
 
                 // When rewinding, reconstruct state from the current move's data
                 const curMove = isRewinding ? moves[replayStep] : null;
