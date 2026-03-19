@@ -175,7 +175,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     match.boardState || (match as any).currentBoard
   );
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
-  const [thinkingSide, setThinkingSide] = useState<string | null>(null);
+  const [thinkingSide, setThinkingSide] = useState<string | null>(
+    // Initialize from match.currentTurn for active matches so spectators see the timer immediately
+    (match.status === "active" || match.status === "starting") ? (match.currentTurn || null) : null
+  );
   const [turnSecondsLeft, setTurnSecondsLeft] = useState<number | null>(null);
   const turnStartRef = useRef<number | null>(null);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -489,7 +492,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         const grid = extractBoard(data);
 
         if (type === "match:move") {
+          // After a move, the OTHER player starts thinking
+          const moveSide = data.side as string;
+          const nextSide = moveSide === "a" ? "b" : "a";
+          // Brief null to reset timer, then set next player as thinking
           setThinkingSide(null);
+          setTimeout(() => setThinkingSide(nextSide), 50);
           // Append move to history from WS data
           if (data.moveNumber != null && data.side) {
             const wsMove: Move = {
@@ -659,6 +667,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       }
 
       if (type === "match:end") {
+        setThinkingSide(null);
         onMatchUpdateRef.current?.(data);
       }
     });
