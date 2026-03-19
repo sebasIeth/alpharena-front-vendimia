@@ -167,6 +167,7 @@ interface PokerBoardProps {
   onAction?: (action: { action: string; amount?: number }) => void;
   showdownResult?: ShowdownResult | null;
   matchResult?: { winnerName: string; reason?: string } | null;
+  turnSecondsLeft?: number | null;
 }
 
 /* ── Action Bar ───────────────────────────────────── */
@@ -258,6 +259,7 @@ function PlayerSeat({
   isWinner,
   hideCards,
   forceCardBacks,
+  turnSecondsLeft,
 }: {
   player: PlayerViewInfo;
   position: { x: number; y: number };
@@ -268,6 +270,7 @@ function PlayerSeat({
   isWinner: boolean;
   hideCards?: boolean;
   forceCardBacks?: boolean;
+  turnSecondsLeft?: number | null;
 }) {
   const isTop = position.y < 45;
 
@@ -337,7 +340,14 @@ function PlayerSeat({
           <span className="hidden sm:inline-flex px-1 rounded text-[7px] bg-green-500/80 text-white font-bold uppercase">You</span>
         )}
       </div>
-      <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack}</div>
+      <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack.toLocaleString()}</div>
+      {isActive && turnSecondsLeft != null && (
+        <div className={`text-[8px] sm:text-[10px] font-mono font-bold tabular-nums ${
+          turnSecondsLeft <= 5 ? "text-red-400 animate-pulse" : turnSecondsLeft <= 10 ? "text-amber-400" : "text-white/60"
+        }`}>
+          {turnSecondsLeft}s
+        </div>
+      )}
       {player.isAllIn && <div className="text-[7px] text-red-300 font-bold">ALL-IN</div>}
       {player.hasFolded && !player.isEliminated && <div className="text-[7px] text-white/40 uppercase">Fold</div>}
       {player.isEliminated && <div className="text-[7px] text-red-400 font-bold uppercase">Out</div>}
@@ -437,6 +447,7 @@ export default function PokerBoard({
   onAction,
   showdownResult,
   matchResult,
+  turnSecondsLeft,
 }: PokerBoardProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -553,6 +564,7 @@ export default function PokerBoard({
                 isWinner={winnerIndices.has(idx)}
                 hideCards={player.isHuman}
                 forceCardBacks={isMatchOver}
+                turnSecondsLeft={idx === currentPlayerIndex ? turnSecondsLeft : undefined}
               />
             );
           })}

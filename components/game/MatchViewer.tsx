@@ -142,6 +142,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   );
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [thinkingSide, setThinkingSide] = useState<string | null>(null);
+  const [turnSecondsLeft, setTurnSecondsLeft] = useState<number | null>(null);
+  const turnStartRef = useRef<number | null>(null);
+  const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [score, setScore] = useState<Record<string, number> | null>(null);
   const [viewers, setViewers] = useState(0);
   const [viewerFlash, setViewerFlash] = useState(false);
@@ -279,6 +282,28 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     const { text } = formatMoveDisplay(move.moveData, match.gameType, boardBefore);
     return { agentName: info?.name || "Agent", side: info?.side || move.side || "a", text, moveNumber: move.moveNumber ?? move.turnNumber };
   }, [replayStep, moves, agentLookup, match.gameType]);
+
+  // Turn countdown timer — starts when an agent begins thinking
+  const TURN_TIMEOUT_SECS = 20;
+  useEffect(() => {
+    if (thinkingSide) {
+      turnStartRef.current = Date.now();
+      setTurnSecondsLeft(TURN_TIMEOUT_SECS);
+      if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+      turnTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - (turnStartRef.current || Date.now())) / 1000);
+        const remaining = Math.max(0, TURN_TIMEOUT_SECS - elapsed);
+        setTurnSecondsLeft(remaining);
+        if (remaining <= 0 && turnTimerRef.current) clearInterval(turnTimerRef.current);
+      }, 1000);
+    } else {
+      if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+      turnTimerRef.current = null;
+      turnStartRef.current = null;
+      setTurnSecondsLeft(null);
+    }
+    return () => { if (turnTimerRef.current) clearInterval(turnTimerRef.current); };
+  }, [thinkingSide]);
 
   // Replay: auto-play timer
   useEffect(() => {
@@ -957,6 +982,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     actionHistory={pokerActionHistory}
                     showdownResult={convertedShowdown}
                     matchResult={pokerMatchResult}
+                    turnSecondsLeft={turnSecondsLeft}
                   />
                 );
               })()
@@ -1232,9 +1258,18 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     </div>
                     <div className="text-right">
                       {isThinking ? (
-                        <span className="text-xs text-arena-primary animate-pulse">
-                          Thinking...
-                        </span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="text-xs text-arena-primary animate-pulse">
+                            Thinking...
+                          </span>
+                          {turnSecondsLeft != null && (
+                            <span className={`text-[11px] font-mono font-bold tabular-nums ${
+                              turnSecondsLeft <= 5 ? "text-red-500" : turnSecondsLeft <= 10 ? "text-amber-500" : "text-arena-muted"
+                            }`}>
+                              {turnSecondsLeft}s
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <>
                           <div className="text-sm text-arena-primary font-medium">
