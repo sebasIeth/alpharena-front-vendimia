@@ -498,8 +498,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           // Brief null to reset timer, then set next player as thinking
           setThinkingSide(null);
           setTimeout(() => setThinkingSide(nextSide), 50);
-          // Append move to history from WS data
-          if (data.moveNumber != null && data.side) {
+          // Append move to history from WS data (skip street-advance events that have no action)
+          const hasAction = data.chessMove || data.move || data.pokerAction;
+          if (data.moveNumber != null && data.side && hasAction) {
             const wsMove: Move = {
               id: `ws-${data.moveNumber}-${data.side}`,
               _id: `ws-${data.moveNumber}-${data.side}`,
