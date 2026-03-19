@@ -374,6 +374,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         const data = await api.getMatchMoves(matchId);
         const fetchedMoves = data?.moves || [];
         setMoves(fetchedMoves);
+        console.log("[POKER DEBUG] moves count:", fetchedMoves.length);
+        if (fetchedMoves.length > 0) {
+          const sample = fetchedMoves[0].moveData as any;
+          console.log("[POKER DEBUG] sample move moveData:", JSON.stringify(sample));
+          console.log("[POKER DEBUG] sample move has pokerHandNumber:", sample?.pokerHandNumber);
+          console.log("[POKER DEBUG] sample move has pokerStreet:", sample?.pokerStreet);
+          console.log("[POKER DEBUG] sample move has pokerCommunityCards:", !!sample?.pokerCommunityCards);
+        }
 
         const initialThoughts: AgentThought[] = [];
         for (const move of fetchedMoves) {
@@ -400,6 +408,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           try {
             const { match: fullMatch } = await api.getMatch(matchId);
             const histories = (fullMatch as any)?.pokerHandHistories;
+            console.log("[POKER DEBUG] pokerHandHistories count:", histories?.length ?? 0);
+            console.log("[POKER DEBUG] pokerState:", (fullMatch as any)?.pokerState ? "exists" : "missing");
+            console.log("[POKER DEBUG] sample history:", histories?.[0]);
             if (Array.isArray(histories) && histories.length > 0) {
               const archive: Record<number, Record<number, PokerCard[]>> = {};
               const communityArchive: Record<number, PokerCard[]> = {};
@@ -1023,6 +1034,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     }));
 
                 // Determine if we're rewinding (not at the final state)
+                if (replayStep >= 0 && replayStep % 10 === 0) {
+                  console.log(`[POKER DEBUG] replayStep=${replayStep}, isLiveMode=${isLiveMode}, pokerPlayers=${pokerPlayers.length}, replayPlayers=${replayPlayers?.length ?? 0}`);
+                  console.log(`[POKER DEBUG] rewindHandNum=${rewindHandNum}, rewindCards keys=${rewindCards ? Object.keys(rewindCards) : 'null'}`);
+                  console.log(`[POKER DEBUG] handCardsArchive keys=`, Object.keys(pokerHandCardsArchive));
+                  console.log(`[POKER DEBUG] communityArchive keys=`, Object.keys(pokerHandCommunityArchive));
+                }
                 const isAtFinalState = replayStep < 0 || replayStep >= moves.length - 1;
                 const isRewinding = isReplay && !isAtFinalState && replayStep >= 0;
 
@@ -1082,6 +1099,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   displayCommunity = [];
                 }
 
+                if (isRewinding && replayStep % 10 === 0) {
+                  console.log(`[POKER DEBUG] REWIND step=${replayStep}: curHandNum=${curHandNum}, curStreet=${curStreet}`);
+                  console.log(`[POKER DEBUG] curMdCommunity=${curMdCommunity?.length ?? 'null'}, archiveCommunity=${archiveCommunity?.length ?? 'null'}`);
+                  console.log(`[POKER DEBUG] displayCommunity=`, displayCommunity.length, displayCommunity.map(c => `${c.rank}${c.suit?.[0]}`));
+                  console.log(`[POKER DEBUG] rewindHandCards=`, rewindHandCards ? Object.keys(rewindHandCards) : 'null');
+                }
                 const displayPot = isRewinding
                   ? (curMdPot ?? 0)
                   : (isReplay && savedState?.pot != null ? savedState.pot : pokerPot);
