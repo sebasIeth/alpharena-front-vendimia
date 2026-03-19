@@ -1581,9 +1581,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         }`}>
                           {display}
                         </span>
-                        {!isPoker && (
+                        {isPoker ? (
+                          move.thinkingTimeMs > 0 && (
+                            <span className="text-[10px] text-arena-muted/60 font-mono flex-shrink-0">
+                              {(move.thinkingTimeMs / 1000).toFixed(1)}s
+                            </span>
+                          )
+                        ) : (
                           <span className="text-[10px] text-arena-muted flex-shrink-0">
-                            {formatRelativeTime(move.timestamp)}
+                            {move.thinkingTimeMs > 0
+                              ? `${(move.thinkingTimeMs / 1000).toFixed(1)}s`
+                              : formatRelativeTime(move.timestamp)}
                           </span>
                         )}
                       </div>
