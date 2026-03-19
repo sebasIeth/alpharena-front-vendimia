@@ -443,7 +443,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                       value={betAmount}
                       onChange={(e) => setBetAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 bg-white/60 border border-arena-border-light/50 rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/40 focus:outline-none focus:border-arena-accent/50 pr-16"
+                      className="w-full px-3 py-2 bg-white border-2 border-arena-border-light rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/50 focus:outline-none focus:border-arena-accent focus:ring-1 focus:ring-arena-accent/30 pr-16 shadow-sm"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">ALPHA</span>
                   </div>
