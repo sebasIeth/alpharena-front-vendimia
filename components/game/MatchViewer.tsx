@@ -190,6 +190,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [pokerHoleCards, setPokerHoleCards] = useState<Record<number, PokerCard[]>>({});
   const [pokerShowdownResult, setPokerShowdownResult] = useState<any>(null);
   // Per-hand hole cards archive: handNumber → { seatIndex → cards }
+  // Archive of community cards per hand number (for replay)
+  const [pokerHandCommunityArchive, setPokerHandCommunityArchive] = useState<Record<number, PokerCard[]>>({});
   const [pokerHandCardsArchive, setPokerHandCardsArchive] = useState<Record<number, Record<number, PokerCard[]>>>(() => {
     // Initialize from match.pokerState if available (completed match)
     if (initPoker?.showdownResult && initPoker?.handNumber && initPoker?.players) {
@@ -364,14 +366,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             const histories = (fullMatch as any)?.pokerHandHistories;
             if (Array.isArray(histories) && histories.length > 0) {
               const archive: Record<number, Record<number, PokerCard[]>> = {};
+              const communityArchive: Record<number, PokerCard[]> = {};
               for (const h of histories) {
-                if (!h.handNumber || !h.holeCards) continue;
-                const hcMap: Record<number, PokerCard[]> = {};
-                if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
-                if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
-                if (Object.keys(hcMap).length > 0) archive[h.handNumber] = hcMap;
+                if (!h.handNumber) continue;
+                if (h.holeCards) {
+                  const hcMap: Record<number, PokerCard[]> = {};
+                  if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
+                  if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
+                  if (Object.keys(hcMap).length > 0) archive[h.handNumber] = hcMap;
+                }
+                if (Array.isArray(h.communityCards) && h.communityCards.length > 0) {
+                  communityArchive[h.handNumber] = h.communityCards;
+                }
               }
               setPokerHandCardsArchive(prev => ({ ...prev, ...archive }));
+              setPokerHandCommunityArchive(prev => ({ ...prev, ...communityArchive }));
             }
           } catch { /* ignore */ }
         }
@@ -948,8 +957,18 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const curMdPot = curMd?.pokerPot as number | undefined;
                 const curMdPlayers = curMd?.pokerPlayers as { a?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean }; b?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean } } | undefined;
 
-                // Get hole cards for the current hand from the archive
+                // Get hole cards and community cards for the current hand from the archive
                 const rewindHandCards = curHandNum != null ? pokerHandCardsArchive[curHandNum] : null;
+                const archiveCommunity = curHandNum != null ? pokerHandCommunityArchive[curHandNum] : null;
+
+                // Derive which community cards to show based on street
+                // preflop = 0 cards, flop = first 3, turn = first 4, river/showdown = all 5
+                const communityForStreet = (allCards: PokerCard[], street: string | undefined): PokerCard[] => {
+                  if (!street || street === "preflop") return [];
+                  if (street === "flop") return allCards.slice(0, 3);
+                  if (street === "turn") return allCards.slice(0, 4);
+                  return allCards; // river, showdown
+                };
 
                 // For replays, prefer saved state; detect fresh unplayed hand (match ended between hands)
                 const replayCommunity = isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards;
@@ -959,9 +978,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   (replayStreet === "preflop" || !replayStreet) &&
                   (!replayCommunity || replayCommunity.length === 0);
 
-                // When rewinding, use moveData's community cards if available, else derive from street
+                // When rewinding: prefer moveData community (new format), then archive sliced by street, then fallback
                 const displayCommunity = isRewinding
-                  ? (curMdCommunity ?? (curStreet === "preflop" ? [] : replayCommunity))
+                  ? (curMdCommunity ?? (archiveCommunity ? communityForStreet(archiveCommunity, curStreet) : (curStreet === "preflop" ? [] : replayCommunity)))
                   : replayCommunity;
                 const displayPot = isRewinding
                   ? (curMdPot ?? 0)
