@@ -86,13 +86,29 @@ function formatMoveDisplay(
     if (Array.isArray(md)) return { text: md.join("") };
   }
 
-  // Poker: show action + amount
+  // Poker: show action + amount with better formatting
   if (gameType === "poker") {
     const action = md.pokerAction || md.action || md.moveData?.pokerAction;
     if (action) {
-      const type = typeof action === "string" ? action : action.type || action;
+      const type = (typeof action === "string" ? action : action.type || action).toLowerCase();
       const amount = typeof action === "object" ? action.amount : (md.pokerAmount ?? md.amount);
-      return { text: amount != null ? `${type} (${amount})` : String(type) };
+      const handNum = md.pokerHandNumber ?? md.handNumber;
+      const street = md.pokerStreet ?? md.street;
+
+      const ACTION_LABELS: Record<string, string> = {
+        fold: "Fold",
+        check: "Check",
+        call: "Call",
+        bet: "Bet",
+        raise: "Raise",
+        "all-in": "ALL-IN",
+        allin: "ALL-IN",
+        "all_in": "ALL-IN",
+      };
+      const label = ACTION_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1);
+      const amountStr = amount != null && amount > 0 ? ` ${Number(amount).toLocaleString()}` : "";
+      const text = `${label}${amountStr}`;
+      return { text, phase: street || undefined };
     }
     return { text: "action" };
   }
@@ -1284,53 +1300,100 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   const info = agentLookup.get(move.agentId) || (move.side ? sideLookup.get(move.side) : undefined);
                   const side = info?.side || move.side || "a";
                   const boardBefore = idx > 0 ? moves[idx - 1].boardStateAfter : null;
-                  const { text: display } = formatMoveDisplay(move.moveData, match.gameType, boardBefore);
+                  const md = move.moveData as any;
+                  const { text: display, phase } = formatMoveDisplay(move.moveData, match.gameType, boardBefore);
                   const isActiveReplayMove = (canReplay && replayStep === idx) || (!isLiveMode && replayStep === idx);
+
+                  // Poker: detect hand/street boundaries
+                  const isPoker = match.gameType === "poker";
+                  const curHand = isPoker ? (md.pokerHandNumber ?? md.handNumber) : null;
+                  const prevMd = idx > 0 ? (moves[idx - 1].moveData as any) : null;
+                  const prevHand = prevMd ? (prevMd.pokerHandNumber ?? prevMd.handNumber) : null;
+                  const isNewHand = isPoker && curHand != null && (idx === 0 || curHand !== prevHand);
+
+                  const curStreet = isPoker ? (md.pokerStreet ?? md.street) : null;
+                  const prevStreet = prevMd ? (prevMd.pokerStreet ?? prevMd.street) : null;
+                  const isNewStreet = isPoker && !isNewHand && curStreet && curStreet !== prevStreet;
+
+                  // Poker action styling
+                  const actionType = isPoker ? (md.pokerAction || md.action || "").toString().toLowerCase() : "";
+                  const isFold = actionType === "fold";
+                  const isAllIn = actionType === "all-in" || actionType === "allin" || actionType === "all_in";
+                  const isRaise = actionType === "raise" || actionType === "bet";
+
+                  const STREET_LABELS: Record<string, string> = { preflop: "Pre-Flop", flop: "Flop", turn: "Turn", river: "River", showdown: "Showdown" };
+                  const STREET_COLORS: Record<string, string> = { preflop: "text-blue-400", flop: "text-emerald-400", turn: "text-amber-400", river: "text-red-400", showdown: "text-purple-400" };
+
                   return (
-                    <div
-                      key={move.id || move._id || idx}
-                      ref={(el) => { if (el) replayMoveRefs.current.set(idx, el); }}
-                      className={`rounded-lg px-2.5 py-2 flex items-center gap-2 transition-all cursor-pointer ${
-                        isActiveReplayMove
-                          ? "bg-arena-primary/15 ring-1 ring-arena-primary/30"
-                          : "bg-arena-bg hover:bg-arena-bg/80"
-                      }`}
-                      onClick={() => {
-                        if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); }
-                        else if (match.status === "active" || match.status === "starting") {
-                          setReplayStep(idx);
-                          setIsLiveMode(idx >= moves.length - 1);
-                        }
-                      }}
-                    >
-                      <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
-                        #{move.moveNumber ?? move.turnNumber ?? idx + 1}
-                      </span>
-                      {match.gameType === "chess" ? (
-                        <div
-                          className={`w-2 h-2 rounded-full flex-shrink-0 border ${
-                            side === "a" ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"
-                          }`}
-                        />
-                      ) : (
-                        <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
-                        />
+                    <React.Fragment key={move.id || move._id || idx}>
+                      {/* Hand separator */}
+                      {isNewHand && (
+                        <div className="flex items-center gap-2 py-1.5 mt-1">
+                          <div className="h-px flex-1 bg-arena-border-light/50" />
+                          <span className="text-[10px] font-mono font-bold text-arena-primary/70 uppercase tracking-wider">
+                            Hand #{curHand}
+                          </span>
+                          <div className="h-px flex-1 bg-arena-border-light/50" />
+                        </div>
                       )}
-                      <span
-                        className="text-xs font-medium flex-shrink-0"
-                        style={{ color: match.gameType === "chess" ? (side === "a" ? "#1f2937" : "#6b7280") : (SIDE_COLORS[side] || "#8B5CF6") }}
+                      {/* Street separator */}
+                      {isNewStreet && (
+                        <div className="flex items-center gap-1.5 pl-7 py-0.5">
+                          <span className={`text-[9px] font-mono font-semibold uppercase tracking-wider ${STREET_COLORS[curStreet] || "text-arena-muted"}`}>
+                            {STREET_LABELS[curStreet] || curStreet}
+                          </span>
+                          <div className="h-px flex-1 bg-arena-border-light/30" />
+                        </div>
+                      )}
+                      {/* Move row */}
+                      <div
+                        ref={(el) => { if (el) replayMoveRefs.current.set(idx, el); }}
+                        className={`rounded-lg px-2.5 py-2 flex items-center gap-2 transition-all cursor-pointer ${
+                          isActiveReplayMove
+                            ? "bg-arena-primary/15 ring-1 ring-arena-primary/30"
+                            : isFold ? "bg-arena-bg/50 opacity-60 hover:opacity-80" : "bg-arena-bg hover:bg-arena-bg/80"
+                        }`}
+                        onClick={() => {
+                          if (canReplay) { setReplayStep(idx); setIsAutoPlaying(false); }
+                          else if (match.status === "active" || match.status === "starting") {
+                            setReplayStep(idx);
+                            setIsLiveMode(idx >= moves.length - 1);
+                          }
+                        }}
                       >
-                        {info?.name || "Agent"}
-                      </span>
-                      <span className="text-xs text-arena-text/70 truncate flex-1">
-                        {display}
-                      </span>
-                      <span className="text-[10px] text-arena-muted flex-shrink-0">
-                        {formatRelativeTime(move.timestamp)}
-                      </span>
-                    </div>
+                        <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
+                          #{move.moveNumber ?? move.turnNumber ?? idx + 1}
+                        </span>
+                        {match.gameType === "chess" ? (
+                          <div
+                            className={`w-2 h-2 rounded-full flex-shrink-0 border ${
+                              side === "a" ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"
+                            }`}
+                          />
+                        ) : (
+                          <div
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
+                          />
+                        )}
+                        <span
+                          className="text-xs font-medium flex-shrink-0"
+                          style={{ color: match.gameType === "chess" ? (side === "a" ? "#1f2937" : "#6b7280") : (SIDE_COLORS[side] || "#8B5CF6") }}
+                        >
+                          {info?.name || "Agent"}
+                        </span>
+                        <span className={`text-xs truncate flex-1 ${
+                          isAllIn ? "text-red-500 font-bold" : isRaise ? "text-amber-600 font-semibold" : isFold ? "text-arena-muted italic" : "text-arena-text/70"
+                        }`}>
+                          {display}
+                        </span>
+                        {!isPoker && (
+                          <span className="text-[10px] text-arena-muted flex-shrink-0">
+                            {formatRelativeTime(move.timestamp)}
+                          </span>
+                        )}
+                      </div>
+                    </React.Fragment>
                   );
                 })
               )}
