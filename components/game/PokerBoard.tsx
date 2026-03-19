@@ -299,9 +299,8 @@ function PlayerSeat({
                 style={{ width: cardSize.w, height: cardSize.h, animationDelay: `${i * 0.1}s` }}
                 className="rounded-md bg-white shadow-md ring-1 ring-black/5 relative flex items-center justify-center select-none poker-flip-in poker-card-lift"
               >
-                <div className="absolute top-[1px] left-[2px] flex flex-col items-center leading-none">
+                <div className="absolute top-[1px] left-[2px] leading-none">
                   <span className={`text-[7px] font-bold ${clr}`}>{c.rank}</span>
-                  <span className={`text-[7px] ${clr}`}>{SUIT_SYM[c.suit]}</span>
                 </div>
                 <span className={`text-sm ${clr}`}>{SUIT_SYM[c.suit]}</span>
               </div>
