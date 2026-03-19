@@ -94,18 +94,17 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
       setMatches(allMatches);
       api.getMatchViewers().then(setViewerCounts).catch(() => {});
 
-      // Fetch betting pool totals for all matches with matchId
+      // Fetch betting pool totals sequentially to avoid 429 rate limiting
       const matchIds = allMatches.map((m) => m.matchId).filter(Boolean) as string[];
       if (matchIds.length > 0) {
-        Promise.all(
-          matchIds.map((mid) =>
-            api.getBettingPool(mid).then((res) => [mid, Number(res.pool?.totalPool ?? 0)] as const).catch(() => [mid, 0] as const)
-          )
-        ).then((results) => {
-          const totals: Record<string, number> = {};
-          for (const [mid, total] of results) totals[mid] = total;
-          setPoolTotals(totals);
-        });
+        const totals: Record<string, number> = {};
+        for (const mid of matchIds) {
+          try {
+            const res = await api.getBettingPool(mid);
+            totals[mid] = Number(res.pool?.totalPool ?? 0);
+          } catch { totals[mid] = 0; }
+        }
+        setPoolTotals(totals);
       }
     } catch {
       setMatches([]);

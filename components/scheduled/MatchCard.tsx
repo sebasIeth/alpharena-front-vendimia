@@ -121,7 +121,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
     if (!bettingOpen) return;
     const interval = setInterval(() => {
       api.getBettingPool(match.matchId!).then(setPoolResp).catch(() => {});
-    }, 15000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [match.matchId, bettingInfo?.betting?.open, poolResp?.bettingOpen]);
 
