@@ -943,6 +943,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const curStreet = curMd?.pokerStreet;
                 const curStacks = curMove?.scoreAfter as { a?: number; b?: number } | undefined;
 
+                // Extract rich state from moveData (new format includes community cards, pot, player states)
+                const curMdCommunity = curMd?.pokerCommunityCards as PokerCard[] | undefined;
+                const curMdPot = curMd?.pokerPot as number | undefined;
+                const curMdPlayers = curMd?.pokerPlayers as { a?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean }; b?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean } } | undefined;
+
+                // Get hole cards for the current hand from the archive
+                const rewindHandCards = curHandNum != null ? pokerHandCardsArchive[curHandNum] : null;
+
                 // For replays, prefer saved state; detect fresh unplayed hand (match ended between hands)
                 const replayCommunity = isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards;
                 const replayStreet = isReplay && savedState?.street ? savedState.street : pokerStreet;
@@ -951,12 +959,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   (replayStreet === "preflop" || !replayStreet) &&
                   (!replayCommunity || replayCommunity.length === 0);
 
-                // When rewinding, show empty community for preflop, otherwise use saved state
+                // When rewinding, use moveData's community cards if available, else derive from street
                 const displayCommunity = isRewinding
-                  ? (curStreet === "preflop" ? [] : replayCommunity)
+                  ? (curMdCommunity ?? (curStreet === "preflop" ? [] : replayCommunity))
                   : replayCommunity;
                 const displayPot = isRewinding
-                  ? 0
+                  ? (curMdPot ?? 0)
                   : (isReplay && savedState?.pot != null ? savedState.pot : pokerPot);
                 const displayStreet = isRewinding
                   ? (curStreet || "preflop")
@@ -966,14 +974,22 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   : (isFreshUnplayedHand ? Math.max(1, replayHandNum - 1) : replayHandNum);
                 const displayDealer = isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex;
 
-                // Update player stacks when rewinding
-                const rewindPlayers = isRewinding && curStacks
-                  ? spectatorPlayers.map((p, i) => ({
-                      ...p,
-                      stack: i === 0 ? (curStacks.a ?? p.stack) : (curStacks.b ?? p.stack),
-                      hasFolded: false,
-                      isEliminated: false,
-                    }))
+                // Update player states when rewinding
+                const rewindPlayers = isRewinding
+                  ? spectatorPlayers.map((p, i) => {
+                      const side = i === 0 ? "a" : "b";
+                      const mdP = curMdPlayers?.[side as "a" | "b"];
+                      const holeCards = rewindHandCards?.[i];
+                      return {
+                        ...p,
+                        stack: mdP?.stack ?? (curStacks?.[side as "a" | "b"] ?? p.stack),
+                        currentBet: mdP?.currentBet ?? 0,
+                        hasFolded: mdP?.hasFolded ?? false,
+                        isAllIn: mdP?.isAllIn ?? false,
+                        isEliminated: (mdP?.stack ?? (curStacks?.[side as "a" | "b"] ?? 1)) <= 0,
+                        holeCards,
+                      };
+                    })
                   : spectatorPlayers;
 
                 // Convert backend showdown format to PokerBoard format (only at final state)
