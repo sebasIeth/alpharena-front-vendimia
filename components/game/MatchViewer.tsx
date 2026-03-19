@@ -1085,7 +1085,15 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     humanPlayerIndex={-1}
                     currentPlayerIndex={isRewinding ? -1 : pokerCurrentPlayerIndex}
                     dealerIndex={displayDealer}
-                    actionHistory={isRewinding ? [] : pokerActionHistory}
+                    actionHistory={isRewinding ? (() => {
+                      // Build a mini action history with just the last action at the current replay step
+                      if (!curMd?.pokerAction) return [];
+                      const actionType = typeof curMd.pokerAction === "string" ? curMd.pokerAction : curMd.pokerAction;
+                      const amount = curMd.pokerAmount;
+                      const side = curMove?.side;
+                      const playerIndex = side === "a" ? 0 : side === "b" ? 1 : 0;
+                      return [{ type: actionType, amount, playerIndex, street: curStreet || "preflop" }];
+                    })() : pokerActionHistory}
                     showdownResult={convertedShowdown}
                     matchResult={pokerMatchResult}
                     turnSecondsLeft={isRewinding ? null : turnSecondsLeft}

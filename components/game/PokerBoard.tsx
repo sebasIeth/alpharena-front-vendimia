@@ -170,6 +170,18 @@ interface PokerBoardProps {
   turnSecondsLeft?: number | null;
 }
 
+/* ── Last action display helpers ─────────────────── */
+const ACTION_DISPLAY: Record<string, { label: string; color: string; bg: string }> = {
+  fold:    { label: "Fold",    color: "text-gray-300",  bg: "bg-gray-500/30" },
+  check:   { label: "Check",   color: "text-green-300", bg: "bg-green-500/20" },
+  call:    { label: "Call",    color: "text-blue-300",  bg: "bg-blue-500/20" },
+  bet:     { label: "Bet",     color: "text-yellow-300", bg: "bg-yellow-500/20" },
+  raise:   { label: "Raise",   color: "text-yellow-300", bg: "bg-yellow-500/20" },
+  "all-in": { label: "ALL-IN", color: "text-red-300",   bg: "bg-red-500/25" },
+  allin:   { label: "ALL-IN",  color: "text-red-300",   bg: "bg-red-500/25" },
+  all_in:  { label: "ALL-IN",  color: "text-red-300",   bg: "bg-red-500/25" },
+};
+
 /* ── Action Bar ───────────────────────────────────── */
 function ActionBar({
   legalActions,
@@ -260,6 +272,7 @@ function PlayerSeat({
   hideCards,
   forceCardBacks,
   turnSecondsLeft,
+  lastAction,
 }: {
   player: PlayerViewInfo;
   position: { x: number; y: number };
@@ -271,6 +284,7 @@ function PlayerSeat({
   hideCards?: boolean;
   forceCardBacks?: boolean;
   turnSecondsLeft?: number | null;
+  lastAction?: { type: string; amount?: number } | null;
 }) {
   const isTop = position.y < 45;
 
@@ -323,7 +337,8 @@ function PlayerSeat({
         px-1 sm:px-2 py-0.5 sm:py-1 rounded sm:rounded-lg backdrop-blur-sm text-center transition-all
         ${isShowdown && isWinner ? "bg-amber-400/15 poker-winner-glow ring-2 ring-amber-400/60" : ""}
         ${isActive && !isShowdown ? "bg-black/60 ring-2 ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)] poker-seat-active" : ""}
-        ${!isActive && !(isShowdown && isWinner) ? "bg-black/50" : ""}
+        ${lastAction && !isActive && !(isShowdown && isWinner) ? "bg-black/55 ring-1 ring-yellow-400/30" : ""}
+        ${!isActive && !lastAction && !(isShowdown && isWinner) ? "bg-black/50" : ""}
         ${player.hasFolded && !player.isEliminated ? "opacity-40" : ""}
         ${player.isEliminated && !forceCardBacks ? "opacity-20 grayscale" : ""}
         ${player.isEliminated && forceCardBacks ? "opacity-60" : ""}
@@ -341,6 +356,18 @@ function PlayerSeat({
         )}
       </div>
       <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack.toLocaleString()}</div>
+      {lastAction && !isActive && (
+        (() => {
+          const actionKey = lastAction.type.toLowerCase();
+          const display = ACTION_DISPLAY[actionKey] || { label: lastAction.type, color: "text-white/70", bg: "bg-white/10" };
+          const amountStr = lastAction.amount ? ` ${lastAction.amount.toLocaleString()}` : "";
+          return (
+            <div className={`${display.bg} ${display.color} rounded-full px-1.5 py-0 text-[7px] sm:text-[9px] font-bold font-mono uppercase tracking-wide poker-action-pop`}>
+              {display.label}{amountStr}
+            </div>
+          );
+        })()
+      )}
       {isActive && turnSecondsLeft != null && (
         <div className={`text-[8px] sm:text-[10px] font-mono font-bold tabular-nums ${
           turnSecondsLeft <= 5 ? "text-red-400 animate-pulse" : turnSecondsLeft <= 10 ? "text-amber-400" : "text-white/60"
@@ -462,6 +489,17 @@ export default function PokerBoard({
   const seats = getSeatsForPlayerCount(players.length);
   const cardSize = getCardSize(players.length, isMobile);
 
+  // Derive last action per player from actionHistory
+  const lastActionByPlayer = React.useMemo(() => {
+    const map: Record<number, { type: string; amount?: number }> = {};
+    if (!actionHistory || actionHistory.length === 0) return map;
+    const lastEntry = actionHistory[actionHistory.length - 1];
+    if (lastEntry) {
+      map[lastEntry.playerIndex] = { type: lastEntry.type, amount: lastEntry.amount };
+    }
+    return map;
+  }, [actionHistory]);
+
   return (
     <div className="rounded-2xl bg-gradient-to-b from-[#0f2818] to-[#0a1f12] shadow-2xl">
       {/* Header */}
@@ -565,6 +603,7 @@ export default function PokerBoard({
                 hideCards={player.isHuman}
                 forceCardBacks={isMatchOver}
                 turnSecondsLeft={idx === currentPlayerIndex ? turnSecondsLeft : undefined}
+                lastAction={!isMatchOver && !isShowdown ? lastActionByPlayer[idx] : undefined}
               />
             );
           })}
