@@ -95,8 +95,7 @@ const SELECTED_SQ = "rgba(255, 255, 0, 0.5)";
 const CHECK_SQ = "rgba(239, 68, 68, 0.55)";
 const LEGAL_DOT = "rgba(91, 79, 207, 0.5)";
 const LEGAL_CAPTURE = "rgba(91, 79, 207, 0.35)";
-const LAST_MOVE_SQ = "rgba(255, 255, 0, 0.4)";
-const ARROW_COLOR = "rgba(0, 150, 50, 0.7)";
+const LAST_MOVE_SQ = "rgba(100, 200, 80, 0.45)";
 
 export default function ChessBoard({
   board,
@@ -347,61 +346,6 @@ export default function ChessBoard({
               )}
             </div>
 
-            {/* SVG Arrow overlay for last move */}
-            {lastMoveSquares && (() => {
-              const [fromR, fromC] = squareToCoord(lastMoveSquares.from);
-              const [toR, toC] = squareToCoord(lastMoveSquares.to);
-              // Convert to visual position (account for flipping)
-              const visualFromR = flipped ? 7 - fromR : fromR;
-              const visualFromC = flipped ? 7 - fromC : fromC;
-              const visualToR = flipped ? 7 - toR : toR;
-              const visualToC = flipped ? 7 - toC : toC;
-              // Center of each square in percentage
-              const x1 = (visualFromC + 0.5) * 12.5;
-              const y1 = (visualFromR + 0.5) * 12.5;
-              const x2 = (visualToC + 0.5) * 12.5;
-              const y2 = (visualToR + 0.5) * 12.5;
-              // Shorten the arrow so it doesn't overlap piece centers too much
-              const dx = x2 - x1;
-              const dy = y2 - y1;
-              const len = Math.sqrt(dx * dx + dy * dy);
-              const shortenFrom = 2;
-              const shortenTo = 3.5;
-              const sx1 = x1 + (dx / len) * shortenFrom;
-              const sy1 = y1 + (dy / len) * shortenFrom;
-              const sx2 = x2 - (dx / len) * shortenTo;
-              const sy2 = y2 - (dy / len) * shortenTo;
-
-              return (
-                <svg
-                  key={lastMove}
-                  className="absolute inset-0 w-full h-full pointer-events-none rounded-md"
-                  viewBox="0 0 100 100"
-                  style={{ animation: "chessArrowFadeIn 0.3s ease-out" }}
-                >
-                  <defs>
-                    <marker
-                      id="arrowhead"
-                      markerWidth="3.5"
-                      markerHeight="3"
-                      refX="3"
-                      refY="1.5"
-                      orient="auto"
-                    >
-                      <polygon points="0 0, 3.5 1.5, 0 3" fill={ARROW_COLOR} />
-                    </marker>
-                  </defs>
-                  <line
-                    x1={sx1} y1={sy1}
-                    x2={sx2} y2={sy2}
-                    stroke={ARROW_COLOR}
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    markerEnd="url(#arrowhead)"
-                  />
-                </svg>
-              );
-            })()}
           </div>
 
           {/* Row labels (right) */}
