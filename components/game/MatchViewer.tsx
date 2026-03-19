@@ -511,12 +511,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         // Archive hand result (fold or showdown) — always has hole cards for rewind
         if (data.pokerHandResult) {
           const hr = data.pokerHandResult as any;
-          if (hr.handNumber && hr.holeCards) {
-            const hcMap: Record<number, PokerCard[]> = {};
-            if (hr.holeCards.a?.length) hcMap[0] = hr.holeCards.a;
-            if (hr.holeCards.b?.length) hcMap[1] = hr.holeCards.b;
-            if (Object.keys(hcMap).length > 0) {
-              setPokerHandCardsArchive(prev => ({ ...prev, [hr.handNumber]: hcMap }));
+          if (hr.handNumber) {
+            if (hr.holeCards) {
+              const hcMap: Record<number, PokerCard[]> = {};
+              if (hr.holeCards.a?.length) hcMap[0] = hr.holeCards.a;
+              if (hr.holeCards.b?.length) hcMap[1] = hr.holeCards.b;
+              if (Object.keys(hcMap).length > 0) {
+                setPokerHandCardsArchive(prev => ({ ...prev, [hr.handNumber]: hcMap }));
+              }
+            }
+            if (Array.isArray(hr.communityCards) && hr.communityCards.length > 0) {
+              setPokerHandCommunityArchive(prev => ({ ...prev, [hr.handNumber]: hr.communityCards }));
             }
           }
         }
@@ -532,8 +537,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             setPokerHoleCards(hcMap);
             // Archive hole cards for this hand so we can reveal them on rewind
             const handNum = (data.pokerHandNumber as number) ?? pokerHandNumber;
-            if (handNum > 0 && Object.keys(hcMap).length > 0) {
-              setPokerHandCardsArchive(prev => ({ ...prev, [handNum]: hcMap }));
+            if (handNum > 0) {
+              if (Object.keys(hcMap).length > 0) {
+                setPokerHandCardsArchive(prev => ({ ...prev, [handNum]: hcMap }));
+              }
+              // Also archive community cards for this hand
+              if (Array.isArray(data.pokerCommunityCards) && (data.pokerCommunityCards as PokerCard[]).length > 0) {
+                setPokerHandCommunityArchive(prev => ({ ...prev, [handNum]: data.pokerCommunityCards as PokerCard[] }));
+              }
             }
           }
         }
@@ -664,6 +675,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
                     if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
                     if (Object.keys(hcMap).length > 0) next[h.handNumber] = hcMap;
+                  }
+                  return next;
+                });
+                setPokerHandCommunityArchive(prev => {
+                  const next = { ...prev };
+                  for (const h of histories) {
+                    if (!h.handNumber || !Array.isArray(h.communityCards)) continue;
+                    if (h.communityCards.length > 0) next[h.handNumber] = h.communityCards;
                   }
                   return next;
                 });
