@@ -1151,7 +1151,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     actionHistory={isRewinding ? (() => {
                       // Build a mini action history with just the last action at the current replay step
                       if (!curMd?.pokerAction) return [];
-                      const actionType = typeof curMd.pokerAction === "string" ? curMd.pokerAction : curMd.pokerAction;
+                      const rawAct = curMd.pokerAction;
+                      const actionType = typeof rawAct === "string" ? rawAct : (rawAct?.type || String(rawAct));
                       const amount = curMd.pokerAmount;
                       const side = curMove?.side;
                       const playerIndex = side === "a" ? 0 : side === "b" ? 1 : 0;
@@ -1531,7 +1532,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   const isNewStreet = isPoker && !isNewHand && curStreet && curStreet !== prevStreet;
 
                   // Poker action styling
-                  const actionType = isPoker ? (md.pokerAction || md.action || "").toString().toLowerCase() : "";
+                  const rawAction = isPoker ? (md.pokerAction || md.action || "") : "";
+                  const actionType = (typeof rawAction === "string" ? rawAction : (rawAction as any)?.type || String(rawAction)).toLowerCase();
                   const isFold = actionType === "fold";
                   const isAllIn = actionType === "all-in" || actionType === "allin" || actionType === "all_in";
                   const isRaise = actionType === "raise" || actionType === "bet";

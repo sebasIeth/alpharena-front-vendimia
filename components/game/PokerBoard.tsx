@@ -358,8 +358,9 @@ function PlayerSeat({
       <div className={`${cardSize.text} text-green-300 font-mono`}>{player.stack.toLocaleString()}</div>
       {lastAction && !isActive && (
         (() => {
-          const actionKey = lastAction.type.toLowerCase();
-          const display = ACTION_DISPLAY[actionKey] || { label: lastAction.type, color: "text-white/70", bg: "bg-white/10" };
+          const rawType = lastAction.type;
+          const actionKey = (typeof rawType === "string" ? rawType : (rawType as any)?.type || String(rawType)).toLowerCase();
+          const display = ACTION_DISPLAY[actionKey] || { label: actionKey, color: "text-white/70", bg: "bg-white/10" };
           const amountStr = lastAction.amount ? ` ${lastAction.amount.toLocaleString()}` : "";
           return (
             <div className={`${display.bg} ${display.color} rounded-full px-1.5 py-0 text-[7px] sm:text-[9px] font-bold font-mono uppercase tracking-wide poker-action-pop`}>
