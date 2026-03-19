@@ -104,7 +104,7 @@ function StreetBadge({ street }: { street: string }) {
     showdown: "bg-purple-400/20 text-purple-300",
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wide ${cls[street] ?? "bg-white/10 text-white/60"}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wide poker-action-pop ${cls[street] ?? "bg-white/10 text-white/60"}`}>
       {label[street] ?? street}
     </span>
   );
@@ -279,8 +279,8 @@ function PlayerSeat({
             return (
               <div
                 key={i}
-                style={{ width: cardSize.w, height: cardSize.h }}
-                className="rounded-md bg-white shadow-md ring-1 ring-black/5 relative flex items-center justify-center select-none"
+                style={{ width: cardSize.w, height: cardSize.h, animationDelay: `${i * 0.1}s` }}
+                className="rounded-md bg-white shadow-md ring-1 ring-black/5 relative flex items-center justify-center select-none poker-flip-in poker-card-lift"
               >
                 <div className="absolute top-[1px] left-[2px] flex flex-col items-center leading-none">
                   <span className={`text-[7px] font-bold ${clr}`}>{c.rank}</span>
@@ -497,13 +497,13 @@ export default function PokerBoard({
             <div className="flex items-center justify-center gap-1">
               {filled.map((c, i) =>
                 c
-                  ? <CardFace key={`cc-${i}`} card={c} size="cc" />
+                  ? <div key={`cc-${i}`} className={`poker-community-deal poker-card-lift poker-deal-delay-${i + 1}`}><CardFace card={c} size="cc" /></div>
                   : <div key={`empty-${i}`} className="w-[24px] h-[34px] sm:w-[40px] sm:h-[56px] md:w-[50px] md:h-[70px] rounded border border-dashed border-white/15 flex-shrink-0" />
               )}
             </div>
-            <div className={`flex items-center gap-1 bg-black/40 rounded-full px-1.5 sm:px-2.5 py-0.5 ${pot > 0 ? "poker-pot-pulse" : ""}`}>
+            <div className={`flex items-center gap-1 bg-black/40 rounded-full px-1.5 sm:px-2.5 py-0.5 transition-all duration-300 ${pot > 0 ? "poker-chip-toss" : ""}`}>
               <span className="text-[5px] sm:text-[8px] text-white/50 uppercase tracking-widest font-mono">{t.poker.pot}</span>
-              <span className="text-[8px] sm:text-xs font-bold text-yellow-300 font-mono tabular-nums">{pot}</span>
+              <span className="text-[8px] sm:text-xs font-bold text-yellow-300 font-mono tabular-nums">{pot.toLocaleString()}</span>
             </div>
             {sidePots && sidePots.length > 1 && (
               <div className="flex gap-1.5 flex-wrap justify-center">
@@ -519,7 +519,7 @@ export default function PokerBoard({
           {/* ── Match Over overlay ── */}
           {isMatchOver && matchResult && (
             <div className="absolute inset-[5%] rounded-[50%] z-30 flex items-center justify-center pointer-events-none">
-              <div className="bg-black/70 backdrop-blur-sm rounded-2xl px-6 py-4 text-center shadow-2xl ring-1 ring-white/10 pointer-events-auto max-w-[80%]">
+              <div className="bg-black/70 backdrop-blur-sm rounded-2xl px-6 py-4 text-center shadow-2xl ring-1 ring-white/10 pointer-events-auto max-w-[80%] poker-action-pop">
                 <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-widest font-mono mb-1">Game Over</div>
                 <div className="text-base sm:text-xl font-display font-bold text-amber-300 flex items-center justify-center gap-2">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
@@ -573,9 +573,11 @@ export default function PokerBoard({
               <div className="flex justify-center gap-1.5 sm:gap-2">
                 {humanPlayer.holeCards && humanPlayer.holeCards.length === 2
                   ? humanPlayer.holeCards.map((c, i) => (
-                      <CardFace key={i} card={c} size={isMobile ? "sm" : "md"} highlight={isShowdown && humanIsWinner} />
+                      <div key={i} className="poker-deal-in poker-card-lift" style={{ animationDelay: `${i * 0.15}s` }}>
+                        <CardFace card={c} size={isMobile ? "sm" : "md"} highlight={isShowdown && humanIsWinner} />
+                      </div>
                     ))
-                  : <><CardBack size={isMobile ? "sm" : "md"} /><CardBack size={isMobile ? "sm" : "md"} /></>
+                  : <><div className="poker-deal-in"><CardBack size={isMobile ? "sm" : "md"} /></div><div className="poker-deal-in poker-deal-delay-1"><CardBack size={isMobile ? "sm" : "md"} /></div></>
                 }
               </div>
             )}
