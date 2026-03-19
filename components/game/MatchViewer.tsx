@@ -242,7 +242,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
   // Replay: can we replay this match?
   const canReplay = match.status === "completed" && moves.length > 0
-    && moves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0);
+    && (match.gameType === "poker" || moves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0));
 
   // Replay: the board to display (override when stepping through moves)
   const displayBoard = useMemo(() => {
@@ -335,9 +335,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           } catch { /* ignore */ }
         }
 
-        // Auto-start replay for completed matches with board data
+        // Auto-start replay for completed matches
         if (match.status === "completed" && fetchedMoves.length > 0
-            && fetchedMoves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0)) {
+            && (match.gameType === "poker" || fetchedMoves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0))) {
           setReplayStep(0);
           setIsAutoPlaying(true);
         }
@@ -1189,10 +1189,20 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-sm"
-                        style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
-                      />
+                      {match.gameType === "chess" ? (
+                        <div
+                          className={`w-3 h-3 rounded-sm border ${
+                            side === "a"
+                              ? "bg-gray-800 border-gray-600"
+                              : "bg-white border-gray-300"
+                          }`}
+                        />
+                      ) : (
+                        <div
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
+                        />
+                      )}
                       <div>
                         <div className="text-sm font-medium text-arena-text">
                           {agent.agentName}
@@ -1296,13 +1306,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       <span className="text-arena-muted font-mono text-[10px] w-5 text-right flex-shrink-0">
                         #{move.moveNumber ?? move.turnNumber ?? idx + 1}
                       </span>
-                      <div
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
-                      />
+                      {match.gameType === "chess" ? (
+                        <div
+                          className={`w-2 h-2 rounded-full flex-shrink-0 border ${
+                            side === "a" ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"
+                          }`}
+                        />
+                      ) : (
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: SIDE_COLORS[side] || "#8B5CF6" }}
+                        />
+                      )}
                       <span
                         className="text-xs font-medium flex-shrink-0"
-                        style={{ color: SIDE_COLORS[side] || "#8B5CF6" }}
+                        style={{ color: match.gameType === "chess" ? (side === "a" ? "#1f2937" : "#6b7280") : (SIDE_COLORS[side] || "#8B5CF6") }}
                       >
                         {info?.name || "Agent"}
                       </span>
@@ -1337,7 +1355,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     className="h-full transition-all duration-500"
                     style={{
                       width: `${bettingPool.pool.percentA}%`,
-                      backgroundColor: SIDE_COLORS.a,
+                      backgroundColor: match.gameType === "chess" ? "#1f2937" : SIDE_COLORS.a,
                     }}
                   />
                 )}
@@ -1346,7 +1364,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     className="h-full transition-all duration-500"
                     style={{
                       width: `${bettingPool.pool.percentB}%`,
-                      backgroundColor: SIDE_COLORS.b,
+                      backgroundColor: match.gameType === "chess" ? "#e5e7eb" : SIDE_COLORS.b,
                     }}
                   />
                 )}
@@ -1356,7 +1374,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.a }} />
+                    {match.gameType === "chess" ? (
+                      <div className="w-2 h-2 rounded-full bg-gray-800 border border-gray-600" />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.a }} />
+                    )}
                     <span className="text-arena-text truncate max-w-[100px]">{agents[0]?.agentName || "Agent A"}</span>
                   </div>
                   <span className="font-mono text-arena-muted">
@@ -1365,7 +1387,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.b }} />
+                    {match.gameType === "chess" ? (
+                      <div className="w-2 h-2 rounded-full bg-white border border-gray-300" />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SIDE_COLORS.b }} />
+                    )}
                     <span className="text-arena-text truncate max-w-[100px]">{agents[1]?.agentName || "Agent B"}</span>
                   </div>
                   <span className="font-mono text-arena-muted">

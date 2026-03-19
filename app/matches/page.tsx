@@ -123,16 +123,18 @@ function AgentColumn({
   gradient,
   isWinner,
   isDraw,
+  chessPiece,
 }: {
   agent: MatchAgent;
   color: string;
   gradient: string;
   isWinner: boolean;
   isDraw: boolean;
+  chessPiece?: "white" | "black";
 }) {
   return (
     <div className="flex-1 flex flex-col items-center min-w-0">
-      {/* Avatar with optional crown */}
+      {/* Avatar with optional crown and chess piece indicator */}
       <div className="relative mb-1.5">
         <AgentAvatar
           name={agent.agentName}
@@ -145,6 +147,18 @@ function AgentColumn({
           <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-arena-accent flex items-center justify-center shadow-sm">
             <IconCrown className="w-3 h-3 text-white" />
           </div>
+        )}
+        {chessPiece && (
+          <span
+            className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] ${
+              chessPiece === "black"
+                ? "bg-gray-800 border-white text-white"
+                : "bg-white border-gray-300 text-gray-800"
+            }`}
+            title={chessPiece === "black" ? "Black" : "White"}
+          >
+            {chessPiece === "black" ? "\u265F" : "\u2659"}
+          </span>
         )}
       </div>
 
@@ -428,6 +442,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
               gradient={PLAYER_GRADIENTS[0]}
               isWinner={winnerAgent?.agentId === agents[0].agentId}
               isDraw={isDraw}
+              chessPiece={match.gameType === "chess" ? "black" : undefined}
             />
 
             {/* VS Divider */}
@@ -451,6 +466,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
               gradient={PLAYER_GRADIENTS[1]}
               isWinner={winnerAgent?.agentId === agents[1].agentId}
               isDraw={isDraw}
+              chessPiece={match.gameType === "chess" ? "white" : undefined}
             />
           </div>
         ) : (

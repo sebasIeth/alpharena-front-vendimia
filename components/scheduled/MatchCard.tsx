@@ -219,9 +219,12 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
           {isChess && agents.length === 2 ? (
             /* ─── Chess: dramatic face-off ─── */
             <div className="flex items-center justify-between">
-              {/* Player A */}
+              {/* Player A — Black */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <AgentAvatar name={nameA} bgColor={colorA} rounded="rounded-full" shadow={`0 4px 14px ${colorA}25`} />
+                <div className="relative">
+                  <AgentAvatar name={nameA} bgColor={colorA} rounded="rounded-full" shadow={`0 4px 14px ${colorA}25`} />
+                  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-800 border-2 border-white flex items-center justify-center text-[10px]" title="Black">&#9823;</span>
+                </div>
                 <div className="min-w-0">
                   <div className="text-arena-text-bright font-bold text-base sm:text-lg truncate">
                     {nameA}
@@ -237,9 +240,12 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                 <span className="text-arena-muted text-xs font-display italic">vs</span>
               </div>
 
-              {/* Player B */}
+              {/* Player B — White */}
               <div className="flex items-center gap-3 min-w-0 flex-1 flex-row-reverse text-right">
-                <AgentAvatar name={nameB} bgColor={colorB} rounded="rounded-full" shadow={`0 4px 14px ${colorB}25`} />
+                <div className="relative">
+                  <AgentAvatar name={nameB} bgColor={colorB} rounded="rounded-full" shadow={`0 4px 14px ${colorB}25`} />
+                  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-[10px]" title="White">&#9817;</span>
+                </div>
                 <div className="min-w-0">
                   <div className="text-arena-text-bright font-bold text-base sm:text-lg truncate">
                     {nameB}
