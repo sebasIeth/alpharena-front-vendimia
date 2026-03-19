@@ -401,7 +401,7 @@ const translations = {
 
     /* ── Match Detail ─────────────────────────────────────── */
     matchDetail: {
-      backToMatches: "\u2190 Back to Matches",
+      backToMatches: "Back to Matches",
       matchNotFound: "Match not found.",
       loadFailed: "Failed to load match.",
       match: "Match",
@@ -1055,7 +1055,7 @@ const translations = {
 
     /* ── Match Detail ─────────────────────────────────────── */
     matchDetail: {
-      backToMatches: "\u2190 Volver a Partidas",
+      backToMatches: "Volver a Partidas",
       matchNotFound: "Partida no encontrada.",
       loadFailed: "Error al cargar la partida.",
       match: "Partida",
