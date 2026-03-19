@@ -15,6 +15,8 @@ interface ChessBoardProps {
   isCheck?: boolean;
   /** Callback when a move is made */
   onMove?: (move: string) => void;
+  /** Last move UCI string for arrow/highlight, e.g. "e2e4" */
+  lastMove?: string;
 }
 
 const GRID = 8;
@@ -93,6 +95,8 @@ const SELECTED_SQ = "rgba(255, 255, 0, 0.5)";
 const CHECK_SQ = "rgba(239, 68, 68, 0.55)";
 const LEGAL_DOT = "rgba(91, 79, 207, 0.5)";
 const LEGAL_CAPTURE = "rgba(91, 79, 207, 0.35)";
+const LAST_MOVE_SQ = "rgba(255, 255, 0, 0.4)";
+const ARROW_COLOR = "rgba(0, 150, 50, 0.7)";
 
 export default function ChessBoard({
   board,
@@ -101,10 +105,17 @@ export default function ChessBoard({
   isMyTurn,
   isCheck,
   onMove,
+  lastMove,
 }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
 
   const flipped = mySide === "b";
+
+  // Parse last move for highlighting
+  const lastMoveSquares = useMemo(() => {
+    if (!lastMove || lastMove.length < 4) return null;
+    return { from: lastMove.slice(0, 2), to: lastMove.slice(2, 4) };
+  }, [lastMove]);
 
   // Build lookup: from-square → list of destination suffixes (e.g. "e4", "e8q")
   const movesFromSquare = useMemo(() => {
@@ -261,76 +272,136 @@ export default function ChessBoard({
             ))}
           </div>
 
-          {/* Board grid */}
-          <div
-            className="grid gap-0 rounded-md overflow-hidden flex-1"
-            style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)` }}
-          >
-            {rows.map((r) =>
-              cols.map((c) => {
-                const sq = coordToSquare(r, c);
-                const piece = board[r]?.[c] ?? 0;
-                const isLight = (r + c) % 2 === 0;
-                const isSelected = sq === selectedSquare;
-                const isDestination = destinations.has(sq);
-                const isKingInCheck = sq === myKingSquare;
-                const hasPiece = piece !== 0;
-                const clickable =
-                  isMyTurn &&
-                  onMove &&
-                  ((hasPiece && isOwnPiece(piece, mySide) && (permissive || movesFromSquare.has(sq))) ||
-                    (selectedSquare && (permissive || isDestination)));
+          {/* Board grid + arrow overlay */}
+          <div className="relative flex-1">
+            <div
+              className="grid gap-0 rounded-md overflow-hidden"
+              style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)` }}
+            >
+              {rows.map((r) =>
+                cols.map((c) => {
+                  const sq = coordToSquare(r, c);
+                  const piece = board[r]?.[c] ?? 0;
+                  const isLight = (r + c) % 2 === 0;
+                  const isSelected = sq === selectedSquare;
+                  const isDestination = destinations.has(sq);
+                  const isKingInCheck = sq === myKingSquare;
+                  const hasPiece = piece !== 0;
+                  const clickable =
+                    isMyTurn &&
+                    onMove &&
+                    ((hasPiece && isOwnPiece(piece, mySide) && (permissive || movesFromSquare.has(sq))) ||
+                      (selectedSquare && (permissive || isDestination)));
 
-                let bgColor = isLight ? LIGHT_SQ : DARK_SQ;
-                if (isKingInCheck) bgColor = CHECK_SQ;
-                if (isSelected) bgColor = SELECTED_SQ;
+                  const isLastMoveSquare = lastMoveSquares && (sq === lastMoveSquares.from || sq === lastMoveSquares.to);
+                  let bgColor = isLight ? LIGHT_SQ : DARK_SQ;
+                  if (isLastMoveSquare) bgColor = LAST_MOVE_SQ;
+                  if (isKingInCheck) bgColor = CHECK_SQ;
+                  if (isSelected) bgColor = SELECTED_SQ;
 
-                return (
-                  <button
-                    key={sq}
-                    type="button"
-                    onClick={() => handleClick(r, c)}
-                    className="aspect-square flex items-center justify-center relative"
-                    style={{
-                      backgroundColor: bgColor,
-                      cursor: clickable ? "pointer" : "default",
-                    }}
-                  >
-                    {/* Legal move dot (empty square) */}
-                    {isDestination && isMyTurn && !hasPiece && (
-                      <div
-                        className="absolute rounded-full"
-                        style={{
-                          width: "28%",
-                          height: "28%",
-                          backgroundColor: LEGAL_DOT,
-                        }}
-                      />
-                    )}
-                    {/* Legal capture ring */}
-                    {isDestination && isMyTurn && hasPiece && (
-                      <div
-                        className="absolute inset-[4%] rounded-full border-[3px]"
-                        style={{ borderColor: LEGAL_CAPTURE }}
-                      />
-                    )}
-                    {/* Piece */}
-                    {hasPiece && (
-                      <span
-                        className="text-[clamp(1.5rem,4vw,2.5rem)] leading-none select-none"
-                        style={{
-                          filter: isWhitePiece(piece)
-                            ? "drop-shadow(0 1px 1px rgba(0,0,0,0.3))"
-                            : "drop-shadow(0 1px 1px rgba(0,0,0,0.5))",
-                        }}
-                      >
-                        {PIECE_CHAR[piece] || ""}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
+                  return (
+                    <button
+                      key={sq}
+                      type="button"
+                      onClick={() => handleClick(r, c)}
+                      className="aspect-square flex items-center justify-center relative"
+                      style={{
+                        backgroundColor: bgColor,
+                        cursor: clickable ? "pointer" : "default",
+                      }}
+                    >
+                      {/* Legal move dot (empty square) */}
+                      {isDestination && isMyTurn && !hasPiece && (
+                        <div
+                          className="absolute rounded-full"
+                          style={{
+                            width: "28%",
+                            height: "28%",
+                            backgroundColor: LEGAL_DOT,
+                          }}
+                        />
+                      )}
+                      {/* Legal capture ring */}
+                      {isDestination && isMyTurn && hasPiece && (
+                        <div
+                          className="absolute inset-[4%] rounded-full border-[3px]"
+                          style={{ borderColor: LEGAL_CAPTURE }}
+                        />
+                      )}
+                      {/* Piece */}
+                      {hasPiece && (
+                        <span
+                          className="text-[clamp(1.5rem,4vw,2.5rem)] leading-none select-none"
+                          style={{
+                            filter: isWhitePiece(piece)
+                              ? "drop-shadow(0 1px 1px rgba(0,0,0,0.3))"
+                              : "drop-shadow(0 1px 1px rgba(0,0,0,0.5))",
+                          }}
+                        >
+                          {PIECE_CHAR[piece] || ""}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* SVG Arrow overlay for last move */}
+            {lastMoveSquares && (() => {
+              const [fromR, fromC] = squareToCoord(lastMoveSquares.from);
+              const [toR, toC] = squareToCoord(lastMoveSquares.to);
+              // Convert to visual position (account for flipping)
+              const visualFromR = flipped ? 7 - fromR : fromR;
+              const visualFromC = flipped ? 7 - fromC : fromC;
+              const visualToR = flipped ? 7 - toR : toR;
+              const visualToC = flipped ? 7 - toC : toC;
+              // Center of each square in percentage
+              const x1 = (visualFromC + 0.5) * 12.5;
+              const y1 = (visualFromR + 0.5) * 12.5;
+              const x2 = (visualToC + 0.5) * 12.5;
+              const y2 = (visualToR + 0.5) * 12.5;
+              // Shorten the arrow so it doesn't overlap piece centers too much
+              const dx = x2 - x1;
+              const dy = y2 - y1;
+              const len = Math.sqrt(dx * dx + dy * dy);
+              const shortenFrom = 2;
+              const shortenTo = 3.5;
+              const sx1 = x1 + (dx / len) * shortenFrom;
+              const sy1 = y1 + (dy / len) * shortenFrom;
+              const sx2 = x2 - (dx / len) * shortenTo;
+              const sy2 = y2 - (dy / len) * shortenTo;
+
+              return (
+                <svg
+                  key={lastMove}
+                  className="absolute inset-0 w-full h-full pointer-events-none rounded-md"
+                  viewBox="0 0 100 100"
+                  style={{ animation: "chessArrowFadeIn 0.3s ease-out" }}
+                >
+                  <defs>
+                    <marker
+                      id="arrowhead"
+                      markerWidth="3.5"
+                      markerHeight="3"
+                      refX="3"
+                      refY="1.5"
+                      orient="auto"
+                    >
+                      <polygon points="0 0, 3.5 1.5, 0 3" fill={ARROW_COLOR} />
+                    </marker>
+                  </defs>
+                  <line
+                    x1={sx1} y1={sy1}
+                    x2={sx2} y2={sy2}
+                    stroke={ARROW_COLOR}
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    markerEnd="url(#arrowhead)"
+                  />
+                </svg>
+              );
+            })()}
           </div>
 
           {/* Row labels (right) */}

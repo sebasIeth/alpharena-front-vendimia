@@ -907,12 +907,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               </div>
             </div>
             {match.gameType === "chess" ? (
-              <ChessBoard
-                board={displayBoard as number[][] | null}
-                legalMoves={[]}
-                mySide={null}
-                isMyTurn={false}
-              />
+              (() => {
+                // Get the last chess move for arrow/highlight
+                const chessStepIdx = (!isLiveMode && replayStep >= 0) ? replayStep : moves.length - 1;
+                const lastChessMove = chessStepIdx >= 0 ? moves[chessStepIdx] : null;
+                const lastUci = lastChessMove ? ((lastChessMove.moveData as any)?.chessMove || (lastChessMove.moveData as any)?.move || (lastChessMove.moveData as any)?.uciMove) : null;
+                return (
+                  <ChessBoard
+                    board={displayBoard as number[][] | null}
+                    legalMoves={[]}
+                    mySide={null}
+                    isMyTurn={false}
+                    lastMove={typeof lastUci === "string" && lastUci.length >= 4 ? lastUci : undefined}
+                  />
+                );
+              })()
             ) : match.gameType === "poker" ? (
               (() => {
                 const isReplay = match.status === "completed";
