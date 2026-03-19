@@ -932,23 +932,53 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       holeCards: undefined as PokerCard[] | undefined,
                     }));
 
+                // Determine if we're rewinding (not at the final state)
+                const isAtFinalState = replayStep < 0 || replayStep >= moves.length - 1;
+                const isRewinding = isReplay && !isAtFinalState && replayStep >= 0;
+
+                // When rewinding, reconstruct state from the current move's data
+                const curMove = isRewinding ? moves[replayStep] : null;
+                const curMd = curMove?.moveData as any;
+                const curHandNum = curMd?.pokerHandNumber;
+                const curStreet = curMd?.pokerStreet;
+                const curStacks = curMove?.scoreAfter as { a?: number; b?: number } | undefined;
+
                 // For replays, prefer saved state; detect fresh unplayed hand (match ended between hands)
                 const replayCommunity = isReplay && savedState?.communityCards ? savedState.communityCards : pokerCommunityCards;
                 const replayStreet = isReplay && savedState?.street ? savedState.street : pokerStreet;
                 const replayHandNum = isReplay && savedState?.handNumber != null ? savedState.handNumber : pokerHandNumber;
-                const isFreshUnplayedHand = isReplay &&
+                const isFreshUnplayedHand = isReplay && !isRewinding &&
                   (replayStreet === "preflop" || !replayStreet) &&
                   (!replayCommunity || replayCommunity.length === 0);
 
-                const displayCommunity = replayCommunity;
-                const displayPot = isReplay && savedState?.pot != null ? savedState.pot : pokerPot;
-                const displayStreet = isFreshUnplayedHand ? "showdown" : replayStreet;
-                const displayHandNumber = isFreshUnplayedHand ? Math.max(1, replayHandNum - 1) : replayHandNum;
+                // When rewinding, show empty community for preflop, otherwise use saved state
+                const displayCommunity = isRewinding
+                  ? (curStreet === "preflop" ? [] : replayCommunity)
+                  : replayCommunity;
+                const displayPot = isRewinding
+                  ? 0
+                  : (isReplay && savedState?.pot != null ? savedState.pot : pokerPot);
+                const displayStreet = isRewinding
+                  ? (curStreet || "preflop")
+                  : (isFreshUnplayedHand ? "showdown" : replayStreet);
+                const displayHandNumber = isRewinding
+                  ? (curHandNum ?? 1)
+                  : (isFreshUnplayedHand ? Math.max(1, replayHandNum - 1) : replayHandNum);
                 const displayDealer = isReplay && savedState?.dealerIndex != null ? savedState.dealerIndex : pokerDealerIndex;
 
-                // Convert backend showdown format to PokerBoard format
+                // Update player stacks when rewinding
+                const rewindPlayers = isRewinding && curStacks
+                  ? spectatorPlayers.map((p, i) => ({
+                      ...p,
+                      stack: i === 0 ? (curStacks.a ?? p.stack) : (curStacks.b ?? p.stack),
+                      hasFolded: false,
+                      isEliminated: false,
+                    }))
+                  : spectatorPlayers;
+
+                // Convert backend showdown format to PokerBoard format (only at final state)
                 let convertedShowdown = null;
-                if (pokerShowdownResult) {
+                if (pokerShowdownResult && !isRewinding) {
                   const sr = pokerShowdownResult;
                   const winnerIdx = sr.winnerSide === "a" ? 0 : 1;
                   const loserIdx = winnerIdx === 0 ? 1 : 0;
@@ -962,8 +992,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   };
                 }
 
-                // Build matchResult for completed matches
-                const pokerMatchResult = match.status === "completed" && match.winnerId
+                // Build matchResult for completed matches (only show at final state)
+                const pokerMatchResult = match.status === "completed" && match.winnerId && !isRewinding
                   ? {
                       winnerName: agents.find(a => a.agentId === match.winnerId)?.agentName
                         ?? (match.winnerId === "a" ? agents[0]?.agentName : match.winnerId === "b" ? agents[1]?.agentName : undefined)
@@ -978,14 +1008,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     pot={displayPot}
                     street={displayStreet}
                     handNumber={displayHandNumber}
-                    players={spectatorPlayers}
+                    players={rewindPlayers}
                     humanPlayerIndex={-1}
-                    currentPlayerIndex={pokerCurrentPlayerIndex}
+                    currentPlayerIndex={isRewinding ? -1 : pokerCurrentPlayerIndex}
                     dealerIndex={displayDealer}
-                    actionHistory={pokerActionHistory}
+                    actionHistory={isRewinding ? [] : pokerActionHistory}
                     showdownResult={convertedShowdown}
                     matchResult={pokerMatchResult}
-                    turnSecondsLeft={turnSecondsLeft}
+                    turnSecondsLeft={isRewinding ? null : turnSecondsLeft}
                   />
                 );
               })()
