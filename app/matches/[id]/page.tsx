@@ -414,7 +414,7 @@ function BettingPanel({ match }: { match: Match }) {
                       value={betAmount}
                       onChange={(e) => setBetAmount(e.target.value)}
                       placeholder="0.00"
-                      className="input-field w-full pr-16 font-mono"
+                      className="w-full px-3 py-2 bg-white border-2 border-arena-border-light rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/50 focus:outline-none focus:border-arena-accent focus:ring-1 focus:ring-arena-accent/30 pr-16 shadow-sm"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-arena-muted font-mono">ALPHA</span>
                   </div>
