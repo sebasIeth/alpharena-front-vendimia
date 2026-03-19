@@ -296,8 +296,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   onMatchUpdateRef.current = onMatchUpdate;
 
   // Replay: can we replay this match?
-  const canReplay = match.status === "completed" && moves.length > 0
-    && (match.gameType === "poker" || moves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0));
+  const canReplay = match.status === "completed" && moves.length > 0;
 
   // Replay: the board to display (override when stepping through moves)
   const displayBoard = useMemo(() => {
@@ -420,8 +419,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
 
         // Auto-start replay for completed matches
-        if (match.status === "completed" && fetchedMoves.length > 0
-            && (match.gameType === "poker" || fetchedMoves.some(m => m.boardStateAfter && m.boardStateAfter.length > 0))) {
+        if (match.status === "completed" && fetchedMoves.length > 0) {
           setReplayStep(0);
           setIsAutoPlaying(true);
         }
