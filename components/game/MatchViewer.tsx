@@ -463,6 +463,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 move: data.move,
                 pokerAction: data.pokerAction,
                 pokerHandNumber: data.pokerHandNumber,
+                pokerStreet: data.pokerStreet,
               } as any,
               boardStateAfter: grid || [],
               scoreAfter: data.score || {},
@@ -482,9 +483,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
         if (data.score) setScore(data.score);
         // Poker-specific (N-player)
-        if (Array.isArray(data.pokerCommunityCards)) setPokerCommunityCards(data.pokerCommunityCards);
-        if (data.pokerPot != null) setPokerPot(data.pokerPot);
-        if (data.pokerStreet) setPokerStreet(data.pokerStreet);
+        // IMPORTANT: handle hand number change BEFORE setting community cards,
+        // so a new hand clears old cards first, then the new ones (if any) get set.
         if (data.pokerHandNumber != null) {
           setPokerHandNumber((prev: number) => {
             if ((data.pokerHandNumber as number) > prev) {
@@ -496,6 +496,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             return data.pokerHandNumber as number;
           });
         }
+        if (Array.isArray(data.pokerCommunityCards)) setPokerCommunityCards(data.pokerCommunityCards);
+        if (data.pokerPot != null) setPokerPot(data.pokerPot);
+        if (data.pokerStreet) setPokerStreet(data.pokerStreet);
         // Archive hand result (fold or showdown) — always has hole cards for rewind
         if (data.pokerHandResult) {
           const hr = data.pokerHandResult as any;
@@ -667,9 +670,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               // Extract poker state from polled match data
               const pk = updated.pokerState as any;
               if (pk && typeof pk === "object") {
-                if (Array.isArray(pk.communityCards)) setPokerCommunityCards(pk.communityCards);
-                if (pk.pot != null) setPokerPot(pk.pot);
-                if (pk.street) setPokerStreet(pk.street);
                 if (pk.handNumber != null) {
                   setPokerHandNumber((prev: number) => {
                     if ((pk.handNumber as number) > prev) {
@@ -681,6 +681,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     return pk.handNumber as number;
                   });
                 }
+                if (Array.isArray(pk.communityCards)) setPokerCommunityCards(pk.communityCards);
+                if (pk.pot != null) setPokerPot(pk.pot);
+                if (pk.street) setPokerStreet(pk.street);
                 // Extract hole cards from polling for showdown display
                 if (pk.showdownResult) {
                   setPokerShowdownResult(pk.showdownResult);
