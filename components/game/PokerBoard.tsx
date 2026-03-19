@@ -63,8 +63,31 @@ function CardFace({ card, size = "md", highlight = false }: { card: PokerCard; s
 function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const dim = { sm: "w-9 h-[52px]", md: "w-[52px] h-[74px]", lg: "w-16 h-[92px]" }[size];
   return (
-    <div className={`${dim} rounded-lg bg-gradient-to-br from-indigo-700 via-blue-800 to-indigo-950 shadow-lg select-none flex items-center justify-center ring-1 ring-white/10`}>
-      <div className="w-[60%] h-[65%] rounded-sm border border-indigo-400/20 bg-[repeating-conic-gradient(rgba(99,102,241,0.15)_0%_25%,transparent_0%_50%)] bg-[length:6px_6px]" />
+    <div className={`${dim} rounded-lg shadow-lg select-none relative overflow-hidden ring-1 ring-white/10`}>
+      {/* Base gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-red-800 via-red-900 to-red-950" />
+      {/* Diamond lattice pattern */}
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.08) 4px, rgba(255,255,255,0.08) 5px), repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,0.08) 4px, rgba(255,255,255,0.08) 5px)`,
+      }} />
+      {/* Inner border frame */}
+      <div className="absolute inset-[3px] rounded-md border border-yellow-500/40" />
+      <div className="absolute inset-[5px] rounded-sm border border-yellow-600/20" />
+      {/* Center ornament */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-[45%] h-[55%] rounded-sm border border-yellow-500/30 bg-gradient-to-br from-red-700/50 to-red-950/50 flex items-center justify-center backdrop-blur-[1px]">
+          <div className="text-yellow-500/50 font-serif font-bold" style={{ fontSize: size === "sm" ? "8px" : size === "md" ? "12px" : "16px" }}>
+            A
+          </div>
+        </div>
+      </div>
+      {/* Corner dots */}
+      <div className="absolute top-[6px] left-[6px] w-1 h-1 rounded-full bg-yellow-500/30" />
+      <div className="absolute top-[6px] right-[6px] w-1 h-1 rounded-full bg-yellow-500/30" />
+      <div className="absolute bottom-[6px] left-[6px] w-1 h-1 rounded-full bg-yellow-500/30" />
+      <div className="absolute bottom-[6px] right-[6px] w-1 h-1 rounded-full bg-yellow-500/30" />
+      {/* Subtle shine */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
     </div>
   );
 }
@@ -272,9 +295,19 @@ function PlayerSeat({
             <div
               key={i}
               style={{ width: cardSize.w, height: cardSize.h }}
-              className="rounded-md bg-gradient-to-br from-indigo-600 via-blue-800 to-indigo-950 shadow-md ring-1 ring-white/10 flex items-center justify-center"
+              className="rounded-md shadow-md ring-1 ring-white/10 relative overflow-hidden"
             >
-              <div className="w-[55%] h-[60%] rounded-sm border border-indigo-400/15 bg-[repeating-conic-gradient(rgba(99,102,241,0.12)_0%_25%,transparent_0%_50%)] bg-[length:5px_5px]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-red-800 via-red-900 to-red-950" />
+              <div className="absolute inset-0 opacity-30" style={{
+                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.08) 3px, rgba(255,255,255,0.08) 4px), repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.08) 3px, rgba(255,255,255,0.08) 4px)`,
+              }} />
+              <div className="absolute inset-[2px] rounded-sm border border-yellow-500/30" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-[45%] h-[55%] rounded-sm border border-yellow-500/20 bg-red-800/40 flex items-center justify-center">
+                  <span className="text-yellow-500/40 font-serif font-bold text-[6px] sm:text-[8px]">A</span>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
             </div>
           ))
         : null}
