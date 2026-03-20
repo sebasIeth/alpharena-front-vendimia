@@ -15,14 +15,9 @@ import type { Agent, Chain } from "@/lib/types";
 /* ── Chain Badge ── */
 function ChainBadge({ chain }: { chain?: Chain }) {
   if (!chain) return null;
-  const isCelo = chain === "celo";
   return (
-    <span className={`shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded ${
-      isCelo
-        ? "bg-yellow-50 text-yellow-600 border border-yellow-200"
-        : "bg-blue-50 text-blue-600 border border-blue-200"
-    }`}>
-      {isCelo ? "Celo" : "Base"}
+    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded bg-purple-50 text-purple-600 border border-purple-200">
+      Solana
     </span>
   );
 }
@@ -507,25 +502,27 @@ function AgentsContent() {
     fetchAgents();
   }, []);
 
+  const filtered = agents;
+
   const summary = useMemo(() => {
-    if (agents.length === 0) return null;
-    const totalW = agents.reduce((s, a) => s + (a.stats?.wins || 0), 0);
-    const totalL = agents.reduce((s, a) => s + (a.stats?.losses || 0), 0);
-    const totalD = agents.reduce((s, a) => s + (a.stats?.draws || 0), 0);
+    if (filtered.length === 0) return null;
+    const totalW = filtered.reduce((s, a) => s + (a.stats?.wins || 0), 0);
+    const totalL = filtered.reduce((s, a) => s + (a.stats?.losses || 0), 0);
+    const totalD = filtered.reduce((s, a) => s + (a.stats?.draws || 0), 0);
     const totalM = totalW + totalL + totalD;
     const winRate = totalM > 0 ? totalW / totalM : 0;
-    const earnings = agents.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
-    const bestAgent = agents.reduce(
+    const earnings = filtered.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
+    const bestAgent = filtered.reduce(
       (best, a) => ((a.elo || 0) > (best.elo || 0) ? a : best),
-      agents[0]
+      filtered[0]
     );
-    const activeLive = agents.filter((a) => a.status === "in_match").length;
+    const activeLive = filtered.filter((a) => a.status === "in_match").length;
     return { totalW, totalL, totalD, totalM, winRate, earnings, bestAgent, activeLive };
-  }, [agents]);
+  }, [filtered]);
 
-  const sorted = useMemo(() => sortAgents(agents, sortKey), [agents, sortKey]);
+  const sorted = useMemo(() => sortAgents(filtered, sortKey), [filtered, sortKey]);
 
-  const showFeatured = agents.length > 1 && summary?.bestAgent;
+  const showFeatured = filtered.length > 1 && summary?.bestAgent;
   const gridAgents = showFeatured
     ? sorted.filter((a) => a.id !== summary!.bestAgent.id)
     : sorted;

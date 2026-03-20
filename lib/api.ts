@@ -402,15 +402,7 @@ export const api = new ApiClient(API_URL);
 /** Build a block-explorer transaction URL for the given chain. */
 export function getExplorerTxUrl(txHash: string, chain: Chain): string {
   const isTestnet = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "testnet";
-  switch (chain) {
-    case "celo":
-      return isTestnet
-        ? `https://alfajores.celoscan.io/tx/${txHash}`
-        : `https://celoscan.io/tx/${txHash}`;
-    case "base":
-    default:
-      return isTestnet
-        ? `https://sepolia.basescan.org/tx/${txHash}`
-        : `https://basescan.org/tx/${txHash}`;
-  }
+  return isTestnet
+    ? `https://explorer.solana.com/tx/${txHash}?cluster=devnet`
+    : `https://explorer.solana.com/tx/${txHash}`;
 }

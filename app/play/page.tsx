@@ -81,7 +81,7 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
-  const [selectedChain, setSelectedChain] = useState<Chain>("base");
+  const [selectedChain, setSelectedChain] = useState<Chain>("solana");
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -936,12 +936,8 @@ function PlayContent() {
             <Card>
               <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30 flex items-center justify-between">
                 <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.balance}</h2>
-                <span className={`px-2 py-0.5 text-[10px] font-mono font-medium rounded-full ${
-                  selectedChain === "celo"
-                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                    : "bg-blue-50 text-blue-700 border border-blue-200"
-                }`}>
-                  {selectedChain === "celo" ? "Celo" : "Base"}
+                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  Solana
                 </span>
               </div>
               <div className="p-6">
@@ -955,13 +951,13 @@ function PlayContent() {
                       {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
                       <div className="flex items-baseline gap-1.5 pt-1">
                         <span className="text-lg font-bold font-mono tabular-nums text-arena-text-bright">{Number(balance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                        <span className="text-xs text-arena-muted">{selectedChain === "celo" ? "CELO" : "ETH"}</span>
+                        <span className="text-xs text-arena-muted">SOL</span>
                       </div>
                     </div>
                     {balance.walletAddress && (
                       <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
                         <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
-                          {t.play.depositAddress} ({selectedChain === "celo" ? "Celo" : "Base"})
+                          {t.play.depositAddress} (Solana)
                         </div>
                         <div className="text-xs font-mono text-arena-text break-all">{balance.walletAddress}</div>
                       </div>
@@ -983,37 +979,15 @@ function PlayContent() {
                   <option value="poker">Poker (Texas Hold&apos;em)</option>
                 </Select>
 
-                {/* Chain selector */}
+                {/* Chain */}
                 <div>
                   <label className="block text-sm font-medium text-arena-text mb-1.5">{t.common.chain}</label>
                   <div className="flex gap-2">
-                    {SUPPORTED_CHAINS.map((chain) => {
-                      const isSelected = selectedChain === chain;
-                      const label = chain === "celo" ? "Celo" : "Base";
-                      return (
-                        <button
-                          key={chain}
-                          type="button"
-                          onClick={() => setSelectedChain(chain)}
-                          className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
-                            isSelected
-                              ? chain === "celo"
-                                ? "bg-yellow-50 text-yellow-700 border-yellow-300 ring-1 ring-yellow-200"
-                                : "bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200"
-                              : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/30"
-                          }`}
-                        >
-                          <span className={`w-2 h-2 rounded-full ${
-                            isSelected
-                              ? chain === "celo" ? "bg-yellow-500" : "bg-blue-500"
-                              : "bg-arena-muted/30"
-                          }`} />
-                          {label}
-                        </button>
-                      );
-                    })}
+                    <div className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border-purple-300 ring-1 ring-purple-200">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      Solana
+                    </div>
                   </div>
-                  <p className="text-[10px] text-arena-muted/70 mt-1">{t.play.chainMatchNote}</p>
                 </div>
 
                 {/* Entry fee */}

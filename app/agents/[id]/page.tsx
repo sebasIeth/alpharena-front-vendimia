@@ -27,16 +27,11 @@ import { getExplorerTxUrl } from "@/lib/api";
 /* ── Chain Badge ── */
 function ChainBadge({ chain, size = "sm" }: { chain?: Chain; size?: "sm" | "md" }) {
   if (!chain) return null;
-  const isCelo = chain === "celo";
   const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]";
   return (
-    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} ${
-      isCelo
-        ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-        : "bg-blue-50 text-blue-700 border border-blue-200"
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${isCelo ? "bg-yellow-500" : "bg-blue-500"}`} />
-      {isCelo ? "Celo" : "Base"}
+    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} bg-purple-50 text-purple-700 border border-purple-200`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+      Solana
     </span>
   );
 }
@@ -789,7 +784,7 @@ function AgentDetailContent() {
             {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
           </div>
           <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ETH (gas)</div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">SOL (gas)</div>
             <span className="text-base font-bold font-mono tabular-nums text-arena-muted leading-none">
               {balanceLoading ? "..." : (balance?.eth ?? "—")}
             </span>
@@ -797,7 +792,7 @@ function AgentDetailContent() {
         </div>
 
         <p className="text-xs text-arena-muted mb-4">
-          Send ALPHA + {agent?.chain === "celo" ? "CELO" : "ETH"} (gas) on <strong>{agent?.chain === "celo" ? "Celo" : "Base"}</strong> network to the wallet address above to fund your agent.
+          Send ALPHA + SOL (gas) on <strong>Solana</strong> network to the wallet address above to fund your agent.
         </p>
 
         {/* Withdraw */}
