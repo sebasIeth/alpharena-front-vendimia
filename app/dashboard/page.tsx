@@ -490,13 +490,17 @@ function DashboardContent() {
                   <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.wins}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
-                <div className="w-7 h-7 rounded-lg bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
-                  <IconCoin className="w-3.5 h-3.5 text-arena-accent" />
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-5 h-5 rounded-full" />
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">
+                    {formatEarnings(stats.earningsAlpha || stats.earnings)}
+                  </span>
                 </div>
-                <div>
-                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(stats.earnings)}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">USDC</span>
+                <div className="w-px h-5 bg-arena-border-light/60" />
+                <div className="flex items-center gap-1.5">
+                  <img src="/tokens/usdc.jpg" alt="USDC" className="w-5 h-5 rounded-full" />
+                  <span className="text-lg font-extrabold font-mono tabular-nums text-emerald-600 leading-none">{formatEarnings(stats.earningsUsdc)}</span>
                 </div>
               </div>
               {stats.active > 0 && (
