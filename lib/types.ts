@@ -27,7 +27,7 @@ export interface RegisterPayload {
 }
 
 // ========== Chain ==========
-export const SUPPORTED_CHAINS = ['base', 'celo'] as const;
+export const SUPPORTED_CHAINS = ['solana'] as const;
 export type Chain = (typeof SUPPORTED_CHAINS)[number];
 
 // ========== Agent ==========
@@ -145,10 +145,12 @@ export interface Match {
     handNumber?: number;
     dealerIndex?: number;
   };
+  token?: string;
   stakeAmount: number;
   pot: number;
   winnerId?: string;
   result?: string;
+  txHashes?: { escrow?: string[]; payout?: string; fee?: string };
   boardState?: BoardState;
   moveCount: number;
   currentTurn?: number;

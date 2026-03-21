@@ -265,8 +265,9 @@ class ApiClient {
   }): Promise<MatchesResponse> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.set("status", params.status);
-    if (params?.page) searchParams.set("page", params.page.toString());
     if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.page && params?.limit) searchParams.set("offset", ((params.page - 1) * params.limit).toString());
+    else if (params?.page) searchParams.set("offset", ((params.page - 1) * 20).toString());
     const query = searchParams.toString();
     return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`, false);
   }
@@ -402,15 +403,7 @@ export const api = new ApiClient(API_URL);
 /** Build a block-explorer transaction URL for the given chain. */
 export function getExplorerTxUrl(txHash: string, chain: Chain): string {
   const isTestnet = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "testnet";
-  switch (chain) {
-    case "celo":
-      return isTestnet
-        ? `https://alfajores.celoscan.io/tx/${txHash}`
-        : `https://celoscan.io/tx/${txHash}`;
-    case "base":
-    default:
-      return isTestnet
-        ? `https://sepolia.basescan.org/tx/${txHash}`
-        : `https://basescan.org/tx/${txHash}`;
-  }
+  return isTestnet
+    ? `https://explorer.solana.com/tx/${txHash}?cluster=devnet`
+    : `https://explorer.solana.com/tx/${txHash}`;
 }

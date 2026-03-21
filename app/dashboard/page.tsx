@@ -715,8 +715,12 @@ function DashboardContent() {
                 </div>
                 {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
                 <div className="flex items-baseline gap-1.5 pt-1">
-                  <span className="text-lg font-bold font-mono tabular-nums text-arena-text-bright">{Number(playBalance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                  <span className="text-xs text-arena-muted">ETH</span>
+                  <span className="text-lg font-bold font-mono tabular-nums text-emerald-600">{Number((playBalance as any).usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-xs text-arena-muted">USDC</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-bold font-mono tabular-nums text-arena-muted">{Number((playBalance as any).sol || (playBalance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                  <span className="text-xs text-arena-muted">SOL</span>
                 </div>
               </div>
 
@@ -804,36 +808,21 @@ function DashboardContent() {
             <p className="text-xs text-arena-muted">{t.dashboard.getAlphaDesc}</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <a
-            href="https://app.uniswap.org/explore/tokens/base/0x324f2bd09e908f28217cc19bb9599b199c736ba3"
+            href="https://jup.ag"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3.5 bg-white/50 border border-blue-200/60 rounded-xl hover:border-blue-400/60 hover:bg-blue-50/30 transition-all group"
+            className="flex items-center gap-3 p-3.5 bg-white/50 border border-purple-200/60 rounded-xl hover:border-purple-400/60 hover:bg-purple-50/30 transition-all group"
           >
-            <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-blue-600">B</span>
+            <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-purple-600">J</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-arena-text-bright">{t.dashboard.buyOnBase}</div>
-              <div className="text-[10px] text-arena-muted font-mono">Uniswap</div>
+              <div className="text-sm font-semibold text-arena-text-bright">Buy on Jupiter</div>
+              <div className="text-[10px] text-arena-muted font-mono">Solana DEX</div>
             </div>
-            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
-          </a>
-          <a
-            href="https://app.uniswap.org/explore/tokens/celo/0x3b825bed44d0daa21a7e960b913848baebb9c869"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3.5 bg-white/50 border border-yellow-200/60 rounded-xl hover:border-yellow-400/60 hover:bg-yellow-50/30 transition-all group"
-          >
-            <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-yellow-600">C</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-arena-text-bright">{t.dashboard.buyOnCelo}</div>
-              <div className="text-[10px] text-arena-muted font-mono">Uniswap</div>
-            </div>
-            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-yellow-500 group-hover:translate-x-0.5 transition-all" />
+            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
           </a>
         </div>
       </div>
@@ -872,12 +861,8 @@ function DashboardContent() {
                     <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
                       {claim.matchId.slice(0, 8)}...
                     </span>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                      claim.chain === "celo"
-                        ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                        : "bg-blue-50 text-blue-700 border border-blue-200"
-                    }`}>
-                      {claim.chain === "celo" ? "Celo" : "Base"}
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                      Solana
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">

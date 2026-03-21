@@ -177,7 +177,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [thinkingSide, setThinkingSide] = useState<string | null>(
     // Initialize from match.currentTurn for active matches so spectators see the timer immediately
-    (match.status === "active" || match.status === "starting") ? (match.currentTurn || null) : null
+    (match.status === "active" || match.status === "starting") ? (match.currentTurn != null ? String(match.currentTurn) : null) : null
   );
   const [turnSecondsLeft, setTurnSecondsLeft] = useState<number | null>(null);
   const turnStartRef = useRef<number | null>(null);
@@ -359,11 +359,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     return () => clearInterval(timer);
   }, [isAutoPlaying, playbackSpeed, moves.length, canReplay]);
 
-  // Replay: auto-scroll move list to current step
+  // Replay: auto-scroll move list to current step (within container only, don't scroll page)
   useEffect(() => {
     if (replayStep < 0) return;
     const el = replayMoveRefs.current.get(replayStep);
-    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (!el) return;
+    const container = el.closest("[data-move-list]") as HTMLElement | null;
+    if (container) {
+      const elTop = el.offsetTop - container.offsetTop;
+      const elBottom = elTop + el.offsetHeight;
+      const scrollTop = container.scrollTop;
+      const scrollBottom = scrollTop + container.clientHeight;
+      if (elTop < scrollTop) {
+        container.scrollTo({ top: elTop, behavior: "smooth" });
+      } else if (elBottom > scrollBottom) {
+        container.scrollTo({ top: elBottom - container.clientHeight, behavior: "smooth" });
+      }
+    }
   }, [replayStep]);
 
   // Fetch moves + extract initial thoughts
@@ -1135,7 +1147,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       winnerName: agents.find(a => a.agentId === match.winnerId)?.agentName
                         ?? (match.winnerId === "a" ? agents[0]?.agentName : match.winnerId === "b" ? agents[1]?.agentName : undefined)
                         ?? "Winner",
-                      reason: typeof match.result === "string" ? match.result : (match.result as any)?.reason,
+                      reason: (() => {
+                        const raw = typeof match.result === "string" ? match.result : (match.result as any)?.reason;
+                        const labels: Record<string, string> = { max_hands: "Hand limit reached", timeout: "Time expired", score: "Score", draw: "Draw", checkmate: "Checkmate", stalemate: "Stalemate", forfeit: "Forfeit" };
+                        return labels[raw] || raw;
+                      })(),
                     }
                   : null;
 
@@ -1489,10 +1505,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 </div>
                 {match.result && (
                   <div className="text-xs text-arena-muted mt-1">
-                    {typeof match.result === "string"
-                      ? match.result
-                      : (match.result as any)?.reason || JSON.stringify(match.result)}
+                    {(() => {
+                      const raw = typeof match.result === "string" ? match.result : (match.result as any)?.reason;
+                      const labels: Record<string, string> = { max_hands: "Hand limit reached", timeout: "Time expired", score: "Score", draw: "Draw", checkmate: "Checkmate", stalemate: "Stalemate", forfeit: "Forfeit" };
+                      return labels[raw] || raw || JSON.stringify(match.result);
+                    })()}
                   </div>
+                )}
+                {/* Payout TX link */}
+                {(match as any).txHashes?.payout && (
+                  <a
+                    href={`https://explorer.solana.com/tx/${(match as any).txHashes.payout}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 hover:text-emerald-800 mt-2 transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Winner Payout TX
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                  </a>
                 )}
               </div>
             )}
@@ -1503,7 +1534,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             <h3 className="text-sm font-semibold text-arena-text mb-3">
               {match.gameType === "poker" ? "Hand History" : "Move History"}
             </h3>
-            <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
+            <div data-move-list className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
               {loadingMoves ? (
                 <div className="text-center text-sm text-arena-muted py-4">
                   {match.gameType === "poker" ? "Loading hands..." : "Loading moves..."}
@@ -1606,15 +1637,15 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                           {display}
                         </span>
                         {isPoker ? (
-                          move.thinkingTimeMs > 0 && (
+                          (move.thinkingTimeMs ?? 0) > 0 && (
                             <span className="text-[10px] text-arena-muted/60 font-mono flex-shrink-0">
-                              {(move.thinkingTimeMs / 1000).toFixed(1)}s
+                              {((move.thinkingTimeMs ?? 0) / 1000).toFixed(1)}s
                             </span>
                           )
                         ) : (
                           <span className="text-[10px] text-arena-muted flex-shrink-0">
-                            {move.thinkingTimeMs > 0
-                              ? `${(move.thinkingTimeMs / 1000).toFixed(1)}s`
+                            {(move.thinkingTimeMs ?? 0) > 0
+                              ? `${((move.thinkingTimeMs ?? 0) / 1000).toFixed(1)}s`
                               : formatRelativeTime(move.timestamp)}
                           </span>
                         )}
