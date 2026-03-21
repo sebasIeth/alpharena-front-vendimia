@@ -281,6 +281,8 @@ function DashboardContent() {
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
+  const [agentSendPage, setAgentSendPage] = useState(0);
+  const [agentSendSearch, setAgentSendSearch] = useState("");
 
   /* ── Pending Claims state ── */
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>([]);
@@ -849,6 +851,75 @@ function DashboardContent() {
                   );
                 })}
               </div>
+
+              {/* Quick send to agent */}
+              {agents.length > 0 && (() => {
+                const AGENTS_PER_PAGE = 5;
+                const uniqueAgents = agents.filter(a => a.walletAddress).filter((a, i, arr) => arr.findIndex(x => x.walletAddress === a.walletAddress) === i);
+                const filtered = agentSendSearch
+                  ? uniqueAgents.filter(a => a.name.toLowerCase().includes(agentSendSearch.toLowerCase()))
+                  : uniqueAgents;
+                const totalPages = Math.ceil(filtered.length / AGENTS_PER_PAGE);
+                const page = Math.min(agentSendPage, Math.max(totalPages - 1, 0));
+                const visible = filtered.slice(page * AGENTS_PER_PAGE, (page + 1) * AGENTS_PER_PAGE);
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono">Quick send to agent</div>
+                      {uniqueAgents.length > AGENTS_PER_PAGE && (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={agentSendSearch}
+                            onChange={(e) => { setAgentSendSearch(e.target.value); setAgentSendPage(0); }}
+                            placeholder="Search..."
+                            className="w-28 px-2 py-0.5 text-[10px] font-mono bg-white border border-arena-border-light rounded-md text-arena-text placeholder-arena-muted/50 focus:outline-none focus:border-arena-primary/30"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {page > 0 && (
+                        <button
+                          onClick={() => setAgentSendPage(p => p - 1)}
+                          className="shrink-0 w-6 h-6 rounded-md border border-arena-border-light bg-white flex items-center justify-center text-arena-muted hover:text-arena-text hover:border-arena-primary/30 transition-all"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                      )}
+                      <div className="flex gap-1.5 flex-wrap flex-1">
+                        {visible.map((agent) => (
+                          <button
+                            key={agent.id}
+                            onClick={() => { setWithdrawAddr(agent.walletAddress!); setWithdrawError(""); setWithdrawSuccess(""); }}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all border ${
+                              withdrawAddr === agent.walletAddress
+                                ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20"
+                                : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
+                            }`}
+                          >
+                            <span className="w-4 h-4 rounded-full bg-gradient-to-br from-arena-primary to-arena-primary-dark flex items-center justify-center text-[8px] text-white font-bold">
+                              {agent.name.charAt(0).toUpperCase()}
+                            </span>
+                            {agent.name}
+                          </button>
+                        ))}
+                        {filtered.length === 0 && (
+                          <span className="text-[10px] text-arena-muted/50 font-mono py-1">No agents found</span>
+                        )}
+                      </div>
+                      {page < totalPages - 1 && (
+                        <button
+                          onClick={() => setAgentSendPage(p => p + 1)}
+                          className="shrink-0 w-6 h-6 rounded-md border border-arena-border-light bg-white flex items-center justify-center text-arena-muted hover:text-arena-text hover:border-arena-primary/30 transition-all"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <input
                 type="text"
