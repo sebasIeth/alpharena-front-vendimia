@@ -11,7 +11,6 @@ import { Select } from "@/components/ui/Input";
 import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
-import { SUPPORTED_CHAINS } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
@@ -81,7 +80,7 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
-  const [selectedChain, setSelectedChain] = useState<Chain>("solana");
+  const selectedChain: Chain = "solana";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 

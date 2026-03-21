@@ -343,7 +343,7 @@ function AgentDetailContent() {
     setWithdrawLoading(true);
     try {
       const data = await api.withdrawAgent(agentId, value, addr);
-      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "base");
+      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "solana");
       setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmount("");
       fetchBalance();
