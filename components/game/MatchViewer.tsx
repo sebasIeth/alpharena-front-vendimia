@@ -275,7 +275,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const agentLookup = React.useMemo(() => {
     const map = new Map<string, { name: string; side: string }>();
     agents.forEach((a, idx) => {
-      const side = ["a", "b", "c", "d"][idx] || String(idx);
+      const side = String.fromCharCode(97 + idx) || String(idx);
       map.set(a.agentId, { name: a.agentName, side });
     });
     return map;
@@ -285,7 +285,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const sideLookup = React.useMemo(() => {
     const map = new Map<string, { name: string; side: string }>();
     agents.forEach((a, idx) => {
-      const side = ["a", "b", "c", "d"][idx] || String(idx);
+      const side = String.fromCharCode(97 + idx) || String(idx);
       map.set(side, { name: a.agentName, side });
     });
     return map;
@@ -428,8 +428,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 if (!h.handNumber) continue;
                 if (h.holeCards) {
                   const hcMap: Record<number, PokerCard[]> = {};
-                  if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
-                  if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
+                  if (Array.isArray(h.holeCards)) {
+                    h.holeCards.forEach((hc: any, i: number) => { if (hc?.length) hcMap[i] = hc; });
+                  } else {
+                    Object.entries(h.holeCards).forEach(([side, cards]: [string, any]) => {
+                      if (cards?.length) hcMap[side.charCodeAt(0) - 97] = cards;
+                    });
+                  }
                   if (Object.keys(hcMap).length > 0) archive[h.handNumber] = hcMap;
                 }
                 if (Array.isArray(h.communityCards) && h.communityCards.length > 0) {
@@ -515,7 +520,10 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         if (type === "match:move") {
           // After a move, the OTHER player starts thinking
           const moveSide = data.side as string;
-          const nextSide = moveSide === "a" ? "b" : "a";
+          // N-player: next side is the next letter, wrapping around
+          const sideIdx = moveSide.charCodeAt(0) - 97;
+          const totalPlayers = pokerPlayers.length || 2;
+          const nextSide = String.fromCharCode(97 + ((sideIdx + 1) % totalPlayers));
           // Brief null to reset timer, then set next player as thinking
           setThinkingSide(null);
           setTimeout(() => setThinkingSide(nextSide), 50);
@@ -577,8 +585,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           if (hr.handNumber) {
             if (hr.holeCards) {
               const hcMap: Record<number, PokerCard[]> = {};
-              if (hr.holeCards.a?.length) hcMap[0] = hr.holeCards.a;
-              if (hr.holeCards.b?.length) hcMap[1] = hr.holeCards.b;
+              if (Array.isArray(hr.holeCards)) {
+                hr.holeCards.forEach((hc: any, i: number) => { if (hc?.length) hcMap[i] = hc; });
+              } else {
+                Object.entries(hr.holeCards).forEach(([side, cards]: [string, any]) => {
+                  if (cards?.length) hcMap[side.charCodeAt(0) - 97] = cards;
+                });
+              }
               if (Object.keys(hcMap).length > 0) {
                 setPokerHandCardsArchive(prev => ({ ...prev, [hr.handNumber]: hcMap }));
               }
@@ -736,8 +749,13 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   for (const h of histories) {
                     if (!h.handNumber || !h.holeCards) continue;
                     const hcMap: Record<number, PokerCard[]> = {};
-                    if (h.holeCards.a?.length) hcMap[0] = h.holeCards.a;
-                    if (h.holeCards.b?.length) hcMap[1] = h.holeCards.b;
+                    if (Array.isArray(h.holeCards)) {
+                      h.holeCards.forEach((hc: any, i: number) => { if (hc?.length) hcMap[i] = hc; });
+                    } else {
+                      Object.entries(h.holeCards).forEach(([side, cards]: [string, any]) => {
+                        if (cards?.length) hcMap[side.charCodeAt(0) - 97] = cards;
+                      });
+                    }
                     if (Object.keys(hcMap).length > 0) next[h.handNumber] = hcMap;
                   }
                   return next;
@@ -842,6 +860,37 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               if (!newMoves.length || newMoves.length <= prev.length) return prev;
 
               const newOnes = newMoves.slice(prev.length);
+
+              // If multiple new moves arrived, stagger them so each one appears individually
+              if (newOnes.length > 1) {
+                // Add the first one now, schedule the rest with delays
+                const [first, ...rest] = newOnes;
+                rest.forEach((move, idx) => {
+                  setTimeout(() => {
+                    setMoves((p) => {
+                      if (p.some((m) => m.moveNumber === move.moveNumber && m.side === move.side)) return p;
+                      return [...p, move];
+                    });
+                  }, (idx + 1) * 1500); // 1.5s between each queued move
+                });
+                // Only add the first move now
+                for (const move of [first]) {
+                  const md = move.moveData as any;
+                  const thinking = md?.thinking || md?.raw;
+                  if (thinking) {
+                    const info = agentLookupRef.current.get(move.agentId);
+                    setThoughts((prevThoughts) => {
+                      const exists = prevThoughts.some(
+                        (t) => t.turnNumber === move.turnNumber && t.agentId === move.agentId
+                      );
+                      if (exists) return prevThoughts;
+                      return [...prevThoughts, { agentId: move.agentId, agentName: info?.name || "Agent", side: info?.side || "a", text: thinking, timestamp: new Date(move.timestamp).getTime() || Date.now(), turnNumber: move.turnNumber }];
+                    });
+                  }
+                }
+                return [...prev, first];
+              }
+
               for (const move of newOnes) {
                 const md = move.moveData as any;
                 const thinking = md?.thinking || md?.raw;
@@ -1451,7 +1500,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             <h3 className="text-sm font-semibold text-arena-text mb-3">Players</h3>
             <div className="space-y-3">
               {agents.map((agent, idx) => {
-                const side = ["a", "b", "c", "d"][idx];
+                const side = String.fromCharCode(97 + idx);
                 const isThinking = thinkingSide === side;
                 return (
                   <div
@@ -1522,6 +1571,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         </>
                       )}
                     </div>
+                    {/* Escrow TX for this agent */}
+                    {(() => {
+                      const escrow = (match as any).txHashes?.escrow;
+                      if (!Array.isArray(escrow)) return null;
+                      const agentTx = escrow.find((e: any) => e.agentId === agent.agentId);
+                      if (!agentTx?.txSignature) return null;
+                      return (
+                        <a
+                          href={`https://explorer.solana.com/tx/${agentTx.txSignature}?cluster=devnet`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[9px] font-mono text-blue-500 hover:text-blue-700 mt-1.5 transition-colors"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-blue-400" />
+                          Stake TX: {agentTx.txSignature.slice(0, 8)}...{agentTx.txSignature.slice(-4)}
+                          <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                        </a>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -1544,19 +1612,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     })()}
                   </div>
                 )}
-                {/* Payout TX link */}
-                {(match as any).txHashes?.payout && (
-                  <a
-                    href={`https://explorer.solana.com/tx/${(match as any).txHashes.payout}?cluster=devnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 hover:text-emerald-800 mt-2 transition-colors"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Winner Payout TX
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-                  </a>
-                )}
+                {/* On-chain TX links */}
+                <div className="space-y-1 mt-2">
+                  {(match as any).txHashes?.payout && (
+                    <a href={`https://explorer.solana.com/tx/${(match as any).txHashes.payout}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 hover:text-emerald-800 transition-colors">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Payout TX: {(match as any).txHashes.payout.slice(0, 10)}...
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                    </a>
+                  )}
+                  {(match as any).txHashes?.fee && (
+                    <a href={`https://explorer.solana.com/tx/${(match as any).txHashes.fee}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-[10px] font-mono text-amber-600 hover:text-amber-800 transition-colors">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Fee TX: {(match as any).txHashes.fee.slice(0, 10)}...
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>
