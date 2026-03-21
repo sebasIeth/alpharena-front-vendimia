@@ -728,22 +728,43 @@ function AgentDetailContent() {
             className="bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm opacity-0 animate-fade-up"
             style={{ animationDelay: "0.2s", animationFillMode: "both" }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.common.matches}</h3>
-              <span className="text-xs font-mono font-bold text-arena-text-bright tabular-nums">{totalMatches}</span>
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wide">{t.common.matches}</h3>
+              <span className="bg-arena-primary/10 text-arena-primary text-base font-extrabold font-mono tabular-nums px-3 py-1 rounded-full">{totalMatches}</span>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center bg-arena-success/5 rounded-xl py-3">
-                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-success">{wins}</div>
-                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.wins}</div>
+
+            {/* Win rate bar */}
+            <div className="w-full h-2 rounded-full bg-arena-bg-darker/60 overflow-hidden mb-4 flex">
+              {totalMatches > 0 && (
+                <>
+                  {wins > 0 && <div className="h-full bg-arena-success transition-all" style={{ width: `${(wins / totalMatches) * 100}%` }} />}
+                  {draws > 0 && <div className="h-full bg-arena-muted-light/40 transition-all" style={{ width: `${(draws / totalMatches) * 100}%` }} />}
+                  {losses > 0 && <div className="h-full bg-arena-danger/60 transition-all" style={{ width: `${(losses / totalMatches) * 100}%` }} />}
+                </>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex items-center gap-2 bg-arena-success/5 rounded-lg px-3 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-arena-success flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-lg font-extrabold font-mono tabular-nums text-arena-success leading-none">{wins}</div>
+                  <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-1">{t.common.wins}</div>
+                </div>
               </div>
-              <div className="text-center bg-arena-muted-light/5 rounded-xl py-3">
-                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-muted">{draws}</div>
-                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.draws}</div>
+              <div className="flex items-center gap-2 bg-arena-muted-light/5 rounded-lg px-3 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-arena-muted-light/50 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-lg font-extrabold font-mono tabular-nums text-arena-muted leading-none">{draws}</div>
+                  <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-1">{t.common.draws}</div>
+                </div>
               </div>
-              <div className="text-center bg-arena-danger/5 rounded-xl py-3">
-                <div className="text-xl font-extrabold font-mono tabular-nums text-arena-danger/70">{losses}</div>
-                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-0.5">{t.common.losses}</div>
+              <div className="flex items-center gap-2 bg-arena-danger/5 rounded-lg px-3 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-arena-danger/60 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-lg font-extrabold font-mono tabular-nums text-arena-danger/70 leading-none">{losses}</div>
+                  <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mt-1">{t.common.losses}</div>
+                </div>
               </div>
             </div>
           </div>
