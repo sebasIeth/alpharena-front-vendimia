@@ -75,7 +75,7 @@ export function getStatusColor(status: string): string {
     case "active":
       return "bg-emerald-100 text-emerald-700 border border-emerald-300";
     case "completed":
-      return "bg-slate-100 text-slate-600 border border-slate-300";
+      return "bg-emerald-200 text-emerald-900 border border-emerald-400";
     case "pending":
       return "bg-amber-100 text-amber-700 border border-amber-300";
     case "starting":

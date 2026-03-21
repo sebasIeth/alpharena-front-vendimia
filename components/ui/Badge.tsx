@@ -7,6 +7,26 @@ interface BadgeProps {
 }
 
 export default function Badge({ status, className }: BadgeProps) {
+  if (status === "completed") {
+    return (
+      <span
+        style={{
+          backgroundColor: "#dcfce7",
+          color: "#000000",
+          borderRadius: "9999px",
+          padding: "1px 8px",
+          fontSize: "0.7rem",
+          fontWeight: 500,
+          display: "inline-flex",
+          alignItems: "center",
+        }}
+        className={className}
+      >
+        ✓ Completed
+      </span>
+    );
+  }
+
   return (
     <span
       className={classNames(
