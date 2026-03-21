@@ -329,8 +329,6 @@ function AgentDetailContent() {
   useEffect(() => {
     if (agent) {
       fetchBalance();
-      const interval = setInterval(fetchBalance, 10000);
-      return () => clearInterval(interval);
     }
   }, [agent?.id]);
 
@@ -543,10 +541,6 @@ function AgentDetailContent() {
                     </span>
                   )}
                 </div>
-
-                <p className="text-sm text-arena-muted font-mono mb-2.5 break-all max-w-lg">
-                  {agent.type === "openclaw" ? agent.openclawUrl : agent.endpointUrl}
-                </p>
 
                 <div className="flex items-center gap-2 flex-wrap">
                   {agent.type === "openclaw" && (

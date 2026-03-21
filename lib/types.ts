@@ -482,6 +482,7 @@ export interface PlayJoinPayload {
   gameType: string;
   stakeAmount: number;
   chain?: Chain;
+  token?: string;
 }
 
 // ========== Scheduled Matches ==========

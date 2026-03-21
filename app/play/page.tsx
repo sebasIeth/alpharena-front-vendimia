@@ -80,6 +80,8 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
+  const [stakeToken, setStakeToken] = useState<"ALPHA" | "USDC">("ALPHA");
+  const [stakeAmount, setStakeAmount] = useState("1");
   const selectedChain: Chain = "solana";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -744,7 +746,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
+      const result = await api.playJoin({ gameType, stakeAmount: parseFloat(stakeAmount) || 1, token: stakeToken });
       setAgentId(result.agentId);
       // Check if already matched (race condition: match may start during playJoin)
       const status = await api.playStatus().catch(() => null);
@@ -986,41 +988,123 @@ function PlayContent() {
               </div>
             </Card>
 
-            <Card>
-              <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
-                <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.joinQueue}</h2>
+            <div className="dash-glass-card rounded-2xl overflow-hidden">
+              {/* Header with gradient accent */}
+              <div className="relative px-6 py-5 bg-gradient-to-r from-arena-primary/5 via-transparent to-arena-accent/5">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-arena-primary via-arena-primary-light to-arena-accent" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-arena-primary/10 flex items-center justify-center ring-1 ring-inset ring-arena-primary/5">
+                    <svg className="w-5 h-5 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">{t.play.joinQueue}</h2>
+                    <p className="text-[11px] text-arena-muted">Play against AI agents in real-time</p>
+                  </div>
+                </div>
               </div>
+
               <div className="p-6 space-y-5">
-                <Select label={t.play.gameType} value={gameType} onChange={(e) => setGameType(e.target.value)}>
-                  <option value="chess">Chess</option>
-                  <option value="poker">Poker (Texas Hold&apos;em)</option>
-                </Select>
-
-                {/* Chain */}
+                {/* Game type selector */}
                 <div>
-                  <label className="block text-sm font-medium text-arena-text mb-1.5">{t.common.chain}</label>
-                  <div className="flex gap-2">
-                    <div className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border-purple-300 ring-1 ring-purple-200">
-                      <span className="w-2 h-2 rounded-full bg-purple-500" />
-                      Solana
-                    </div>
+                  <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.play.gameType}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "chess", label: "Chess", icon: "\u265F" },
+                      { value: "poker", label: "Poker", icon: "\u2660" },
+                    ].map((game) => (
+                      <button
+                        key={game.value}
+                        onClick={() => setGameType(game.value)}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                          gameType === game.value
+                            ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20 shadow-sm"
+                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
+                        }`}
+                      >
+                        <span className="text-lg">{game.icon}</span>
+                        {game.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Entry fee */}
-                <div className="bg-arena-bg/50 border border-arena-border-light rounded-xl px-4 py-3">
-                  <span className="text-xs text-arena-muted font-medium uppercase tracking-wider">{t.play.entryFee}</span>
-                  <div className="flex flex-wrap items-baseline gap-1.5 mt-1">
-                    <span className="text-lg font-bold font-mono tabular-nums text-arena-text">1,000,000</span>
-                    <span className="text-xs text-arena-muted">ALPHA</span>
-                    {(() => { const usd = formatUsdEquivalent(1_000_000, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
+                {/* Chain badge */}
+                <div>
+                  <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.common.chain}</label>
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-50/80 border border-purple-200/60">
+                    <img src="/tokens/solana.jpg" alt="SOL" className="w-5 h-5 rounded-full" />
+                    <span className="text-sm font-semibold text-purple-700">Solana</span>
+                    <span className="ml-auto w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                   </div>
-                  <p className="text-[10px] text-arena-muted/70 mt-1">{t.play.entryFeeDesc}</p>
                 </div>
 
-                <Button onClick={handleJoinQueue} isLoading={joining} className="w-full" size="lg">
-                  {t.play.joinQueue}
-                </Button>
+                {/* Stake token selector */}
+                <div>
+                  <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">Stake Token</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { value: "ALPHA" as const, icon: "/tokens/alpha.jpg", color: "text-arena-accent", bg: "bg-arena-accent/10", border: "border-arena-accent/30", ring: "ring-arena-accent/20" },
+                      { value: "USDC" as const, icon: "/tokens/usdc.jpg", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-300", ring: "ring-emerald-200" },
+                    ]).map((token) => (
+                      <button
+                        key={token.value}
+                        onClick={() => setStakeToken(token.value)}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                          stakeToken === token.value
+                            ? `${token.bg} ${token.color} ${token.border} ring-1 ${token.ring} shadow-sm`
+                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
+                        }`}
+                      >
+                        <img src={token.icon} alt={token.value} className="w-5 h-5 rounded-full" />
+                        {token.value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stake amount */}
+                <div className="relative bg-gradient-to-br from-arena-bg/80 to-white border border-arena-border-light/60 rounded-xl px-4 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-arena-muted font-mono font-semibold uppercase tracking-widest">{t.play.entryFee}</span>
+                    <span className="text-[9px] text-arena-muted/60 font-mono">min: 1 · max: 1</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <img src={stakeToken === "USDC" ? "/tokens/usdc.jpg" : "/tokens/alpha.jpg"} alt={stakeToken} className="w-6 h-6 rounded-full" />
+                    <input
+                      type="number"
+                      min="1"
+                      max="1"
+                      step="1"
+                      value={stakeAmount}
+                      onChange={(e) => setStakeAmount(e.target.value)}
+                      className="flex-1 text-xl font-extrabold font-mono tabular-nums text-arena-text-bright bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className={`text-xs font-mono font-semibold ${stakeToken === "USDC" ? "text-emerald-600" : "text-arena-accent"}`}>{stakeToken}</span>
+                  </div>
+                  {stakeToken === "USDC" && (
+                    <p className="text-[10px] text-arena-muted/60 mt-1.5">~${parseFloat(stakeAmount || "0").toFixed(2)} USD</p>
+                  )}
+                  {stakeToken === "ALPHA" && (() => { const usd = formatUsdEquivalent(parseFloat(stakeAmount || "0"), priceUsd); return usd ? <p className="text-[10px] text-arena-muted/60 mt-1.5">{usd}</p> : null; })()}
+                  <p className="text-[10px] text-arena-muted/60 mt-1">{t.play.entryFeeDesc}</p>
+                </div>
+
+                {/* Join button */}
+                <button
+                  onClick={handleJoinQueue}
+                  disabled={joining}
+                  className="w-full relative overflow-hidden px-6 py-4 rounded-xl font-display font-bold text-base text-white bg-gradient-to-r from-arena-primary via-arena-primary to-arena-primary-light shadow-lg shadow-arena-primary/20 hover:shadow-xl hover:shadow-arena-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {joining ? (
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" /></svg>
+                    )}
+                    {joining ? t.common.loading : t.play.joinQueue}
+                  </span>
+                </button>
 
                 {/* Local poker vs AI */}
                 {gameType === "poker" && (
@@ -1029,13 +1113,14 @@ function PlayContent() {
                       setPhase("local-poker");
                       localPokerControls.startMatchmaking();
                     }}
-                    className="w-full mt-3 px-5 py-3 rounded-xl border-2 border-arena-primary/30 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/50 transition-all active:scale-[0.98]"
+                    className="w-full px-5 py-3.5 rounded-xl border-2 border-dashed border-arena-primary/20 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                   >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
                     Practice vs AI (Free)
                   </button>
                 )}
               </div>
-            </Card>
+            </div>
           </div>
         )}
 

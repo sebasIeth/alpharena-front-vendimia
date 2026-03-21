@@ -412,7 +412,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
         {/* Players Section */}
         {isPoker ? (
           /* Poker: vertical list with stack bars */
-          <div className="space-y-1 mb-3">
+          <div className="space-y-1 mb-3 max-h-40 overflow-y-auto scrollbar-thin">
             {agents
               .slice()
               .sort((a, b) => {
@@ -474,7 +474,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
             />
           </div>
         ) : (
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 max-h-40 overflow-y-auto scrollbar-thin">
             {agents.map((agent, idx) => (
               <div key={agent.agentId} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -588,9 +588,17 @@ export default function MatchesPage() {
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [sortOpen, setSortOpen] = useState(false);
   const [chainFilter, setChainFilter] = useState<ChainFilter>("all");
+  const [activeAgents, setActiveAgents] = useState(0);
   const sortRef = useRef<HTMLDivElement>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const limit = 12;
+
+  // Fetch active agents count
+  useEffect(() => {
+    api.getLeaderboardAgents(100).then(res => {
+      setActiveAgents((res.agents || []).length);
+    }).catch(() => {});
+  }, []);
 
   const tabLabels: Record<Tab, string> = {
     all: t.matchesList.all,
@@ -731,6 +739,19 @@ export default function MatchesPage() {
               <div>
                 <span className="text-lg font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{totalCount}</span>
                 <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.matches}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
+              <div className="w-7 h-7 rounded-lg bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
+                <IconUsers className="w-3.5 h-3.5 text-arena-accent" />
+              </div>
+              <div>
+                <span className="text-lg font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{activeAgents}</span>
+                <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.agents}</span>
+                <span className="relative w-2 h-2 ml-1 inline-block align-middle">
+                  <span className="absolute inset-0 rounded-full bg-blue-500" />
+                  <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-40" />
+                </span>
               </div>
             </div>
             {activeMatches.length > 0 && (
