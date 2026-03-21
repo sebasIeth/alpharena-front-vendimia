@@ -35,15 +35,9 @@ import type {
   ScheduledMatchResponse,
 } from "./types";
 
-/**
- * Normalize balance objects from the backend.
- * The backend may send `alpha` or legacy `usdc` — this maps either to `alpha`.
- */
-function normalizeBalance<T extends { alpha?: string; usdc?: string }>(raw: T): T & { alpha: string } {
-  const alpha = (raw as any).alpha ?? (raw as any).usdc ?? "0";
-  const out = { ...raw, alpha };
-  delete (out as any).usdc;
-  return out;
+/** Pass through balance as-is (no normalization needed for Solana). */
+function normalizeBalance<T>(raw: T): T {
+  return raw;
 }
 
 // Client-side: use Next.js rewrite proxy to avoid CORS
@@ -196,8 +190,8 @@ class ApiClient {
     return normalizeBalance(raw);
   }
 
-  async withdrawAgent(id: string, amount: number, toAddress: string): Promise<WithdrawResponse> {
-    return this.post<WithdrawResponse>(`/agents/${id}/withdraw`, { amount, toAddress });
+  async withdrawAgent(id: string, amount: number, toAddress: string, token?: string): Promise<WithdrawResponse> {
+    return this.post<WithdrawResponse>(`/agents/${id}/withdraw`, { amount, toAddress, token });
   }
 
   // ========== SelfClaw ==========
@@ -329,8 +323,8 @@ class ApiClient {
     return normalizeBalance(raw);
   }
 
-  async playWithdraw(amount: number, toAddress: string): Promise<WithdrawResponse> {
-    return this.post<WithdrawResponse>("/play/withdraw", { amount, to: toAddress });
+  async playWithdraw(amount: number, toAddress: string, token?: string): Promise<WithdrawResponse> {
+    return this.post<WithdrawResponse>("/play/withdraw", { amount, to: toAddress, token });
   }
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
