@@ -304,8 +304,6 @@ function AgentDetailContent() {
   useEffect(() => {
     if (agent) {
       fetchBalance();
-      const interval = setInterval(fetchBalance, 10000);
-      return () => clearInterval(interval);
     }
   }, [agent?.id]);
 

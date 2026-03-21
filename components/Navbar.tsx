@@ -144,7 +144,6 @@ export default function Navbar() {
     { href: "/play", label: t.nav.play, icon: <IconPlay /> },
     { href: "/dashboard", label: t.nav.dashboard, icon: <IconDashboard /> },
     { href: "/agents", label: t.nav.myAgents, icon: <IconRobot /> },
-    { href: "/matchmaking", label: t.nav.matchmaking, icon: <IconBolt /> },
   ];
 
   const isActive = (href: string) => {
