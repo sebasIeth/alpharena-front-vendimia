@@ -207,20 +207,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         isEliminated: p.isEliminated ?? false, playerId: p.playerId, name: p.name, isAgent: p.isAgent,
       }));
     }
-    // Object format from backend DB: { a: {...}, b: {...} }
-    const p = initPoker.players;
-    const arr: any[] = [];
-    if (p.a) arr.push({ seatIndex: 0, stack: p.a.stack ?? 0, currentBet: p.a.currentBet ?? 0, hasFolded: p.a.hasFolded ?? false, isAllIn: p.a.isAllIn ?? false, isDealer: p.a.isDealer ?? false, isEliminated: false });
-    if (p.b) arr.push({ seatIndex: 1, stack: p.b.stack ?? 0, currentBet: p.b.currentBet ?? 0, hasFolded: p.b.hasFolded ?? false, isAllIn: p.b.isAllIn ?? false, isDealer: p.b.isDealer ?? false, isEliminated: false });
-    return arr;
+    // Object format from backend DB: { a: {...}, b: {...}, c: {...}, ... }
+    const p = initPoker.players as Record<string, any>;
+    const seatOrder = initPoker.seatOrder || Object.keys(p).sort();
+    return seatOrder.map((side: string, i: number) => {
+      const pl = p[side];
+      if (!pl) return null;
+      return { seatIndex: i, stack: pl.stack ?? 0, currentBet: pl.currentBet ?? 0, hasFolded: pl.hasFolded ?? false, isAllIn: pl.isAllIn ?? false, isDealer: pl.isDealer ?? false, isEliminated: pl.isEliminated ?? false };
+    }).filter(Boolean);
   });
   const [pokerCurrentPlayerIndex, setPokerCurrentPlayerIndex] = useState(() => {
     if (!initPoker?.currentPlayerSide) return 0;
-    return initPoker.currentPlayerSide === "b" ? 1 : 0;
+    const seatOrder = initPoker.seatOrder || Object.keys(initPoker.players || {}).sort();
+    return Math.max(0, seatOrder.indexOf(initPoker.currentPlayerSide));
   });
   const [pokerDealerIndex, setPokerDealerIndex] = useState(() => {
     if (initPoker?.dealerIndex != null) return initPoker.dealerIndex;
-    if (initPoker?.dealerSide) return initPoker.dealerSide === "b" ? 1 : 0;
+    if (initPoker?.dealerSide) {
+      const seatOrder = initPoker.seatOrder || Object.keys(initPoker.players || {}).sort();
+      return Math.max(0, seatOrder.indexOf(initPoker.dealerSide));
+    }
     return 0;
   });
   const [pokerActionHistory, setPokerActionHistory] = useState<{ type: string; amount?: number; playerIndex: number; street: string }[]>([]);
@@ -236,8 +242,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       if (Array.isArray(initPoker.players)) {
         initPoker.players.forEach((p: any) => { if (p.holeCards?.length) hcMap[p.seatIndex ?? 0] = p.holeCards; });
       } else {
-        if (initPoker.players.a?.holeCards?.length) hcMap[0] = initPoker.players.a.holeCards;
-        if (initPoker.players.b?.holeCards?.length) hcMap[1] = initPoker.players.b.holeCards;
+        const sOrder = initPoker.seatOrder || Object.keys(initPoker.players).sort();
+        sOrder.forEach((side: string, i: number) => {
+          const pl = (initPoker.players as any)[side];
+          if (pl?.holeCards?.length) hcMap[i] = pl.holeCards;
+        });
       }
       if (Object.keys(hcMap).length > 0) return { [initPoker.handNumber]: hcMap };
     }
@@ -482,11 +491,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           const dealer = players.findIndex((p: any) => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
         } else if (data.pokerPlayerStacks) {
-          const stacks = data.pokerPlayerStacks as { a: number; b: number };
-          setPokerPlayers([
-            { seatIndex: 0, stack: stacks.a, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: true, isEliminated: false },
-            { seatIndex: 1, stack: stacks.b, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: false, isEliminated: false },
-          ]);
+          const stacks = data.pokerPlayerStacks as Record<string, number>;
+          const sides = Object.keys(stacks).sort();
+          setPokerPlayers(sides.map((side, i) => ({
+            seatIndex: i, stack: stacks[side], currentBet: 0, hasFolded: false, isAllIn: false, isDealer: i === 0, isEliminated: false,
+          })));
         }
         if (data.pokerHandNumber != null) {
           setPokerHandNumber((prev: number) => {
@@ -611,15 +620,15 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           const dealer = incoming.findIndex((p: any) => p.isDealer);
           if (dealer !== -1) setPokerDealerIndex(dealer);
         } else if (data.pokerPlayerStacks) {
-          const stacks = data.pokerPlayerStacks as { a: number; b: number };
+          const stacks = data.pokerPlayerStacks as Record<string, number>;
+          const sides = Object.keys(stacks).sort();
           setPokerPlayers(prev => {
             if (prev.length === 0) {
-              return [
-                { seatIndex: 0, stack: stacks.a, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: true, isEliminated: false },
-                { seatIndex: 1, stack: stacks.b, currentBet: 0, hasFolded: false, isAllIn: false, isDealer: false, isEliminated: false },
-              ];
+              return sides.map((side, i) => ({
+                seatIndex: i, stack: stacks[side], currentBet: 0, hasFolded: false, isAllIn: false, isDealer: i === 0, isEliminated: false,
+              }));
             }
-            return prev.map((p, i) => ({ ...p, stack: i === 0 ? stacks.a : stacks.b }));
+            return prev.map((p, i) => ({ ...p, stack: stacks[sides[i]] ?? p.stack }));
           });
         }
         if (data.pokerCurrentPlayerIndex != null) {
@@ -629,7 +638,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
         if (data.pokerAction) {
           const action = data.pokerAction as { type: string; amount?: number };
-          const playerIndex = (data.pokerPlayerIndex as number) ?? (data.side === "a" ? 0 : data.side === "b" ? 1 : 0);
+          const playerIndex = (data.pokerPlayerIndex as number) ?? (typeof data.side === 'string' ? Math.max(0, data.side.charCodeAt(0) - 97) : 0);
           setPokerActionHistory((prev) => [...prev, {
             type: action.type,
             amount: action.amount,
@@ -771,8 +780,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 if (pk.showdownResult) {
                   setPokerShowdownResult(pk.showdownResult);
                   const hcMap: Record<number, PokerCard[]> = {};
-                  if (pk.players?.a?.holeCards?.length) hcMap[0] = pk.players.a.holeCards;
-                  if (pk.players?.b?.holeCards?.length) hcMap[1] = pk.players.b.holeCards;
+                  const pollSeatOrder = pk.seatOrder || Object.keys(pk.players || {}).sort();
+                  pollSeatOrder.forEach((side: string, i: number) => {
+                    const pl = (pk.players as any)?.[side];
+                    if (pl?.holeCards?.length) hcMap[i] = pl.holeCards;
+                  });
                   if (Object.keys(hcMap).length > 0) {
                     setPokerHoleCards(hcMap);
                     const hn = pk.handNumber as number;
@@ -780,8 +792,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   }
                 }
                 if (pk.dealerIndex != null) setPokerDealerIndex(pk.dealerIndex);
-                else if (pk.dealerSide) setPokerDealerIndex(pk.dealerSide === "b" ? 1 : 0);
-                if (pk.currentPlayerSide) setPokerCurrentPlayerIndex(pk.currentPlayerSide === "b" ? 1 : 0);
+                else if (pk.dealerSide) {
+                  const so = pk.seatOrder || Object.keys(pk.players || {}).sort();
+                  setPokerDealerIndex(Math.max(0, so.indexOf(pk.dealerSide)));
+                }
+                if (pk.currentPlayerSide) {
+                  const so = pk.seatOrder || Object.keys(pk.players || {}).sort();
+                  setPokerCurrentPlayerIndex(Math.max(0, so.indexOf(pk.currentPlayerSide)));
+                }
                 // Players: handle both array format (WS) and object format (DB: { a, b })
                 if (pk.players) {
                   if (Array.isArray(pk.players)) {
@@ -794,19 +812,20 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         name: p.name ?? existing?.name, isAgent: p.isAgent ?? existing?.isAgent,
                       };
                     }));
-                  } else if (pk.players.a || pk.players.b) {
+                  } else if (typeof pk.players === 'object') {
                     setPokerPlayers(prev => {
                       const arr: typeof prev = [];
-                      for (const [side, idx] of [["a", 0], ["b", 1]] as const) {
+                      const so = pk.seatOrder || Object.keys(pk.players).sort();
+                      so.forEach((side: string, idx: number) => {
                         const p = (pk.players as any)[side];
-                        if (!p) continue;
+                        if (!p) return;
                         const existing = prev.find(e => e.seatIndex === idx);
                         arr.push({
                           seatIndex: idx, stack: p.stack ?? 0, currentBet: p.currentBet ?? 0,
                           hasFolded: p.hasFolded ?? false, isAllIn: p.isAllIn ?? false, isDealer: p.isDealer ?? false,
-                          isEliminated: false, playerId: existing?.playerId, name: existing?.name, isAgent: existing?.isAgent,
+                          isEliminated: p.isEliminated ?? false, playerId: existing?.playerId, name: existing?.name, isAgent: existing?.isAgent,
                         });
-                      }
+                      });
                       return arr;
                     });
                   }
@@ -1045,12 +1064,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const curMd = curMove?.moveData as any;
                 const curHandNum = curMd?.pokerHandNumber;
                 const curStreet = curMd?.pokerStreet;
-                const curStacks = curMove?.scoreAfter as { a?: number; b?: number } | undefined;
+                const curStacks = curMove?.scoreAfter as Record<string, number> | undefined;
 
                 // Extract rich state from moveData (new format includes community cards, pot, player states)
                 const curMdCommunity = curMd?.pokerCommunityCards as PokerCard[] | undefined;
                 const curMdPot = curMd?.pokerPot as number | undefined;
-                const curMdPlayers = curMd?.pokerPlayers as { a?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean }; b?: { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean } } | undefined;
+                const curMdPlayers = curMd?.pokerPlayers as Record<string, { stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean }> | Array<{ seatIndex: number; stack: number; currentBet: number; hasFolded: boolean; isAllIn: boolean; isDealer: boolean; isEliminated: boolean }> | undefined;
 
                 // Get hole cards and community cards for the current hand from the archive
                 // Try exact hand number first, then +1 and -1 (handles off-by-one in old matches)
@@ -1110,16 +1129,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 // Update player states when rewinding
                 const rewindPlayers = isRewinding
                   ? spectatorPlayers.map((p, i) => {
-                      const side = i === 0 ? "a" : "b";
-                      const mdP = curMdPlayers?.[side as "a" | "b"];
+                      const side = String.fromCharCode(97 + i); // a, b, c, ...
+                      let mdP: any = null;
+                      if (Array.isArray(curMdPlayers)) {
+                        mdP = curMdPlayers.find((pp: any) => pp.seatIndex === i) || curMdPlayers[i];
+                      } else if (curMdPlayers) {
+                        mdP = (curMdPlayers as any)[side];
+                      }
                       const holeCards = rewindHandCards?.[i];
                       return {
                         ...p,
-                        stack: mdP?.stack ?? (curStacks?.[side as "a" | "b"] ?? p.stack),
+                        stack: mdP?.stack ?? (curStacks?.[side] ?? p.stack),
                         currentBet: mdP?.currentBet ?? 0,
                         hasFolded: mdP?.hasFolded ?? false,
                         isAllIn: mdP?.isAllIn ?? false,
-                        isEliminated: (mdP?.stack ?? (curStacks?.[side as "a" | "b"] ?? 1)) <= 0,
+                        isEliminated: (mdP?.stack ?? (curStacks?.[side] ?? 1)) <= 0,
                         holeCards,
                       };
                     })
@@ -1129,15 +1153,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 let convertedShowdown = null;
                 if (pokerShowdownResult && !isRewinding) {
                   const sr = pokerShowdownResult;
-                  const winnerIdx = sr.winnerSide === "a" ? 0 : 1;
-                  const loserIdx = winnerIdx === 0 ? 1 : 0;
+                  const winnerIdx = sr.winnerSide && sr.winnerSide.length === 1 ? Math.max(0, sr.winnerSide.charCodeAt(0) - 97) : 0;
+                  const playerHandEntries: [number, any][] = [[winnerIdx, { rank: sr.winnerHand?.rank ?? 0, description: sr.winnerHand?.description ?? "" } as any]];
+                  // Add all hands from showdown
+                  if (sr.hands) {
+                    Object.entries(sr.hands).forEach(([side, hand]: [string, any]) => {
+                      const idx = side.charCodeAt(0) - 97;
+                      if (idx !== winnerIdx) playerHandEntries.push([idx, { rank: hand?.rank ?? 0, description: hand?.description ?? "" } as any]);
+                    });
+                  } else if (sr.loserHand) {
+                    // Legacy 2-player format
+                    const loserIdx = winnerIdx === 0 ? 1 : 0;
+                    playerHandEntries.push([loserIdx, { rank: sr.loserHand.rank ?? 0, description: sr.loserHand.description ?? "" } as any]);
+                  }
                   convertedShowdown = {
                     winners: [{ playerIndex: winnerIdx, handEval: { rank: sr.winnerHand?.rank ?? 0, description: sr.winnerHand?.description ?? "Winner" } as any }],
                     pots: [{ amount: displayPot, winnerIndices: [winnerIdx] }],
-                    playerHands: new Map([
-                      [winnerIdx, { rank: sr.winnerHand?.rank ?? 0, description: sr.winnerHand?.description ?? "" } as any],
-                      ...(sr.loserHand ? [[loserIdx, { rank: sr.loserHand.rank ?? 0, description: sr.loserHand.description ?? "" } as any] as [number, any]] : []),
-                    ]),
+                    playerHands: new Map(playerHandEntries),
                   };
                 }
 
@@ -1145,7 +1177,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 const pokerMatchResult = match.status === "completed" && match.winnerId && !isRewinding
                   ? {
                       winnerName: agents.find(a => a.agentId === match.winnerId)?.agentName
-                        ?? (match.winnerId === "a" ? agents[0]?.agentName : match.winnerId === "b" ? agents[1]?.agentName : undefined)
+                        ?? (match.winnerId && match.winnerId.length === 1 ? agents[match.winnerId.charCodeAt(0) - 97]?.agentName : undefined)
                         ?? "Winner",
                       reason: (() => {
                         const raw = typeof match.result === "string" ? match.result : (match.result as any)?.reason;
@@ -1172,7 +1204,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       const actionType = typeof rawAct === "string" ? rawAct : (rawAct?.type || String(rawAct));
                       const amount = curMd.pokerAmount;
                       const side = curMove?.side;
-                      const playerIndex = side === "a" ? 0 : side === "b" ? 1 : 0;
+                      const playerIndex = typeof side === 'string' && side.length === 1 ? Math.max(0, side.charCodeAt(0) - 97) : 0;
                       return [{ type: actionType, amount, playerIndex, street: curStreet || "preflop" }];
                     })() : pokerActionHistory}
                     showdownResult={convertedShowdown}
