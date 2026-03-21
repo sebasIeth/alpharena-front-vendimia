@@ -265,8 +265,9 @@ class ApiClient {
   }): Promise<MatchesResponse> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.set("status", params.status);
-    if (params?.page) searchParams.set("page", params.page.toString());
     if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.page && params?.limit) searchParams.set("offset", ((params.page - 1) * params.limit).toString());
+    else if (params?.page) searchParams.set("offset", ((params.page - 1) * 20).toString());
     const query = searchParams.toString();
     return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`, false);
   }

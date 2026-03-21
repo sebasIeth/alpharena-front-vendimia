@@ -621,8 +621,11 @@ export default function MatchesPage() {
           pokerState: raw.pokerState,
         };
       }));
-      setTotalPages(data.pages || 1);
-      setTotalCount(data.total || 0);
+      const pagination = (data as any).pagination;
+      const total = data.total || pagination?.total || 0;
+      const pages = data.pages || (pagination ? Math.ceil(pagination.total / (pagination.limit || limit)) : 1);
+      setTotalPages(pages);
+      setTotalCount(total);
       // Fetch viewer counts for active matches
       api.getMatchViewers().then(setViewerCounts).catch(() => {});
     } catch (err) {
