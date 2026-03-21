@@ -20,10 +20,28 @@ const TABS: { key: FilterTab; label: string; icon?: string }[] = [
   { key: "live", label: "Live" },
 ];
 
-const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
-  { key: "mostBets", label: "Most Bets", icon: "\uD83D\uDCB0" },
-  { key: "mostViewers", label: "Most Viewers", icon: "\uD83D\uDC41" },
-  { key: "soonest", label: "Soonest", icon: "\u23F1" },
+const SORT_ICONS: Record<SortOption, React.ReactNode> = {
+  mostBets: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
+  mostViewers: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  soonest: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+};
+
+const SORT_OPTIONS: { key: SortOption; label: string }[] = [
+  { key: "mostBets", label: "Most Bets" },
+  { key: "mostViewers", label: "Most Viewers" },
+  { key: "soonest", label: "Soonest" },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -247,7 +265,7 @@ export default function ScheduledMatches({ initialGameType }: ScheduledMatchesPr
                 }
               `}
             >
-              <span className="text-[11px]">{opt.icon}</span>
+              {SORT_ICONS[opt.key]}
               {opt.label}
             </button>
           );
