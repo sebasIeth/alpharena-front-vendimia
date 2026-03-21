@@ -402,11 +402,25 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         <span className="text-arena-muted font-mono">
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
-        <span className="font-mono font-bold text-arena-accent tabular-nums">
-          {(agent.stats?.earningsAlpha || 0) > 0 && <><img src="/tokens/alpha.jpg" alt="" className="w-3 h-3 rounded-full inline mr-0.5" />{formatEarnings(agent.stats.earningsAlpha || 0)} </>}
-          {(agent.stats?.earningsUsdc || 0) > 0 && <><img src="/tokens/usdc.jpg" alt="" className="w-3 h-3 rounded-full inline mr-0.5" />{formatEarnings(agent.stats.earningsUsdc || 0)} </>}
-          {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && <>{formatEarnings(agent.stats?.totalEarnings || 0)} ALPHA</>}
-        </span>
+        <div className="flex flex-col items-end gap-0.5">
+          {(agent.stats?.earningsAlpha || 0) > 0 && (
+            <div className="flex items-center gap-1">
+              <img src="/tokens/alpha.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+              <span className="font-mono font-bold text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
+              <span className="text-[9px] text-arena-muted font-mono">ALPHA</span>
+            </div>
+          )}
+          {(agent.stats?.earningsUsdc || 0) > 0 && (
+            <div className="flex items-center gap-1">
+              <img src="/tokens/usdc.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+              <span className="font-mono font-bold text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
+              <span className="text-[9px] text-arena-muted font-mono">USDC</span>
+            </div>
+          )}
+          {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+            <span className="font-mono font-bold text-arena-muted tabular-nums">0 Earnings</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -526,12 +540,14 @@ function AgentsContent() {
     const totalM = totalW + totalL + totalD;
     const winRate = totalM > 0 ? totalW / totalM : 0;
     const earnings = filtered.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
+    const earningsAlpha = filtered.reduce((s, a) => s + (a.stats?.earningsAlpha || 0), 0);
+    const earningsUsdc = filtered.reduce((s, a) => s + (a.stats?.earningsUsdc || 0), 0);
     const bestAgent = filtered.reduce(
       (best, a) => ((a.elo || 0) > (best.elo || 0) ? a : best),
       filtered[0]
     );
     const activeLive = filtered.filter((a) => a.status === "in_match").length;
-    return { totalW, totalL, totalD, totalM, winRate, earnings, bestAgent, activeLive };
+    return { totalW, totalL, totalD, totalM, winRate, earnings, earningsAlpha, earningsUsdc, bestAgent, activeLive };
   }, [filtered]);
 
   const sorted = useMemo(() => sortAgents(filtered, sortKey), [filtered, sortKey]);
@@ -624,12 +640,29 @@ function AgentsContent() {
 
               <DashStat
                 label={t.common.earnings}
-                value={formatEarnings(summary.earnings)}
-                sub="ALPHA"
+                value=""
                 icon={<IconCoin className="w-4 h-4" />}
                 accentColor="bg-arena-accent"
                 delay={0.18}
-              />
+              >
+                <div className="space-y-0.5 mt-1">
+                  {summary.earningsAlpha > 0 && (
+                    <div className="flex items-center gap-1">
+                      <img src="/tokens/alpha.jpg" alt="" className="w-3 h-3 rounded-full" />
+                      <span className="text-xs font-bold font-mono text-arena-accent tabular-nums">{formatEarnings(summary.earningsAlpha)}</span>
+                    </div>
+                  )}
+                  {summary.earningsUsdc > 0 && (
+                    <div className="flex items-center gap-1">
+                      <img src="/tokens/usdc.jpg" alt="" className="w-3 h-3 rounded-full" />
+                      <span className="text-xs font-bold font-mono text-emerald-600 tabular-nums">{formatEarnings(summary.earningsUsdc)}</span>
+                    </div>
+                  )}
+                  {summary.earningsAlpha === 0 && summary.earningsUsdc === 0 && (
+                    <span className="text-sm font-bold font-mono text-arena-muted tabular-nums">0</span>
+                  )}
+                </div>
+              </DashStat>
             </div>
           )}
 
