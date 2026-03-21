@@ -118,7 +118,7 @@ function IconSend({ className = "w-4 h-4" }: { className?: string }) {
    ═══════════════════════════════════════════════════════ */
 
 /* ── Avatar ── (shared component) */
-import AgentAvatar from "@/components/ui/AgentAvatar";
+import AgentAvatar, { getAgentSprite } from "@/components/ui/AgentAvatar";
 
 /* ── Win Rate Ring ── */
 function WinRateRing({ rate, size = 110 }: { rate: number; size?: number }) {
@@ -404,6 +404,25 @@ function DashboardContent() {
     return `${agents.length} ${t.dashboard.agentsCompeting}`;
   }, [agents, stats, t]);
 
+  const [userSprite, setUserSprite] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("arena_avatar");
+      if (saved) return `/agents/${saved}.webp`;
+    }
+    return getAgentSprite(user?.username || "user");
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const saved = localStorage.getItem("arena_avatar");
+      setUserSprite(saved ? `/agents/${saved}.webp` : getAgentSprite(user?.username || "user"));
+    };
+    window.addEventListener("storage", handleStorage);
+    // Also poll for same-tab changes (localStorage events only fire cross-tab)
+    const interval = setInterval(handleStorage, 1000);
+    return () => { window.removeEventListener("storage", handleStorage); clearInterval(interval); };
+  }, [user?.username]);
+
   if (loading) return <PageSpinner />;
 
   const hasAgents = agents.length > 0;
@@ -426,9 +445,13 @@ function DashboardContent() {
             {/* Avatar + greeting */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-arena-primary to-arena-accent flex items-center justify-center ring-4 ring-arena-primary/10" style={{ boxShadow: "0 4px 16px rgba(91, 79, 207, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
-                  <span className="text-2xl sm:text-3xl font-extrabold text-white">{user?.username?.charAt(0).toUpperCase()}</span>
-                </div>
+                <div
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden agent-sprite ring-4 ring-arena-primary/10"
+                  style={{
+                    backgroundImage: `url('${userSprite}')`,
+                    boxShadow: "0 4px 16px rgba(91, 79, 207, 0.3)",
+                  }}
+                />
                 {/* Online dot */}
                 <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-arena-success border-[2.5px] border-white shadow-sm" />
               </div>
@@ -458,7 +481,7 @@ function DashboardContent() {
                   </span>
                 </Button>
               </Link>
-              <Link href="/matchmaking">
+              <Link href="/play">
                 <Button variant="outline">
                   <span className="flex items-center gap-2">
                     <IconBolt className="w-4 h-4" />

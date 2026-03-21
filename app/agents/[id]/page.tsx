@@ -517,10 +517,6 @@ function AgentDetailContent() {
                   )}
                 </div>
 
-                <p className="text-sm text-arena-muted font-mono mb-2.5 break-all max-w-lg">
-                  {agent.type === "openclaw" ? agent.openclawUrl : agent.endpointUrl}
-                </p>
-
                 <div className="flex items-center gap-2 flex-wrap">
                   {agent.type === "openclaw" && (
                     <span className="px-2 py-0.5 text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-200 rounded">OpenClaw</span>
