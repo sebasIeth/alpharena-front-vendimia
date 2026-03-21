@@ -287,7 +287,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
             {/* Total pool header */}
             <div className="flex items-center justify-center mb-2">
               <span className="text-arena-muted text-[10px] font-mono font-semibold">
-                {t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA
+                {t.betting.totalPool}: {formatEarnings(totalPool)} USDC
               </span>
             </div>
 
@@ -311,7 +311,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-mono font-semibold" style={{ color }}>
-                            {formatEarnings(bets)} ALPHA
+                            {formatEarnings(bets)} USDC
                           </span>
                           {totalPool > 0 && (
                             <span className="text-arena-muted/70 text-[9px] font-mono w-8 text-right">
@@ -349,7 +349,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
           <div className="flex items-center gap-1.5">
             <span className="text-arena-accent text-xs">&#9672;</span>
             <span className="text-arena-muted text-xs font-mono font-medium">
-              {(match.stakeAmount ?? 0).toLocaleString()} ALPHA
+              {(match.stakeAmount ?? 0).toLocaleString()} USDC
             </span>
           </div>
 
@@ -445,7 +445,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                       placeholder="0.00"
                       className="w-full px-3 py-2 bg-white border-2 border-arena-border-light rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/50 focus:outline-none focus:border-arena-accent focus:ring-1 focus:ring-arena-accent/30 pr-16 shadow-sm"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">ALPHA</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">USDC</span>
                   </div>
                   <button
                     onClick={handlePlaceBet}
@@ -469,7 +469,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                     <div className="flex items-center justify-between px-1">
                       <span className="text-[10px] text-arena-muted/60 font-mono">{t.betting.minBet}</span>
                       <span className="text-[11px] font-mono font-semibold text-arena-success">
-                        {t.betting.potentialWin}: ~{formatEarnings(potentialWin)} ALPHA
+                        {t.betting.potentialWin}: ~{formatEarnings(potentialWin)} USDC
                       </span>
                     </div>
                   );

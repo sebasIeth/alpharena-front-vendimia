@@ -496,7 +496,7 @@ function DashboardContent() {
                 </div>
                 <div>
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(stats.earnings)}</span>
-                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">ALPHA</span>
+                  <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">USDC</span>
                 </div>
               </div>
               {stats.active > 0 && (
@@ -973,11 +973,11 @@ function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-arena-muted font-mono">
-                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} ALPHA
+                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} USDC
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">
-                        +{formatEarnings(Number(claim.winnings) * 0.95)} ALPHA
+                        +{formatEarnings(Number(claim.winnings) * 0.95)} USDC
                       </span>
                     )}
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
@@ -1276,7 +1276,7 @@ function DashboardContent() {
                               {myAgent.eloChange > 0 ? "+" : ""}{myAgent.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} ALPHA</span>
+                          <span className="font-mono">{match.stakeAmount} USDC</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

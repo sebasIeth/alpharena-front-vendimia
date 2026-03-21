@@ -343,7 +343,8 @@ export default function LeaderboardPage() {
 
   // Summary stats
   const totalMatches = agents.reduce((s, a) => s + a.totalMatches, 0);
-  const avgElo = agents.length > 0 ? Math.round(agents.reduce((s, a) => s + a.elo, 0) / agents.length) : 0;
+  const avgEloRaw = agents.length > 0 ? agents.reduce((s, a) => s + a.elo, 0) / agents.length : 0;
+  const avgElo = Math.round(avgEloRaw * 10) / 10;
   const totalEarnings = agents.reduce((s, a) => s + a.totalEarnings, 0);
 
   return (
