@@ -682,7 +682,7 @@ export default function MatchDetailPage() {
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                 Solana
               </span>
-              <Badge status={match.status} />
+              {!isActive && <Badge status={match.status} />}
               {isActive && (
                 <span className="flex items-center gap-1.5 text-[11px] text-arena-success font-semibold uppercase tracking-wider">
                   <span className="relative w-2 h-2">
