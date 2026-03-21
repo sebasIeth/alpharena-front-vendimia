@@ -410,16 +410,16 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-3 mt-8 max-w-lg mx-auto animate-fade-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
-            <div className="text-center">
+          <div className="grid grid-cols-3 gap-3 mt-8 max-w-lg mx-auto items-center animate-fade-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
+            <div className="text-center flex flex-col items-center justify-center">
               <div className="text-xl sm:text-2xl font-extrabold text-arena-text-bright font-mono tabular-nums">{agents.length}</div>
               <div className="text-[10px] uppercase tracking-wider text-arena-muted">{t.common.agents}</div>
             </div>
-            <div className="text-center border-x border-arena-border-light">
+            <div className="text-center flex flex-col items-center justify-center border-x border-arena-border-light">
               <div className="text-xl sm:text-2xl font-extrabold text-arena-primary font-mono tabular-nums">{avgElo}</div>
-              <div className="text-[10px] uppercase tracking-wider text-arena-muted">Avg {t.common.elo}</div>
+              <div className="text-[10px] uppercase tracking-wider text-arena-muted">Average {t.common.elo}</div>
             </div>
-            <div className="text-center">
+            <div className="text-center flex flex-col items-center justify-center">
               <div className="text-[10px] uppercase tracking-wider text-arena-muted mb-1">{t.common.earnings}</div>
               <TokenEarnings alpha={agents.reduce((s, a) => s + (a.earningsAlpha || 0), 0)} usdc={agents.reduce((s, a) => s + (a.earningsUsdc || 0), 0)} size="md" />
               {(() => { const usd = formatUsdEquivalent(totalEarnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
