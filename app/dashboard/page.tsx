@@ -715,7 +715,11 @@ function DashboardContent() {
                 </div>
                 {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
                 <div className="flex items-baseline gap-1.5 pt-1">
-                  <span className="text-lg font-bold font-mono tabular-nums text-arena-text-bright">{Number(playBalance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                  <span className="text-lg font-bold font-mono tabular-nums text-emerald-600">{Number((playBalance as any).usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-xs text-arena-muted">USDC</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-bold font-mono tabular-nums text-arena-muted">{Number((playBalance as any).sol || (playBalance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
                   <span className="text-xs text-arena-muted">SOL</span>
                 </div>
               </div>

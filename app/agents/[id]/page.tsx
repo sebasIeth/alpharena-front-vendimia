@@ -784,9 +784,15 @@ function AgentDetailContent() {
             {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
           </div>
           <div>
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">USDC</div>
+            <span className="text-base font-bold font-mono tabular-nums text-emerald-600 leading-none">
+              {balanceLoading ? "..." : ((balance as any)?.usdc ?? "—")}
+            </span>
+          </div>
+          <div>
             <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">SOL (gas)</div>
             <span className="text-base font-bold font-mono tabular-nums text-arena-muted leading-none">
-              {balanceLoading ? "..." : (balance?.eth ?? "—")}
+              {balanceLoading ? "..." : ((balance as any)?.sol || (balance as any)?.eth || "—")}
             </span>
           </div>
         </div>
