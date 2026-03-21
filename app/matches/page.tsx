@@ -409,7 +409,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
         {/* Players Section */}
         {isPoker ? (
           /* Poker: vertical list with stack bars */
-          <div className="space-y-1 mb-3">
+          <div className="space-y-1 mb-3 max-h-40 overflow-y-auto scrollbar-thin">
             {agents
               .slice()
               .sort((a, b) => {
@@ -471,7 +471,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
             />
           </div>
         ) : (
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 max-h-40 overflow-y-auto scrollbar-thin">
             {agents.map((agent, idx) => (
               <div key={agent.agentId} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
