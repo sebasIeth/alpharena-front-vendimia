@@ -67,7 +67,8 @@ export interface Agent {
 export interface AgentBalance {
   walletAddress: string;
   alpha: string;
-  eth: string;
+  usdc: string;
+  sol: string;
   chain: Chain;
 }
 
@@ -457,7 +458,8 @@ export interface WSMessage {
 export interface PlayBalance {
   walletAddress: string;
   alpha: string;
-  eth: string;
+  usdc: string;
+  sol: string;
 }
 
 export interface PlayStatus {

@@ -200,6 +200,7 @@ function AgentDetailContent() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -326,8 +327,8 @@ function AgentDetailContent() {
     setWithdrawError("");
     setWithdrawSuccess("");
     const addr = withdrawAddress.trim();
-    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-      setWithdrawError("Enter a valid Ethereum address (0x...).");
+    if (!addr || addr.length < 32) {
+      setWithdrawError("Enter a valid Solana address.");
       return;
     }
     const value = Number(withdrawAmount);
@@ -335,16 +336,21 @@ function AgentDetailContent() {
       setWithdrawError("Amount must be greater than 0.");
       return;
     }
-    const alphaBalance = parseFloat(balance?.alpha || "0");
-    if (value > alphaBalance) {
-      setWithdrawError(`Exceeds available balance (${alphaBalance} ALPHA).`);
+    const balanceMap: Record<string, string> = {
+      ALPHA: balance?.alpha || "0",
+      USDC: balance?.usdc || "0",
+      SOL: (balance as any)?.sol || (balance as any)?.eth || "0",
+    };
+    const available = parseFloat(balanceMap[withdrawToken]);
+    if (value > available) {
+      setWithdrawError(`Exceeds available balance (${available} ${withdrawToken}).`);
       return;
     }
     setWithdrawLoading(true);
     try {
-      const data = await api.withdrawAgent(agentId, value, addr);
+      const data = await api.withdrawAgent(agentId, value, addr, withdrawToken);
       const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "solana");
-      setWithdrawSuccess(`Withdrawn! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
+      setWithdrawSuccess(`Withdrawn ${value} ${withdrawToken}! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmount("");
       fetchBalance();
     } catch (err) {
@@ -775,35 +781,72 @@ function AgentDetailContent() {
         )}
 
         {/* Balances */}
-        <div className="flex items-end gap-6 mb-3">
-          <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">ALPHA</div>
-            <span className="text-2xl font-extrabold font-mono tabular-nums text-arena-primary leading-none">
-              {balanceLoading ? "..." : (balance?.alpha ?? "—")}
-            </span>
-            {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted ml-2">({usd})</span> : null; })()}
+        <div className="space-y-2 mb-3">
+          {/* ALPHA */}
+          <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3 py-2.5">
+            <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">
+                  {balanceLoading ? "..." : (balance?.alpha ?? "—")}
+                </span>
+                {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">USDC</div>
-            <span className="text-base font-bold font-mono tabular-nums text-emerald-600 leading-none">
-              {balanceLoading ? "..." : ((balance as any)?.usdc ?? "—")}
-            </span>
+          {/* USDC */}
+          <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3 py-2.5">
+            <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">USDC</div>
+              <span className="text-xl font-extrabold font-mono tabular-nums text-emerald-600">
+                {balanceLoading ? "..." : (balance?.usdc ?? "—")}
+              </span>
+            </div>
           </div>
-          <div>
-            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">SOL (gas)</div>
-            <span className="text-base font-bold font-mono tabular-nums text-arena-muted leading-none">
-              {balanceLoading ? "..." : ((balance as any)?.sol || (balance as any)?.eth || "—")}
-            </span>
+          {/* SOL */}
+          <div className="flex items-center gap-3 bg-purple-50/30 border border-purple-100/50 rounded-xl px-3 py-2">
+            <img src="/tokens/solana.jpg" alt="SOL" className="w-7 h-7 rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL (gas)</div>
+              <span className="text-lg font-bold font-mono tabular-nums text-purple-600">
+                {balanceLoading ? "..." : (balance?.sol || "—")}
+              </span>
+            </div>
           </div>
         </div>
 
         <p className="text-xs text-arena-muted mb-4">
-          Send ALPHA + SOL (gas) on <strong>Solana</strong> network to the wallet address above to fund your agent.
+          Send ALPHA, USDC, or SOL on <strong>Solana</strong> network to the wallet address above to fund your agent.
         </p>
 
         {/* Withdraw */}
         <div className="border-t border-arena-border-light/60 pt-4">
-          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-2">Withdraw ALPHA</div>
+          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-3">Withdraw</div>
+
+          {/* Token selector */}
+          <div className="flex gap-1.5 mb-3">
+            {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+              const isActive = withdrawToken === token;
+              const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+              return (
+                <button
+                  key={token}
+                  onClick={() => { setWithdrawToken(token); setWithdrawError(""); setWithdrawSuccess(""); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all border ${
+                    isActive
+                      ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20"
+                      : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20"
+                  }`}
+                >
+                  <img src={icons[token]} alt={token} className="w-4 h-4 rounded-full" />
+                  {token}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="space-y-2">
             <input
               type="text"
@@ -813,30 +856,33 @@ function AgentDetailContent() {
                 setWithdrawError("");
                 setWithdrawSuccess("");
               }}
-              placeholder="Destination address (0x...)"
+              placeholder="Destination Solana address"
               className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
             <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={withdrawAmount}
-                onChange={(e) => {
-                  setWithdrawAmount(e.target.value);
-                  setWithdrawError("");
-                  setWithdrawSuccess("");
-                }}
-                placeholder="Amount"
-                className="w-36 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={withdrawAmount}
+                  onChange={(e) => {
+                    setWithdrawAmount(e.target.value);
+                    setWithdrawError("");
+                    setWithdrawSuccess("");
+                  }}
+                  placeholder="Amount"
+                  className="w-full px-3 py-2 pr-16 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">{withdrawToken}</span>
+              </div>
               <Button
                 size="sm"
                 onClick={handleWithdraw}
                 disabled={withdrawLoading || !withdrawAmount || !withdrawAddress}
                 isLoading={withdrawLoading}
               >
-                Withdraw
+                Send
               </Button>
             </div>
           </div>

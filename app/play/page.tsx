@@ -942,19 +942,33 @@ function PlayContent() {
               <div className="p-6">
                 {balance ? (
                   <div className="space-y-3">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap items-baseline gap-1.5">
-                        <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate min-w-0">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                        <span className="text-xs text-arena-muted">ALPHA</span>
+                    <div className="space-y-2">
+                      {/* ALPHA */}
+                      <div className="flex items-center gap-2.5 bg-arena-primary/5 border border-arena-primary/10 rounded-lg px-3 py-2">
+                        <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-7 h-7 rounded-full shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg font-extrabold font-mono tabular-nums text-arena-primary">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                            <span className="text-[10px] text-arena-muted font-mono">ALPHA</span>
+                            {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">({usd})</span> : null; })()}
+                          </div>
+                        </div>
                       </div>
-                      {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
-                      <div className="flex items-baseline gap-1.5 pt-1">
-                        <span className="text-lg font-bold font-mono tabular-nums text-emerald-600">{Number((balance as any).usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span className="text-xs text-arena-muted">USDC</span>
+                      {/* USDC */}
+                      <div className="flex items-center gap-2.5 bg-emerald-50/50 border border-emerald-100 rounded-lg px-3 py-2">
+                        <img src="/tokens/usdc.jpg" alt="USDC" className="w-7 h-7 rounded-full shrink-0" />
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-lg font-extrabold font-mono tabular-nums text-emerald-600">{Number(balance.usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-[10px] text-arena-muted font-mono">USDC</span>
+                        </div>
                       </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm font-bold font-mono tabular-nums text-arena-muted">{Number((balance as any).sol || (balance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                        <span className="text-xs text-arena-muted">SOL</span>
+                      {/* SOL */}
+                      <div className="flex items-center gap-2.5 bg-purple-50/30 border border-purple-100/50 rounded-lg px-3 py-1.5">
+                        <img src="/tokens/solana.jpg" alt="SOL" className="w-6 h-6 rounded-full shrink-0" />
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-sm font-bold font-mono tabular-nums text-purple-600">{Number(balance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                          <span className="text-[10px] text-arena-muted font-mono">SOL</span>
+                        </div>
                       </div>
                     </div>
                     {balance.walletAddress && (

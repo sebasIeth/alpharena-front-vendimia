@@ -256,15 +256,28 @@ function DashboardContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const { priceUsd } = useAlphaPrice();
+  const { solPriceUsd, usdcPriceUsd } = (require("@/lib/useSolanaPrice") as any).useSolanaPrice();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   /* ── Play Wallet state ── */
   const [playBalance, setPlayBalance] = useState<PlayBalance | null>(null);
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false);
   const [addressCopied, setAddressCopied] = useState(false);
+
+  const refreshBalance = async () => {
+    setBalanceRefreshing(true);
+    try {
+      const bal = await api.playBalance();
+      setPlayBalance(bal);
+    } catch {} finally {
+      setBalanceRefreshing(false);
+    }
+  };
   const [withdrawAddr, setWithdrawAddr] = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
+  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -318,13 +331,20 @@ function DashboardContent() {
   const handlePlayWithdraw = async () => {
     const value = parseFloat(withdrawAmt);
     if (!value || value <= 0) { setWithdrawError(t.matchmaking.insufficientBalance); return; }
-    if (!/^0x[a-fA-F0-9]{40}$/.test(withdrawAddr)) { setWithdrawError("Invalid address"); return; }
+    if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid Solana address"); return; }
+    const balanceMap: Record<string, number> = {
+      ALPHA: parseFloat(playBalance?.alpha || "0"),
+      USDC: parseFloat((playBalance as any)?.usdc || "0"),
+      SOL: parseFloat((playBalance as any)?.sol || "0"),
+    };
+    if (value > balanceMap[withdrawToken]) { setWithdrawError(`Exceeds ${withdrawToken} balance (${balanceMap[withdrawToken]})`); return; }
     setWithdrawLoading(true);
     setWithdrawError("");
     setWithdrawSuccess("");
     try {
-      await api.playWithdraw(value, withdrawAddr);
-      setWithdrawSuccess(t.dashboard.withdrawSuccess);
+      const res = await api.playWithdraw(value, withdrawAddr, withdrawToken);
+      const explorerUrl = getExplorerTxUrl(res.txHash, "solana");
+      setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${res.txHash.slice(0, 10)}...${res.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmt("");
       setWithdrawAddr("");
       const bal = await api.playBalance();
@@ -702,25 +722,55 @@ function DashboardContent() {
                 {t.dashboard.playWallet}
               </h3>
             </div>
+            <button
+              onClick={refreshBalance}
+              disabled={balanceRefreshing}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono font-semibold rounded-lg bg-arena-bg border border-arena-border-light text-arena-muted hover:text-arena-text hover:border-arena-primary/30 transition-all"
+            >
+              <svg className={`w-3.5 h-3.5 ${balanceRefreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              {balanceRefreshing ? "..." : "Refresh"}
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left: Balance + Address */}
             <div className="space-y-4">
               {/* Balances */}
-              <div className="flex flex-col gap-1">
-                <div className="flex flex-wrap items-baseline gap-1.5">
-                  <span className="text-2xl font-bold font-mono tabular-nums text-arena-primary truncate min-w-0">{Number(playBalance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                  <span className="text-xs text-arena-muted">ALPHA</span>
+              <div className="space-y-2.5">
+                {/* ALPHA */}
+                <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3.5 py-2.5">
+                  <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">{Number(playBalance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                      {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
+                    </div>
+                  </div>
                 </div>
-                {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">{usd}</span> : null; })()}
-                <div className="flex items-baseline gap-1.5 pt-1">
-                  <span className="text-lg font-bold font-mono tabular-nums text-emerald-600">{Number((playBalance as any).usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span className="text-xs text-arena-muted">USDC</span>
+                {/* USDC */}
+                <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3.5 py-2.5">
+                  <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">USDC</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-extrabold font-mono tabular-nums text-emerald-600">{Number(playBalance.usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-xs text-arena-muted">(~${Number(playBalance.usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-bold font-mono tabular-nums text-arena-muted">{Number((playBalance as any).sol || (playBalance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                  <span className="text-xs text-arena-muted">SOL</span>
+                {/* SOL */}
+                <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
+                  <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-lg font-bold font-mono tabular-nums text-purple-600">{Number(playBalance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                      {solPriceUsd && Number(playBalance.sol || 0) > 0 && (
+                        <span className="text-xs text-arena-muted">(~${(Number(playBalance.sol || 0) * solPriceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -752,25 +802,51 @@ function DashboardContent() {
             </div>
 
             {/* Right: Withdraw */}
-            <div className="space-y-2">
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.play.withdraw} ALPHA</div>
+            <div className="space-y-3">
+              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.play.withdraw}</div>
+
+              {/* Token selector */}
+              <div className="flex gap-1.5">
+                {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+                  const isActive = withdrawToken === token;
+                  const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+                  return (
+                    <button
+                      key={token}
+                      onClick={() => { setWithdrawToken(token); setWithdrawError(""); setWithdrawSuccess(""); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all border ${
+                        isActive
+                          ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20"
+                          : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20"
+                      }`}
+                    >
+                      <img src={icons[token]} alt={token} className="w-4 h-4 rounded-full" />
+                      {token}
+                    </button>
+                  );
+                })}
+              </div>
+
               <input
                 type="text"
                 value={withdrawAddr}
                 onChange={(e) => { setWithdrawAddr(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-                placeholder={`${t.dashboard.withdrawTo} (0x...)`}
+                placeholder="Destination Solana address"
                 className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
               />
               <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={withdrawAmt}
-                  onChange={(e) => { setWithdrawAmt(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-                  placeholder={t.dashboard.withdrawAmount}
-                  className="flex-1 px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={withdrawAmt}
+                    onChange={(e) => { setWithdrawAmt(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
+                    placeholder={t.dashboard.withdrawAmount}
+                    className="w-full px-3 py-2 pr-16 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-arena-muted font-mono">{withdrawToken}</span>
+                </div>
                 <Button
                   size="sm"
                   onClick={handlePlayWithdraw}
@@ -779,12 +855,23 @@ function DashboardContent() {
                 >
                   <span className="flex items-center gap-1.5">
                     <IconSend className="w-3.5 h-3.5" />
-                    {withdrawLoading ? t.dashboard.withdrawing : t.dashboard.withdrawBtn}
+                    Send
                   </span>
                 </Button>
               </div>
               {withdrawError && <p className="text-xs text-arena-danger mt-1">{withdrawError}</p>}
-              {withdrawSuccess && <p className="text-xs text-arena-success mt-1">{withdrawSuccess}</p>}
+              {withdrawSuccess && (
+                <p className="text-xs text-arena-success mt-1">
+                  {withdrawSuccess.includes("|") ? (
+                    <>
+                      {withdrawSuccess.split("|")[0]}{" "}
+                      <a href={withdrawSuccess.split("|")[1]} target="_blank" rel="noopener noreferrer" className="underline hover:text-arena-success/80">
+                        View on Explorer
+                      </a>
+                    </>
+                  ) : withdrawSuccess}
+                </p>
+              )}
             </div>
           </div>
         </div>
