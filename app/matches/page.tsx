@@ -742,6 +742,10 @@ export default function MatchesPage() {
               <div>
                 <span className="text-lg font-extrabold font-mono tabular-nums text-arena-text-bright leading-none">{activeAgents}</span>
                 <span className="text-[10px] text-arena-muted uppercase tracking-wider font-semibold ml-1.5">{t.common.agents}</span>
+                <span className="relative w-2 h-2 ml-1 inline-block align-middle">
+                  <span className="absolute inset-0 rounded-full bg-blue-500" />
+                  <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-40" />
+                </span>
               </div>
             </div>
             {activeMatches.length > 0 && (
