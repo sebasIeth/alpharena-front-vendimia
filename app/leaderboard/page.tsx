@@ -41,8 +41,33 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
     draws,
     totalMatches,
     totalEarnings: raw.totalEarnings ?? stats.totalEarnings ?? 0,
+    earningsAlpha: raw.earningsAlpha ?? stats.earningsAlpha ?? 0,
+    earningsUsdc: raw.earningsUsdc ?? stats.earningsUsdc ?? 0,
     xUsername: raw.xUsername ?? null,
   };
+}
+
+/** Render earnings with token icons */
+function TokenEarnings({ alpha, usdc, size = "sm" }: { alpha: number; usdc: number; size?: "sm" | "md" }) {
+  const textCls = size === "md" ? "text-sm font-extrabold" : "text-xs font-bold";
+  const imgCls = size === "md" ? "w-4 h-4" : "w-3 h-3";
+  if (alpha <= 0 && usdc <= 0) return <span className={`${textCls} font-mono text-arena-muted tabular-nums`}>0</span>;
+  return (
+    <span className="inline-flex flex-col gap-0.5">
+      {alpha > 0 && (
+        <span className="inline-flex items-center gap-0.5">
+          <img src="/tokens/alpha.jpg" alt="" className={`${imgCls} rounded-full`} />
+          <span className={`${textCls} font-mono text-arena-accent tabular-nums`}>{formatEarnings(alpha)}</span>
+        </span>
+      )}
+      {usdc > 0 && (
+        <span className="inline-flex items-center gap-0.5">
+          <img src="/tokens/usdc.jpg" alt="" className={`${imgCls} rounded-full`} />
+          <span className={`${textCls} font-mono text-emerald-600 tabular-nums`}>{formatEarnings(usdc)}</span>
+        </span>
+      )}
+    </span>
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +77,8 @@ function normalizeUser(raw: any, index: number): LeaderboardUser {
     id: raw.id ?? raw.userId ?? raw._id ?? "",
     username: raw.username ?? "Unknown",
     totalEarnings: raw.totalEarnings ?? 0,
+    earningsAlpha: raw.earningsAlpha ?? 0,
+    earningsUsdc: raw.earningsUsdc ?? 0,
     agentCount: raw.agentCount ?? 0,
   };
 }
@@ -255,7 +282,10 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
         <StatRow label={t.common.wins} value={d.wins} accentColor="text-emerald-600" />
         <StatRow label={t.common.losses} value={d.losses} accentColor="text-rose-600" />
         <StatRow label={t.common.draws} value={d.draws} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${formatEarnings(agent.totalEarnings)} ALPHA`} accentColor="text-arena-accent" />
+        <div className="flex items-center justify-between py-2.5 border-b border-arena-border-light/40">
+          <span className="text-xs text-arena-muted">{t.leaderboard.totalEarnings}</span>
+          <TokenEarnings alpha={agent.earningsAlpha || 0} usdc={agent.earningsUsdc || 0} />
+        </div>
       </div>
 
       <div>
@@ -283,14 +313,16 @@ function UserModalContent({ user }: { user: LeaderboardUser }) {
           <div className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</div>
         </div>
         <div className="text-right shrink-0">
-          <div className={`text-2xl font-extrabold font-mono tabular-nums ${rc.text}`}>{formatEarnings(user.totalEarnings)}</div>
-          <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
+          <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} size="md" />
         </div>
       </div>
 
       <div className="bg-arena-bg-light rounded-xl px-4">
         <StatRow label={t.leaderboard.agentsDeployed} value={user.agentCount} />
-        <StatRow label={t.leaderboard.totalEarnings} value={`${formatEarnings(user.totalEarnings)} ALPHA`} accentColor="text-arena-accent" />
+        <div className="flex items-center justify-between py-2.5 border-b border-arena-border-light/40">
+          <span className="text-xs text-arena-muted">{t.leaderboard.totalEarnings}</span>
+          <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} />
+        </div>
       </div>
     </div>
   );
@@ -389,8 +421,8 @@ export default function LeaderboardPage() {
               <div className="text-[10px] uppercase tracking-wider text-arena-muted">Average {t.common.elo}</div>
             </div>
             <div className="text-center">
-              <div className="text-xl sm:text-2xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(totalEarnings)}</div>
-              <div className="text-[10px] uppercase tracking-wider text-arena-muted">ALPHA</div>
+              <div className="text-[10px] uppercase tracking-wider text-arena-muted mb-1">{t.common.earnings}</div>
+              <TokenEarnings alpha={agents.reduce((s, a) => s + (a.earningsAlpha || 0), 0)} usdc={agents.reduce((s, a) => s + (a.earningsUsdc || 0), 0)} size="md" />
               {(() => { const usd = formatUsdEquivalent(totalEarnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
             </div>
           </div>
@@ -583,7 +615,7 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-arena-border-light/40">
                       <MiniFormDots form={d.form} />
-                      <span className="text-xs text-arena-accent font-bold tabular-nums">{formatEarnings(agent.totalEarnings)} ALPHA</span>
+                      <span className="text-xs text-arena-accent font-bold tabular-nums"><TokenEarnings alpha={agent.earningsAlpha || 0} usdc={agent.earningsUsdc || 0} /></span>
                     </div>
                   </div>
                 );
@@ -644,9 +676,7 @@ export default function LeaderboardPage() {
                           {agent.totalMatches}
                         </div>
                         <div className="col-span-2 text-right">
-                          <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {formatEarnings(agent.totalEarnings)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
-                          </span>
+                          <TokenEarnings alpha={agent.earningsAlpha || 0} usdc={agent.earningsUsdc || 0} />
                         </div>
                       </div>
 
@@ -672,7 +702,7 @@ export default function LeaderboardPage() {
                             </div>
                             <div className="flex items-center justify-between mt-1">
                               <span className="text-xs text-arena-muted">{agent.ownerUsername}</span>
-                              <span className="text-xs text-arena-accent font-semibold tabular-nums">{formatEarnings(agent.totalEarnings)} ALPHA</span>
+                              <span className="text-xs text-arena-accent font-semibold tabular-nums"><TokenEarnings alpha={agent.earningsAlpha || 0} usdc={agent.earningsUsdc || 0} /></span>
                             </div>
                           </div>
                         </div>
@@ -726,9 +756,9 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className={`text-3xl font-extrabold font-mono leading-none ${c.accent} tabular-nums`} style={{ letterSpacing: "-0.02em" }}>
-                        {formatEarnings(user.totalEarnings)}
+                        <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} size="md" />
                       </div>
-                      <div className="text-[10px] uppercase tracking-widest text-arena-muted mt-1 mb-4">ALPHA {t.leaderboard.totalEarnings}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-arena-muted mt-1 mb-4">{t.leaderboard.totalEarnings}</div>
 
                       <div className="font-bold text-arena-text-bright truncate w-full text-sm">{user.username}</div>
                       <div className="text-xs text-arena-muted mt-0.5">
@@ -762,8 +792,7 @@ export default function LeaderboardPage() {
                         <span className="text-xs text-arena-muted">{user.agentCount} {agentPlural(user.agentCount, t)}</span>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className={`text-xl font-extrabold font-mono ${pc.accent} tabular-nums`}>{formatEarnings(user.totalEarnings)}</div>
-                        <div className="text-[10px] text-arena-muted">ALPHA</div>
+                        <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} />
                       </div>
                     </div>
                   </div>
@@ -802,9 +831,7 @@ export default function LeaderboardPage() {
                           {user.agentCount}
                         </div>
                         <div className="col-span-4 text-right">
-                          <span className="text-sm font-bold text-arena-accent tabular-nums">
-                            {formatEarnings(user.totalEarnings)} <span className="text-xs font-medium text-arena-muted">ALPHA</span>
-                          </span>
+                          <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} />
                         </div>
                       </div>
 
@@ -824,7 +851,7 @@ export default function LeaderboardPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-sm font-bold text-arena-accent tabular-nums">
-                              {formatEarnings(user.totalEarnings)} <span className="text-xs font-medium">ALPHA</span>
+                              <TokenEarnings alpha={user.earningsAlpha || 0} usdc={user.earningsUsdc || 0} />
                             </div>
                           </div>
                         </div>

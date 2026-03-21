@@ -435,6 +435,8 @@ export interface LeaderboardAgent {
   draws: number;
   totalMatches: number;
   totalEarnings: number;
+  earningsAlpha?: number;
+  earningsUsdc?: number;
 }
 
 export interface LeaderboardUser {
@@ -442,6 +444,8 @@ export interface LeaderboardUser {
   id: string;
   username: string;
   totalEarnings: number;
+  earningsAlpha?: number;
+  earningsUsdc?: number;
   agentCount: number;
 }
 
