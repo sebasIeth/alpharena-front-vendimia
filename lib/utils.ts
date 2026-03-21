@@ -175,7 +175,7 @@ export function normalizeMatchAgents(agents: any, pokerPlayers?: any[]): {
   if (Array.isArray(agents)) return agents;
   if (agents && typeof agents === "object") {
     const result: any[] = [];
-    for (const key of ["a", "b", "c", "d"]) {
+    for (const key of ["a", "b", "c", "d", "e", "f", "g", "h", "i"]) {
       const val = agents[key];
       if (val && typeof val === "object") {
         result.push({

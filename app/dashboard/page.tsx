@@ -374,6 +374,8 @@ function DashboardContent() {
     const active = agents.filter((a) => a.status === "in_match").length;
     const queued = agents.filter((a) => a.status === "queued").length;
     const earnings = agents.reduce((s, a) => s + (a.stats?.totalEarnings || 0), 0);
+    const earningsAlpha = agents.reduce((s, a) => s + (a.stats?.earningsAlpha || 0), 0);
+    const earningsUsdc = agents.reduce((s, a) => s + (a.stats?.earningsUsdc || 0), 0);
     const bestElo = agents.length > 0 ? Math.max(...agents.map((a) => a.elo || 0)) : 0;
     const wins = agents.reduce((s, a) => s + (a.stats?.wins || 0), 0);
     const losses = agents.reduce((s, a) => s + (a.stats?.losses || 0), 0);
@@ -383,7 +385,7 @@ function DashboardContent() {
     const bestAgent = agents.length > 0
       ? agents.reduce((best, a) => ((a.elo || 0) > (best.elo || 0) ? a : best), agents[0])
       : null;
-    return { active, queued, earnings, bestElo, wins, losses, draws, total, winRate, bestAgent };
+    return { active, queued, earnings, earningsAlpha, earningsUsdc, bestElo, wins, losses, draws, total, winRate, bestAgent };
   }, [agents]);
 
   /* Time-based greeting */
@@ -564,13 +566,30 @@ function DashboardContent() {
           />
           <DashStat
             label={t.dashboard.totalEarnings}
-            value={formatEarnings(stats.earnings)}
-            sub="ALPHA"
+            value=""
             icon={<IconCoin className="w-4 h-4" />}
             accentColor="bg-arena-accent"
             delay={0.2}
           >
-            {(() => { const usd = formatUsdEquivalent(stats.earnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted mt-1">{usd}</div> : null; })()}
+            <div className="space-y-1 mt-1">
+              {stats.earningsAlpha > 0 && (
+                <div className="flex items-center gap-1">
+                  <img src="/tokens/alpha.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+                  <span className="text-sm font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(stats.earningsAlpha)}</span>
+                  {(() => { const usd = formatUsdEquivalent(stats.earningsAlpha, priceUsd); return usd ? <span className="text-[9px] text-arena-muted">({usd})</span> : null; })()}
+                </div>
+              )}
+              {stats.earningsUsdc > 0 && (
+                <div className="flex items-center gap-1">
+                  <img src="/tokens/usdc.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+                  <span className="text-sm font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(stats.earningsUsdc)}</span>
+                  <span className="text-[9px] text-arena-muted">(~${stats.earningsUsdc.toFixed(2)})</span>
+                </div>
+              )}
+              {stats.earningsAlpha === 0 && stats.earningsUsdc === 0 && (
+                <span className="text-lg font-extrabold font-mono text-arena-muted tabular-nums">0</span>
+              )}
+            </div>
           </DashStat>
         </div>
       )}

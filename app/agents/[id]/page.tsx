@@ -705,11 +705,27 @@ function AgentDetailContent() {
                 <IconCoin className="w-4 h-4 text-arena-accent" />
               </div>
             </div>
-            <div className="flex items-end gap-1.5 min-w-0">
-              <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-arena-text-bright leading-none truncate">
-                {formatEarnings(agent.stats?.totalEarnings || 0)}
-              </span>
-              <span className="text-[10px] text-arena-muted font-mono mb-0.5 shrink-0">ALPHA</span>
+            <div className="space-y-1 min-w-0">
+              {(agent.stats?.earningsAlpha || 0) > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <img src="/tokens/alpha.jpg" alt="" className="w-5 h-5 rounded-full" />
+                  <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
+                  <span className="text-[10px] text-arena-muted font-mono">ALPHA</span>
+                </div>
+              )}
+              {(agent.stats?.earningsUsdc || 0) > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <img src="/tokens/usdc.jpg" alt="" className="w-5 h-5 rounded-full" />
+                  <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-emerald-600 leading-none">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
+                  <span className="text-[10px] text-arena-muted font-mono">USDC</span>
+                </div>
+              )}
+              {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-arena-muted leading-none">0</span>
+                  <span className="text-[10px] text-arena-muted font-mono">Earnings</span>
+                </div>
+              )}
             </div>
           </div>
 
