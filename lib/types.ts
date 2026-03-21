@@ -37,6 +37,8 @@ export interface AgentStats {
   draws: number;
   winRate: number;
   totalEarnings: number;
+  earningsAlpha?: number;
+  earningsUsdc?: number;
 }
 
 export type AgentType = "http" | "openclaw" | "pull";

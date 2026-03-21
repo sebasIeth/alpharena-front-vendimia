@@ -284,10 +284,22 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
 
             {/* Earnings */}
             <div className="text-center hidden sm:block">
-              <div className="text-xl font-extrabold font-mono text-arena-accent tabular-nums">
-                {formatEarnings(agent.stats?.totalEarnings || 0)}
-              </div>
-              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">ALPHA</div>
+              {(agent.stats?.earningsAlpha || 0) > 0 && (
+                <div className="flex items-center gap-1 justify-center">
+                  <img src="/tokens/alpha.jpg" alt="" className="w-4 h-4 rounded-full" />
+                  <span className="text-lg font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
+                </div>
+              )}
+              {(agent.stats?.earningsUsdc || 0) > 0 && (
+                <div className="flex items-center gap-1 justify-center">
+                  <img src="/tokens/usdc.jpg" alt="" className="w-4 h-4 rounded-full" />
+                  <span className="text-lg font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
+                </div>
+              )}
+              {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+                <div className="text-lg font-extrabold font-mono text-arena-muted tabular-nums">0</div>
+              )}
+              <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">Earnings</div>
             </div>
           </div>
         </div>
@@ -391,7 +403,9 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
         <span className="font-mono font-bold text-arena-accent tabular-nums">
-          {formatEarnings(agent.stats?.totalEarnings || 0)} ALPHA
+          {(agent.stats?.earningsAlpha || 0) > 0 && <><img src="/tokens/alpha.jpg" alt="" className="w-3 h-3 rounded-full inline mr-0.5" />{formatEarnings(agent.stats.earningsAlpha || 0)} </>}
+          {(agent.stats?.earningsUsdc || 0) > 0 && <><img src="/tokens/usdc.jpg" alt="" className="w-3 h-3 rounded-full inline mr-0.5" />{formatEarnings(agent.stats.earningsUsdc || 0)} </>}
+          {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && <>{formatEarnings(agent.stats?.totalEarnings || 0)} ALPHA</>}
         </span>
       </div>
     </div>
