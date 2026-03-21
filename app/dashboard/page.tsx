@@ -973,11 +973,11 @@ function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-arena-muted font-mono">
-                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} ALPHA
+                      {t.betting.yourTotal}: {formatEarnings(Object.values(claim.betsByAgent || {}).reduce((s, v) => s + v, 0))} USDC
                     </span>
                     {claim.winnings > 0 && (
                       <span className="text-xs font-semibold text-arena-success font-mono">
-                        +{formatEarnings(Number(claim.winnings) * 0.95)} ALPHA
+                        +{formatEarnings(Number(claim.winnings) * 0.95)} USDC
                       </span>
                     )}
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${
