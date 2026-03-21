@@ -34,7 +34,7 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
     name: raw.name ?? "Unknown",
     ownerUsername: raw.ownerUsername ?? raw.owner?.username ?? "—",
     isHuman: raw.isHuman ?? false,
-    elo: raw.elo ?? raw.eloRating ?? stats.elo ?? 1200,
+    elo: raw.eloRating ?? raw.elo ?? stats.elo ?? 1200,
     winRate: raw.winRate ?? stats.winRate ?? 0,
     wins,
     losses,
@@ -385,7 +385,7 @@ export default function LeaderboardPage() {
             </div>
             <div className="text-center border-x border-arena-border-light">
               <div className="text-xl sm:text-2xl font-extrabold text-arena-primary font-mono tabular-nums">{avgElo}</div>
-              <div className="text-[10px] uppercase tracking-wider text-arena-muted">Avg {t.common.elo}</div>
+              <div className="text-[10px] uppercase tracking-wider text-arena-muted">Average {t.common.elo}</div>
             </div>
             <div className="text-center">
               <div className="text-xl sm:text-2xl font-extrabold text-arena-accent font-mono tabular-nums">{formatEarnings(totalEarnings)}</div>
