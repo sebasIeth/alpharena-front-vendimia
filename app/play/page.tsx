@@ -80,6 +80,8 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
+  const [stakeToken, setStakeToken] = useState<"ALPHA" | "USDC">("ALPHA");
+  const [stakeAmount, setStakeAmount] = useState("1");
   const selectedChain: Chain = "solana";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -744,7 +746,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: 1_000_000 });
+      const result = await api.playJoin({ gameType, stakeAmount: parseFloat(stakeAmount) || 1, token: stakeToken });
       setAgentId(result.agentId);
       // Check if already matched (race condition: match may start during playJoin)
       const status = await api.playStatus().catch(() => null);
@@ -1038,19 +1040,54 @@ function PlayContent() {
                   </div>
                 </div>
 
-                {/* Entry fee */}
+                {/* Stake token selector */}
+                <div>
+                  <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">Stake Token</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { value: "ALPHA" as const, icon: "/tokens/alpha.jpg", color: "text-arena-accent", bg: "bg-arena-accent/10", border: "border-arena-accent/30", ring: "ring-arena-accent/20" },
+                      { value: "USDC" as const, icon: "/tokens/usdc.jpg", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-300", ring: "ring-emerald-200" },
+                    ]).map((token) => (
+                      <button
+                        key={token.value}
+                        onClick={() => setStakeToken(token.value)}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                          stakeToken === token.value
+                            ? `${token.bg} ${token.color} ${token.border} ring-1 ${token.ring} shadow-sm`
+                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
+                        }`}
+                      >
+                        <img src={token.icon} alt={token.value} className="w-5 h-5 rounded-full" />
+                        {token.value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stake amount */}
                 <div className="relative bg-gradient-to-br from-arena-bg/80 to-white border border-arena-border-light/60 rounded-xl px-4 py-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] text-arena-muted font-mono font-semibold uppercase tracking-widest">{t.play.entryFee}</span>
-                    <span className="text-[9px] text-arena-muted/60 font-mono">per match</span>
+                    <span className="text-[9px] text-arena-muted/60 font-mono">min: 1 · max: 1</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-6 h-6 rounded-full" />
-                    <span className="text-xl font-extrabold font-mono tabular-nums text-arena-text-bright">1,000,000</span>
-                    <span className="text-xs text-arena-muted font-mono">ALPHA</span>
-                    {(() => { const usd = formatUsdEquivalent(1_000_000, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">({usd})</span> : null; })()}
+                  <div className="flex items-center gap-2">
+                    <img src={stakeToken === "USDC" ? "/tokens/usdc.jpg" : "/tokens/alpha.jpg"} alt={stakeToken} className="w-6 h-6 rounded-full" />
+                    <input
+                      type="number"
+                      min="1"
+                      max="1"
+                      step="1"
+                      value={stakeAmount}
+                      onChange={(e) => setStakeAmount(e.target.value)}
+                      className="flex-1 text-xl font-extrabold font-mono tabular-nums text-arena-text-bright bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className={`text-xs font-mono font-semibold ${stakeToken === "USDC" ? "text-emerald-600" : "text-arena-accent"}`}>{stakeToken}</span>
                   </div>
-                  <p className="text-[10px] text-arena-muted/60 mt-1.5">{t.play.entryFeeDesc}</p>
+                  {stakeToken === "USDC" && (
+                    <p className="text-[10px] text-arena-muted/60 mt-1.5">~${parseFloat(stakeAmount || "0").toFixed(2)} USD</p>
+                  )}
+                  {stakeToken === "ALPHA" && (() => { const usd = formatUsdEquivalent(parseFloat(stakeAmount || "0"), priceUsd); return usd ? <p className="text-[10px] text-arena-muted/60 mt-1.5">{usd}</p> : null; })()}
+                  <p className="text-[10px] text-arena-muted/60 mt-1">{t.play.entryFeeDesc}</p>
                 </div>
 
                 {/* Join button */}
