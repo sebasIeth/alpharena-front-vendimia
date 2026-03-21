@@ -214,8 +214,8 @@ function AgentCard({
               </div>
               {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">{usd}</span> : null; })()}
               <div className="flex items-baseline gap-1 pt-0.5">
-                <span className="text-xs font-mono tabular-nums text-arena-muted">{Number(balance.eth).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                <span className="text-[10px] text-arena-muted">ETH</span>
+                <span className="text-xs font-mono tabular-nums text-arena-muted">{Number(balance.sol).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                <span className="text-[10px] text-arena-muted">SOL</span>
               </div>
             </div>
           ) : (
