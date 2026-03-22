@@ -349,7 +349,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
           <div className="flex items-center gap-1.5">
             <span className="text-arena-accent text-xs">&#9672;</span>
             <span className="text-arena-muted text-xs font-mono font-medium">
-              {(match.stakeAmount ?? 0).toLocaleString()} {(match as any).token || 'ALPHA'}
+              {(match.stakeAmount ?? 0).toLocaleString()} {(match as any).token || 'USDC'}
             </span>
           </div>
 

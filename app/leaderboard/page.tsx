@@ -34,7 +34,7 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
     name: raw.name ?? "Unknown",
     ownerUsername: raw.ownerUsername ?? raw.owner?.username ?? "—",
     isHuman: raw.isHuman ?? false,
-    elo: raw.elo ?? raw.eloRating ?? stats.elo ?? 1200,
+    elo: raw.eloRating ?? raw.elo ?? stats.elo ?? 1200,
     winRate: raw.winRate ?? stats.winRate ?? 0,
     wins,
     losses,
@@ -375,7 +375,8 @@ export default function LeaderboardPage() {
 
   // Summary stats
   const totalMatches = agents.reduce((s, a) => s + a.totalMatches, 0);
-  const avgElo = agents.length > 0 ? Math.round(agents.reduce((s, a) => s + a.elo, 0) / agents.length) : 0;
+  const avgEloRaw = agents.length > 0 ? agents.reduce((s, a) => s + a.elo, 0) / agents.length : 0;
+  const avgElo = Math.round(avgEloRaw * 10) / 10;
   const totalAlpha = agents.reduce((s, a) => s + (a.earningsAlpha || 0), 0);
   const totalUsdc = agents.reduce((s, a) => s + (a.earningsUsdc || 0), 0);
 

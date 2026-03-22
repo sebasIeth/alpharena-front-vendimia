@@ -115,6 +115,31 @@ function IconArrowRight({ className = "w-4 h-4" }: { className?: string }) {
     </svg>
   );
 }
+function IconWallet({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+    </svg>
+  );
+}
+function IconCopy({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+    </svg>
+  );
+}
+function IconCheck({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  );
+}
+function truncateAddress(addr: string, chars = 6): string {
+  if (addr.length <= chars * 2 + 3) return addr;
+  return `${addr.slice(0, chars)}...${addr.slice(-chars)}`;
+}
 
 /* ═══════════════════════════════════════════════════════
    SUB-COMPONENTS
@@ -775,118 +800,133 @@ function AgentDetailContent() {
           WALLET & BALANCE
           ═══════════════════════════════════════════════════ */}
       <div
-        className="bg-white border border-arena-border-light rounded-2xl p-5 shadow-arena-sm mb-8 opacity-0 animate-fade-up"
+        className="dash-glass-card rounded-2xl p-6 mb-8 opacity-0 animate-fade-up"
         style={{ animationDelay: "0.25s", animationFillMode: "both" }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <CardTitle>Wallet & Balance</CardTitle>
-            <ChainBadge chain={balance?.chain || agent?.chain} size="md" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-arena-primary/10 flex items-center justify-center ring-1 ring-inset ring-arena-primary/5">
+              <IconWallet className="w-5 h-5 text-arena-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">
+                Wallet & Balance
+              </h3>
+              <ChainBadge chain={balance?.chain || agent?.chain} size="md" />
+            </div>
           </div>
           <button
             onClick={fetchBalance}
             disabled={balanceLoading}
-            className="text-xs text-arena-primary hover:text-arena-primary-dark font-mono transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono font-semibold rounded-lg bg-arena-bg border border-arena-border-light text-arena-muted hover:text-arena-text hover:border-arena-primary/30 transition-all"
           >
+            <svg className={`w-3.5 h-3.5 ${balanceLoading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             {balanceLoading ? "..." : "Refresh"}
           </button>
         </div>
 
-        {/* Wallet Address */}
-        {walletAddress ? (
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-mono text-arena-text break-all">
-              {walletAddress}
-            </span>
-            <button
-              onClick={handleCopyAddress}
-              className="shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border border-arena-border-light bg-arena-bg hover:border-arena-primary/40 hover:text-arena-primary transition-all"
-            >
-              {copied ? "Copied!" : "Copy"}
-            </button>
-          </div>
-        ) : (
-          <div className="text-sm text-arena-muted font-mono mb-4">
-            {balanceLoading ? "Loading wallet..." : "Wallet address unavailable"}
-          </div>
-        )}
-
-        {/* Balances */}
-        <div className="space-y-2 mb-3">
-          {/* ALPHA */}
-          <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3 py-2.5">
-            <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">
-                  {balanceLoading ? "..." : (balance?.alpha ?? "—")}
-                </span>
-                {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Balance + Address */}
+          <div className="space-y-4">
+            {/* Balances */}
+            <div className="space-y-2.5">
+              {/* ALPHA */}
+              <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3.5 py-2.5">
+                <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">
+                      {balanceLoading ? "..." : Number(balance?.alpha || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}
+                    </span>
+                    {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
+                  </div>
+                </div>
+              </div>
+              {/* USDC */}
+              <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3.5 py-2.5">
+                <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">USDC</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-extrabold font-mono tabular-nums text-emerald-600">
+                      {balanceLoading ? "..." : Number(balance?.usdc || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    {!balanceLoading && <span className="text-xs text-arena-muted">(~${Number(balance?.usdc || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>}
+                  </div>
+                </div>
+              </div>
+              {/* SOL */}
+              <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
+                <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-bold font-mono tabular-nums text-purple-600">
+                      {balanceLoading ? "..." : Number(balance?.sol || 0).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Deposit address + copy */}
+            {walletAddress ? (
+              <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2.5">
+                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">Deposit Address</div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-mono text-arena-text break-all">{truncateAddress(walletAddress, 10)}</span>
+                  <button
+                    onClick={handleCopyAddress}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded-md bg-arena-primary/10 text-arena-primary hover:bg-arena-primary/20 transition-colors"
+                  >
+                    {copied ? (
+                      <><IconCheck className="w-3 h-3" /> Copied</>
+                    ) : (
+                      <><IconCopy className="w-3 h-3" /> Copy</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2.5">
+                <span className="text-xs text-arena-muted font-mono">
+                  {balanceLoading ? "Loading wallet..." : "Wallet address unavailable"}
+                </span>
+              </div>
+            )}
           </div>
-          {/* USDC */}
-          <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3 py-2.5">
-            <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">USDC</div>
-              <span className="text-xl font-extrabold font-mono tabular-nums text-emerald-600">
-                {balanceLoading ? "..." : (balance?.usdc ?? "—")}
-              </span>
+
+          {/* Right: Withdraw */}
+          <div className="space-y-3">
+            <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Withdraw</div>
+
+            {/* Token selector */}
+            <div className="flex gap-1.5">
+              {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+                const isActive = withdrawToken === token;
+                const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+                return (
+                  <button
+                    key={token}
+                    onClick={() => { setWithdrawToken(token); setWithdrawError(""); setWithdrawSuccess(""); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all border ${
+                      isActive
+                        ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20"
+                        : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20"
+                    }`}
+                  >
+                    <img src={icons[token]} alt={token} className="w-4 h-4 rounded-full" />
+                    {token}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-          {/* SOL */}
-          <div className="flex items-center gap-3 bg-purple-50/30 border border-purple-100/50 rounded-xl px-3 py-2">
-            <img src="/tokens/solana.jpg" alt="SOL" className="w-7 h-7 rounded-full shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL (gas)</div>
-              <span className="text-lg font-bold font-mono tabular-nums text-purple-600">
-                {balanceLoading ? "..." : (balance?.sol || "—")}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        <p className="text-xs text-arena-muted mb-4">
-          Send ALPHA, USDC, or SOL on <strong>Solana</strong> network to the wallet address above to fund your agent.
-        </p>
-
-        {/* Withdraw */}
-        <div className="border-t border-arena-border-light/60 pt-4">
-          <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-3">Withdraw</div>
-
-          {/* Token selector */}
-          <div className="flex gap-1.5 mb-3">
-            {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
-              const isActive = withdrawToken === token;
-              const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
-              return (
-                <button
-                  key={token}
-                  onClick={() => { setWithdrawToken(token); setWithdrawError(""); setWithdrawSuccess(""); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all border ${
-                    isActive
-                      ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20"
-                      : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20"
-                  }`}
-                >
-                  <img src={icons[token]} alt={token} className="w-4 h-4 rounded-full" />
-                  {token}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-2">
             <input
               type="text"
               value={withdrawAddress}
-              onChange={(e) => {
-                setWithdrawAddress(e.target.value);
-                setWithdrawError("");
-                setWithdrawSuccess("");
-              }}
+              onChange={(e) => { setWithdrawAddress(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
               placeholder="Destination Solana address"
               className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
@@ -897,11 +937,7 @@ function AgentDetailContent() {
                   min={0}
                   step="0.01"
                   value={withdrawAmount}
-                  onChange={(e) => {
-                    setWithdrawAmount(e.target.value);
-                    setWithdrawError("");
-                    setWithdrawSuccess("");
-                  }}
+                  onChange={(e) => { setWithdrawAmount(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
                   placeholder="Amount"
                   className="w-full px-3 py-2 pr-16 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
                 />
@@ -913,25 +949,26 @@ function AgentDetailContent() {
                 disabled={withdrawLoading || !withdrawAmount || !withdrawAddress}
                 isLoading={withdrawLoading}
               >
-                Send
+                <span className="flex items-center gap-1.5">
+                  <IconSend className="w-3.5 h-3.5" />
+                  Send
+                </span>
               </Button>
             </div>
+            {withdrawError && <p className="text-xs text-arena-danger mt-1">{withdrawError}</p>}
+            {withdrawSuccess && (
+              <p className="text-xs text-arena-success mt-1">
+                {withdrawSuccess.includes("|") ? (
+                  <>
+                    {withdrawSuccess.split("|")[0]}{" "}
+                    <a href={withdrawSuccess.split("|")[1]} target="_blank" rel="noopener noreferrer" className="underline hover:text-arena-success/80">
+                      {t.common.viewOnExplorer}
+                    </a>
+                  </>
+                ) : withdrawSuccess}
+              </p>
+            )}
           </div>
-          {withdrawError && (
-            <p className="text-sm text-arena-danger mt-2">{withdrawError}</p>
-          )}
-          {withdrawSuccess && (
-            <p className="text-sm text-arena-success mt-2">
-              {withdrawSuccess.includes("|") ? (
-                <>
-                  {withdrawSuccess.split("|")[0]}{" "}
-                  <a href={withdrawSuccess.split("|")[1]} target="_blank" rel="noopener noreferrer" className="underline hover:text-arena-success/80">
-                    {t.common.viewOnExplorer}
-                  </a>
-                </>
-              ) : withdrawSuccess}
-            </p>
-          )}
         </div>
       </div>
 

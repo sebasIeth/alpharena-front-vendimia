@@ -969,7 +969,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-arena-text">Board</h3>
               <div className="flex items-center gap-3">
-                <Badge status={match.status} />
+                {match.status !== "active" && match.status !== "starting" && <Badge status={match.status} />}
                 {(match.status === "active" || match.status === "starting") && (
                   <span className="flex items-center gap-1 text-xs text-arena-success">
                     <span className="w-2 h-2 bg-arena-success rounded-full animate-pulse" />

@@ -346,7 +346,7 @@ function BettingPanel({ match }: { match: Match }) {
             {/* Pool total + percentages */}
             <div className="flex items-center justify-between mt-1">
               <span className="text-[10px] font-mono text-arena-muted">{pctA.toFixed(1)}%</span>
-              <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {formatEarnings(totalPool)} ALPHA</span>
+              <span className="text-[10px] font-mono text-arena-muted font-semibold">{t.betting.totalPool}: {formatEarnings(totalPool)} USDC</span>
               <span className="text-[10px] font-mono text-arena-muted">{pctB.toFixed(1)}%</span>
             </div>
 
@@ -416,7 +416,7 @@ function BettingPanel({ match }: { match: Match }) {
                       placeholder="0.00"
                       className="w-full px-3 py-2 bg-white border-2 border-arena-border-light rounded-lg text-arena-text-bright text-sm font-mono placeholder:text-arena-muted/50 focus:outline-none focus:border-arena-accent focus:ring-1 focus:ring-arena-accent/30 pr-16 shadow-sm"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-arena-muted font-mono">ALPHA</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-arena-muted font-mono">USDC</span>
                   </div>
                   <Button
                     onClick={handlePlaceBet}
@@ -436,7 +436,7 @@ function BettingPanel({ match }: { match: Match }) {
           <div className="border-t border-arena-border-light/40 pt-5 mt-4">
             {Number(myBets.winnings) > 0 && (
               <p className="text-sm text-arena-text-bright font-semibold mb-3 text-center">
-                {t.betting.payout}: {formatEarnings(Number(myBets.winnings) * 0.95)} ALPHA
+                {t.betting.payout}: {formatEarnings(Number(myBets.winnings) * 0.95)} USDC
               </p>
             )}
             <Button onClick={handleClaim} disabled={claiming} className="w-full">
@@ -454,7 +454,7 @@ function BettingPanel({ match }: { match: Match }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[0] }} />
-                    <span className="text-xs text-arena-text">{formatEarnings(userOnA)} ALPHA {t.betting.onAgent} {nameA}</span>
+                    <span className="text-xs text-arena-text">{formatEarnings(userOnA)} USDC {t.betting.onAgent} {nameA}</span>
                   </div>
                   {myBets?.potential?.winIfA != null && Number(myBets.potential.winIfA) > 0 && (
                     <span className="text-[10px] font-mono text-arena-success">+{formatEarnings(Number(myBets.potential.winIfA) * 0.95)}</span>
@@ -465,7 +465,7 @@ function BettingPanel({ match }: { match: Match }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: PLAYER_COLORS[1] }} />
-                    <span className="text-xs text-arena-text">{formatEarnings(userOnB)} ALPHA {t.betting.onAgent} {nameB}</span>
+                    <span className="text-xs text-arena-text">{formatEarnings(userOnB)} USDC {t.betting.onAgent} {nameB}</span>
                   </div>
                   {myBets?.potential?.winIfB != null && Number(myBets.potential.winIfB) > 0 && (
                     <span className="text-[10px] font-mono text-arena-success">+{formatEarnings(Number(myBets.potential.winIfB) * 0.95)}</span>
