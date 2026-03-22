@@ -311,37 +311,47 @@ export default function TokenomicsPage() {
         </div>
       </div>
 
-      {/* Header with spinning coin */}
+      {/* Header */}
       <div className="text-center mb-12">
-        <SpinningCoin />
         <h1 className="text-4xl font-display font-bold text-arena-text mb-3">
           $ALPHA Tokenomics
         </h1>
-        {/* 100% stacked bar */}
-        <div className="max-w-2xl mx-auto mt-6 mb-4">
-          <div className="flex h-5 rounded-full overflow-hidden shadow-inner">
-            {ALLOCATIONS.map((alloc, i) => (
-              <div
-                key={i}
-                className="relative group h-full transition-all hover:brightness-110"
-                style={{ width: `${alloc.pct}%`, backgroundColor: alloc.color }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {alloc.pct >= 10 && <span className="text-[8px] font-bold text-white/90 font-mono">{alloc.pct}%</span>}
-                </div>
-                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-mono font-semibold" style={{ color: alloc.color }}>
-                  {alloc.label}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-[10px] text-arena-muted text-center mt-8 uppercase tracking-widest font-mono">100% Trade Tax Distribution</div>
-        </div>
-
-        <p className="text-lg text-arena-muted max-w-2xl mx-auto">
+        <p className="text-lg text-arena-muted max-w-2xl mx-auto mb-8">
           Every <span className="text-arena-primary font-semibold">$ALPHA</span> trade generates a fee.
           Here&apos;s how that tax fuels the entire ecosystem.
         </p>
+
+        {/* Stacked bar */}
+        <div className="max-w-3xl mx-auto dash-glass-card rounded-2xl p-6">
+          <div className="flex h-7 rounded-full overflow-hidden" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08)' }}>
+            {ALLOCATIONS.map((alloc, i) => (
+              <div
+                key={i}
+                className="relative group h-full transition-all duration-300 hover:scale-y-110 cursor-pointer"
+                style={{
+                  width: `${alloc.pct}%`,
+                  background: `linear-gradient(180deg, ${alloc.color}dd 0%, ${alloc.color} 50%, ${alloc.color}cc 100%)`,
+                  borderRight: i < ALLOCATIONS.length - 1 ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {alloc.pct >= 10 && (
+                    <span className="text-xs font-extrabold text-white font-mono" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+                      {alloc.pct}%
+                    </span>
+                  )}
+                </div>
+                {/* Hover tooltip */}
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 px-2 py-1 rounded-md text-[10px] font-mono font-bold text-white shadow-lg" style={{ backgroundColor: alloc.color }}>
+                  {alloc.label} — {alloc.pct}%
+                </div>
+                {/* Shine effect */}
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent rounded-t-full" />
+              </div>
+            ))}
+          </div>
+          <div className="text-[10px] text-arena-muted text-center mt-4 uppercase tracking-widest font-mono">100% Trade Tax Distribution</div>
+        </div>
       </div>
 
       {/* Main layout: chart + breakdown */}
