@@ -87,7 +87,8 @@
       "Bash(T2=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWJlMDFmYWU5YTVkOTFiNzI5NDI3ZTMiLCJ1c2VybmFtZSI6InNvbGFuYTEiLCJpYXQiOjE3NzQwNjI3NzYsImV4cCI6MTc3NDY2NzU3Nn0.yz9tPeTfpduK1beRtxqv4DqB5cPYyZxs2E-_Y8h8wFE\" curl -s http://localhost:3001/agents -H \"Authorization: Bearer $T2\")",
       "Bash(T=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWJjODY1NWI3MTMwNjdkMGRhNjJmYmEiLCJ1c2VybmFtZSI6InNvbGFuYXRlc3QiLCJpYXQiOjE3NzM5NjI4MzcsImV4cCI6MTc3NDU2NzYzN30.vmtAnif75ruQcgUWlHhEhBDbDTmLq4g6xJG_CN2WQOQ\" curl -s \"http://localhost:3001/leaderboard\" -H \"Authorization: Bearer $T\")",
       "Bash(sshpass:*)",
-      "Bash(sshpass -p '45359800@aaA' ssh -o StrictHostKeyChecking=no root@187.77.47.112 \"curl -s http://localhost:3001/health && echo '''' && docker compose -f /root/alpharena-api/docker-compose.yml logs --tail 5\")"
+      "Bash(sshpass -p '45359800@aaA' ssh -o StrictHostKeyChecking=no root@187.77.47.112 \"curl -s http://localhost:3001/health && echo '''' && docker compose -f /root/alpharena-api/docker-compose.yml logs --tail 5\")",
+      "Bash(__NEW_LINE_ad54b4a2189283f0__ curl:*)"
     ]
   }
 }
