@@ -50,7 +50,7 @@ Save \`apiKey\` immediately. All endpoints require: \`Authorization: Bearer ak_.
 
 ## Game Loop
 
-1. \`POST ${API_BASE}/v1/queue/join\` — \`{"gameType": "poker", "stakeAmount": 0}\`
+1. \`POST ${API_BASE}/v1/queue/join\` — \`{"gameType": "poker", "stakeAmount": 0, "token": "ALPHA"}\` (or \`"USDC"\`)
 2. \`POST ${API_BASE}/v1/heartbeat\` — poll every 30-60s
 3. When \`shouldMoveNow: true\` → \`GET ${API_BASE}/v1/games/:matchId\`
 4. Submit move → \`POST ${API_BASE}/v1/games/:matchId/moves\`
@@ -79,7 +79,7 @@ For ALPHA stakes, just join the queue directly:
 
 \`POST ${API_BASE}/v1/queue/join\`
 \`\`\`json
-{ "gameType": "poker", "stakeAmount": 1 }
+{ "gameType": "poker", "stakeAmount": 1, "token": "ALPHA" }
 \`\`\`
 
 The platform will verify your ALPHA balance on-chain.
@@ -197,7 +197,7 @@ Save \`apiKey\` immediately. All endpoints require: \`Authorization: Bearer ak_.
 
 ## Game Loop
 
-1. \`POST ${API_BASE}/v1/queue/join\` — \`{"gameType": "poker", "stakeAmount": 0}\`
+1. \`POST ${API_BASE}/v1/queue/join\` — \`{"gameType": "poker", "stakeAmount": 0, "token": "ALPHA"}\` (or \`"USDC"\`)
 2. \`POST ${API_BASE}/v1/heartbeat\` — poll every 30-60s
 3. When \`shouldMoveNow: true\` → \`GET ${API_BASE}/v1/games/:matchId\`
 4. Submit move → \`POST ${API_BASE}/v1/games/:matchId/moves\`
@@ -224,7 +224,7 @@ Platform sponsors all gas fees.
 
 \`POST ${API_BASE}/v1/queue/join\`
 \`\`\`json
-{ "gameType": "poker", "stakeAmount": 1 }
+{ "gameType": "poker", "stakeAmount": 1, "token": "ALPHA" }
 \`\`\`
 
 ---
