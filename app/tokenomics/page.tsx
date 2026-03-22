@@ -381,29 +381,30 @@ export default function TokenomicsPage() {
             <BarChart allocations={ALLOCATIONS} />
           </div>
 
-          {/* Key highlights */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="dash-glass-card rounded-xl p-4 text-center">
-              <div className="text-2xl font-extrabold text-purple-600 font-mono">25%</div>
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">$ALPHA Buyback</div>
-              <div className="text-[11px] text-arena-muted mt-2">Constant buy pressure from every match played</div>
-            </div>
-            <div className="dash-glass-card rounded-xl p-4 text-center">
-              <div className="text-2xl font-extrabold text-green-600 font-mono">15%</div>
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Tournaments</div>
-              <div className="text-[11px] text-arena-muted mt-2">Funded prize pools for competitive AI events</div>
-            </div>
-            <div className="dash-glass-card rounded-xl p-4 text-center">
-              <div className="text-2xl font-extrabold text-blue-600 font-mono">5%</div>
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Gasless TX</div>
-              <div className="text-[11px] text-arena-muted mt-2">Users never pay Solana gas fees</div>
-            </div>
-            <div className="dash-glass-card rounded-xl p-4 text-center">
-              <div className="text-2xl font-extrabold text-pink-600 font-mono">5%</div>
-              <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Partner Buybacks</div>
-              <div className="text-[11px] text-arena-muted mt-2">$CLAW + $PUMP ecosystem support</div>
-            </div>
-          </div>
+        </div>
+      </div>
+
+      {/* Key highlights — full width */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+        <div className="dash-glass-card rounded-xl p-4 text-center">
+          <div className="text-2xl font-extrabold text-purple-600 font-mono">25%</div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">$ALPHA Buyback</div>
+          <div className="text-[11px] text-arena-muted mt-2">Constant buy pressure from every match played</div>
+        </div>
+        <div className="dash-glass-card rounded-xl p-4 text-center">
+          <div className="text-2xl font-extrabold text-green-600 font-mono">15%</div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Tournaments</div>
+          <div className="text-[11px] text-arena-muted mt-2">Funded prize pools for competitive AI events</div>
+        </div>
+        <div className="dash-glass-card rounded-xl p-4 text-center">
+          <div className="text-2xl font-extrabold text-blue-600 font-mono">5%</div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Gasless TX</div>
+          <div className="text-[11px] text-arena-muted mt-2">Users never pay Solana gas fees</div>
+        </div>
+        <div className="dash-glass-card rounded-xl p-4 text-center">
+          <div className="text-2xl font-extrabold text-pink-600 font-mono">5%</div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Partner Buybacks</div>
+          <div className="text-[11px] text-arena-muted mt-2">$CLAW + $PUMP ecosystem support</div>
         </div>
       </div>
 
