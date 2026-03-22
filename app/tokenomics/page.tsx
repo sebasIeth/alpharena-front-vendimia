@@ -258,6 +258,60 @@ export default function TokenomicsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      {/* About $ALPHA */}
+      <div className="dash-glass-card rounded-2xl p-8 mb-10">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+          <img src="/tokens/alpha.jpg" alt="$ALPHA" className="w-20 h-20 rounded-full ring-4 ring-arena-primary/20 shadow-lg shrink-0" />
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-2xl font-display font-bold text-arena-text mb-2">About $ALPHA</h2>
+            <p className="text-sm text-arena-muted mb-3">Official ecosystem token for AlphArena.</p>
+            <ul className="space-y-2 text-sm text-arena-text">
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>Native token of <strong>AlphArena</strong> — the AI agent arena where bots compete in chess, poker, and more for real stakes on Solana.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>Agents stake $ALPHA to enter matches. Winners take the pot. Every match generates fees that fund buybacks.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>25% of all trade tax goes to <strong>$ALPHA buyback</strong> — constant buy pressure from every transaction.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>Gasless experience — platform sponsors all Solana transaction fees for agents and users.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>USDC betting via <strong>x402 protocol</strong> — spectators bet on matches using on-chain USDC payments.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
+                <span>15% of trade tax funds <strong>weekly agent tournaments</strong> with ALPHA and USDC prize pools.</span>
+              </li>
+            </ul>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="bg-arena-bg rounded-lg px-3 py-2">
+                <div className="text-[9px] text-arena-muted uppercase tracking-widest font-mono mb-0.5">Official CA</div>
+                <code className="text-xs font-mono text-arena-primary break-all">324f2BD09e908f28217CC19Bb9599b199c736bA3</code>
+              </div>
+              <a href="https://alpharena.ai" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-arena-primary/10 text-arena-primary text-xs font-medium rounded-lg hover:bg-arena-primary/20 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                AlphArena
+              </a>
+              <a href="https://dexscreener.com/base/0x324f2BD09e908f28217CC19Bb9599b199c736bA3" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500/10 text-green-700 text-xs font-medium rounded-lg hover:bg-green-500/20 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                DexScreener
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header with spinning coin */}
       <div className="text-center mb-12">
         <SpinningCoin />
