@@ -1460,6 +1460,24 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <div className="text-arena-muted text-xs">Pot</div>
                     <div className="text-arena-primary font-medium">{pokerPot}</div>
                   </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Match ID</div>
+                    <div className="text-arena-text font-medium font-mono text-[11px]">{(matchId || "unknown").slice(0, 12)}...</div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Game</div>
+                    <div className="text-arena-text font-medium capitalize">{match.gameType}</div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Created</div>
+                    <div className="text-arena-text font-medium text-[11px]">{formatDate(match.createdAt)}</div>
+                  </div>
+                  {(match.completedAt || (match as any).endedAt) && (
+                    <div className="bg-arena-bg rounded-lg p-2 text-center">
+                      <div className="text-arena-muted text-xs">Completed</div>
+                      <div className="text-arena-text font-medium text-[11px]">{formatDate(match.completedAt || (match as any).endedAt)}</div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -1494,7 +1512,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         </div>
 
         {/* Sidebar: Players + Moves + Details */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {/* Players */}
           <div className="dash-glass-card rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">Players</h3>
@@ -1640,7 +1658,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             <h3 className="text-sm font-semibold text-arena-text mb-3">
               {match.gameType === "poker" ? "Hand History" : "Move History"}
             </h3>
-            <div data-move-list className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
+            <div data-move-list className="max-h-[422px] overflow-y-auto space-y-1.5 pr-1">
               {loadingMoves ? (
                 <div className="text-center text-sm text-arena-muted py-4">
                   {match.gameType === "poker" ? "Loading hands..." : "Loading moves..."}
@@ -1828,30 +1846,32 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             </div>
           )}
 
-          {/* Match Details */}
-          <div className="dash-glass-card rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-arena-text mb-3">Details</h3>
-            <dl className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <dt className="text-arena-muted">Match ID</dt>
-                <dd className="text-arena-text font-mono">{(matchId || "unknown").slice(0, 12)}...</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-arena-muted">Game Type</dt>
-                <dd className="text-arena-text capitalize">{match.gameType}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-arena-muted">Created</dt>
-                <dd className="text-arena-text">{formatDate(match.createdAt)}</dd>
-              </div>
-              {(match.completedAt || (match as any).endedAt) && (
+          {/* Match Details (non-poker only, poker details are in the info grid) */}
+          {match.gameType !== "poker" && (
+            <div className="dash-glass-card rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-arena-text mb-3">Details</h3>
+              <dl className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <dt className="text-arena-muted">Completed</dt>
-                  <dd className="text-arena-text">{formatDate(match.completedAt || (match as any).endedAt)}</dd>
+                  <dt className="text-arena-muted">Match ID</dt>
+                  <dd className="text-arena-text font-mono">{(matchId || "unknown").slice(0, 12)}...</dd>
                 </div>
-              )}
-            </dl>
-          </div>
+                <div className="flex justify-between">
+                  <dt className="text-arena-muted">Game Type</dt>
+                  <dd className="text-arena-text capitalize">{match.gameType}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-arena-muted">Created</dt>
+                  <dd className="text-arena-text">{formatDate(match.createdAt)}</dd>
+                </div>
+                {(match.completedAt || (match as any).endedAt) && (
+                  <div className="flex justify-between">
+                    <dt className="text-arena-muted">Completed</dt>
+                    <dd className="text-arena-text">{formatDate(match.completedAt || (match as any).endedAt)}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
         </div>
       </div>
 

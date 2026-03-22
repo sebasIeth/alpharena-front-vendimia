@@ -384,34 +384,27 @@
 
   /* ---- Match card enhanced hover ---- */
   .match-card-enhanced {
-    @apply bg-white border border-arena-border-light rounded-xl shadow-arena-sm relative overflow-hidden;
+    @apply bg-white rounded-xl shadow-arena-sm relative;
+    border: 1.5px solid var(--arena-border-light, #e5e2db);
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .match-card-enhanced::before {
-    content: "";
-    @apply absolute top-0 left-0 right-0 h-[3px];
-    transition: height 0.25s ease;
   }
   .match-card-enhanced:hover {
     @apply shadow-arena-lg;
     transform: translateY(-3px);
     border-color: rgba(91, 79, 207, 0.3);
   }
-  .match-card-enhanced:hover::before {
-    height: 4px;
+  .match-card-enhanced--active {
+    border-color: rgba(5, 150, 105, 0.5);
   }
-  .match-card-enhanced--active::before {
-    @apply bg-arena-success;
+  .match-card-enhanced--completed {
+    border-color: rgba(156, 163, 175, 0.4);
   }
-  .match-card-enhanced--completed::before {
-    @apply bg-arena-muted/40;
+  .match-card-enhanced--pending {
+    border-color: rgba(245, 158, 11, 0.5);
   }
-  .match-card-enhanced--pending::before {
-    background-color: #F59E0B;
-  }
-  .match-card-enhanced--cancelled::before,
-  .match-card-enhanced--error::before {
-    @apply bg-arena-danger;
+  .match-card-enhanced--cancelled,
+  .match-card-enhanced--error {
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   /* ELO comparison bar */

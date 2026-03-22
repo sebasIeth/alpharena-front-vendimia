@@ -400,7 +400,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
               <IconStack className="w-3 h-3" />
               {t.common.pot} {Number(pot).toLocaleString()}
               {priceUsd && (
-                <span className="text-arena-muted/70">({formatUsdEquivalent(Number(pot), priceUsd)})</span>
+                <span className="text-arena-muted/70">({((match as any).token || "ALPHA") === "USDC" ? formatUsdEquivalent(0, priceUsd, Number(pot)) : formatUsdEquivalent(Number(pot), priceUsd)})</span>
               )}
             </span>
           </div>
@@ -514,7 +514,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
               <span className="text-arena-border-light/80">·</span>
               <span>{t.common.pot} {Number(pot).toLocaleString()}</span>
               {priceUsd && (
-                <span className="text-arena-muted/70">({formatUsdEquivalent(Number(pot), priceUsd)})</span>
+                <span className="text-arena-muted/70">({((match as any).token || "ALPHA") === "USDC" ? formatUsdEquivalent(0, priceUsd, Number(pot)) : formatUsdEquivalent(Number(pot), priceUsd)})</span>
               )}
             </>
             {match.moveCount > 0 && (

@@ -376,7 +376,8 @@ export default function LeaderboardPage() {
   // Summary stats
   const totalMatches = agents.reduce((s, a) => s + a.totalMatches, 0);
   const avgElo = agents.length > 0 ? Math.round(agents.reduce((s, a) => s + a.elo, 0) / agents.length) : 0;
-  const totalEarnings = agents.reduce((s, a) => s + a.totalEarnings, 0);
+  const totalAlpha = agents.reduce((s, a) => s + (a.earningsAlpha || 0), 0);
+  const totalUsdc = agents.reduce((s, a) => s + (a.earningsUsdc || 0), 0);
 
   return (
     <div className="min-h-screen">
@@ -422,7 +423,7 @@ export default function LeaderboardPage() {
             <div className="text-center flex flex-col items-center justify-center">
               <div className="text-[10px] uppercase tracking-wider text-arena-muted mb-1">{t.common.earnings}</div>
               <TokenEarnings alpha={agents.reduce((s, a) => s + (a.earningsAlpha || 0), 0)} usdc={agents.reduce((s, a) => s + (a.earningsUsdc || 0), 0)} size="md" />
-              {(() => { const usd = formatUsdEquivalent(totalEarnings, priceUsd); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
+              {(() => { const usd = formatUsdEquivalent(totalAlpha, priceUsd, totalUsdc); return usd ? <div className="text-[10px] text-arena-muted">{usd}</div> : null; })()}
             </div>
           </div>
 

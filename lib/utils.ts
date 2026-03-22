@@ -57,9 +57,15 @@ export function formatStake(amount: number): string {
   return amount.toFixed(2);
 }
 
-export function formatUsdEquivalent(alphaAmount: number, priceUsd: number | null): string | null {
-  if (priceUsd === null || priceUsd <= 0) return null;
-  const usd = alphaAmount * priceUsd;
+export function formatUsdEquivalent(alphaAmount: number, priceUsd: number | null, usdcAmount: number = 0): string | null {
+  if (priceUsd === null || priceUsd <= 0) {
+    if (usdcAmount > 0) {
+      if (usdcAmount < 0.01) return "< $0.01 USD";
+      return `~$${usdcAmount.toFixed(2)} USD`;
+    }
+    return null;
+  }
+  const usd = alphaAmount * priceUsd + usdcAmount;
   if (usd < 0.01 && usd > 0) return "< $0.01 USD";
   return `~$${usd.toFixed(2)} USD`;
 }

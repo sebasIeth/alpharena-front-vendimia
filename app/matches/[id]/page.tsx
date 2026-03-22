@@ -697,13 +697,6 @@ export default function MatchDetailPage() {
             {/* Utility buttons */}
             <div className="flex items-center gap-2">
               <button
-                onClick={copyMatchId}
-                className="flex items-center gap-1.5 text-[11px] text-arena-muted hover:text-arena-primary font-mono px-2.5 py-1.5 rounded-lg bg-white/50 border border-white/60 hover:border-arena-primary/20 transition-all"
-              >
-                {copiedId ? <IconCheck className="w-3 h-3 text-arena-success" /> : <IconCopy className="w-3 h-3" />}
-                {copiedId ? t.matchDetail.copied : t.matchDetail.copyId}
-              </button>
-              <button
                 onClick={shareMatch}
                 className="flex items-center gap-1.5 text-[11px] text-arena-muted hover:text-arena-primary font-mono px-2.5 py-1.5 rounded-lg bg-white/50 border border-white/60 hover:border-arena-primary/20 transition-all"
               >
@@ -942,7 +935,7 @@ export default function MatchDetailPage() {
       {/* ── Result Section (completed) ── */}
       {isCompleted && (
         <div className="mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
-          <div className="dash-glass-card rounded-2xl p-6">
+          <div className="bg-white border border-arena-border-light rounded-2xl p-6 shadow-arena-sm">
             {/* Section Header */}
             <div className="flex items-center gap-2 mb-5">
               <svg className="w-5 h-5 text-arena-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -988,8 +981,10 @@ export default function MatchDetailPage() {
                 return (
                   <div
                     key={agent.agentId}
-                    className={`dash-glass-card rounded-xl p-5 transition-all ${
-                      isWinner ? "ring-2 ring-arena-accent/25 shadow-[0_0_20px_rgba(232,165,0,0.08)]" : ""
+                    className={`rounded-xl p-5 transition-all ${
+                      isWinner
+                        ? "bg-gradient-to-br from-amber-50/80 to-white border-2 border-arena-accent/35 shadow-[0_0_20px_rgba(232,165,0,0.1)]"
+                        : "dash-glass-card"
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-4">

@@ -1078,8 +1078,8 @@ function PlayContent() {
                       max="1"
                       step="1"
                       value={stakeAmount}
-                      onChange={(e) => setStakeAmount(e.target.value)}
-                      className="flex-1 text-xl font-extrabold font-mono tabular-nums text-arena-text-bright bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      disabled
+                      className="flex-1 text-xl font-extrabold font-mono tabular-nums text-arena-text-bright bg-transparent outline-none cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <span className={`text-xs font-mono font-semibold ${stakeToken === "USDC" ? "text-emerald-600" : "text-arena-accent"}`}>{stakeToken}</span>
                   </div>
