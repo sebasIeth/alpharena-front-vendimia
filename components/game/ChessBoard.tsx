@@ -88,6 +88,85 @@ function isPromotionMove(piece: number, toRow: number): boolean {
 const WHITE_KING = 6;
 const BLACK_KING = 12;
 
+/* ── Starting piece counts ── */
+const STARTING_PIECES: Record<number, number> = {
+  1: 8, 2: 2, 3: 2, 4: 2, 5: 1, 6: 1,   // white: 8P, 2N, 2B, 2R, 1Q, 1K
+  7: 8, 8: 2, 9: 2, 10: 2, 11: 1, 12: 1, // black
+};
+
+// Material values for advantage calculation
+const PIECE_VALUE: Record<number, number> = {
+  1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 0,
+  7: 1, 8: 3, 9: 3, 10: 5, 11: 9, 12: 0,
+};
+
+// Display order: queen, rook, bishop, knight, pawn
+const CAPTURE_ORDER_WHITE = [11, 10, 9, 8, 7]; // black pieces captured by white
+const CAPTURE_ORDER_BLACK = [5, 4, 3, 2, 1];    // white pieces captured by black
+
+function computeCaptures(board: number[][]) {
+  const currentCounts: Record<number, number> = {};
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r]?.[c] ?? 0;
+      if (p > 0) currentCounts[p] = (currentCounts[p] || 0) + 1;
+    }
+  }
+
+  const whiteCaptured: number[] = []; // black pieces captured by white
+  const blackCaptured: number[] = []; // white pieces captured by black
+
+  for (const [pieceStr, startCount] of Object.entries(STARTING_PIECES)) {
+    const piece = Number(pieceStr);
+    const onBoard = currentCounts[piece] || 0;
+    const captured = startCount - onBoard;
+    for (let i = 0; i < captured; i++) {
+      if (isBlackPiece(piece)) whiteCaptured.push(piece);
+      else if (isWhitePiece(piece)) blackCaptured.push(piece);
+    }
+  }
+
+  // Sort by display order
+  const orderW = (p: number) => CAPTURE_ORDER_WHITE.indexOf(p);
+  const orderB = (p: number) => CAPTURE_ORDER_BLACK.indexOf(p);
+  whiteCaptured.sort((a, b) => orderW(a) - orderW(b));
+  blackCaptured.sort((a, b) => orderB(a) - orderB(b));
+
+  // Material advantage
+  const whiteMaterial = blackCaptured.reduce((s, p) => s + (PIECE_VALUE[p] || 0), 0);
+  const blackMaterial = whiteCaptured.reduce((s, p) => s + (PIECE_VALUE[p] || 0), 0);
+  const advantage = whiteMaterial - blackMaterial;
+
+  return { whiteCaptured, blackCaptured, advantage };
+}
+
+function CapturedPieces({ pieces, advantage, side }: { pieces: number[]; advantage: number; side: "white" | "black" }) {
+  const showAdv = (side === "white" && advantage > 0) || (side === "black" && advantage < 0);
+  const advValue = Math.abs(advantage);
+
+  return (
+    <div className="flex items-center gap-0.5 min-h-[1.5rem] flex-wrap">
+      {pieces.map((p, i) => (
+        <span
+          key={`${p}-${i}`}
+          className="text-[clamp(0.85rem,2.5vw,1.2rem)] leading-none select-none opacity-80"
+          style={{
+            filter: isWhitePiece(p)
+              ? "drop-shadow(0 1px 1px rgba(0,0,0,0.2))"
+              : "drop-shadow(0 1px 1px rgba(0,0,0,0.4))",
+            marginLeft: i > 0 && PIECE_VALUE[p] !== PIECE_VALUE[pieces[i - 1]] ? "4px" : "-2px",
+          }}
+        >
+          {PIECE_CHAR[p]}
+        </span>
+      ))}
+      {showAdv && advValue > 0 && (
+        <span className="text-[10px] font-mono font-bold text-arena-muted ml-1">+{advValue}</span>
+      )}
+    </div>
+  );
+}
+
 /* ── Colors ── */
 const LIGHT_SQ = "#f0d9b5";
 const DARK_SQ = "#b58863";
@@ -237,15 +316,29 @@ export default function ChessBoard({
     );
   }
 
+  // Captured pieces
+  const captures = useMemo(() => computeCaptures(board), [board]);
+
   // Display order: row 0 = rank 8 (black back rank)
   // White perspective: rank 8 at top → row 0 at top → ascending
   // Black perspective: rank 1 at top → row 7 at top → descending
   const rows = flipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
   const cols = flipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
 
+  // Top = opponent's captures, Bottom = player's captures (or white top / black bottom for spectators)
+  const topCaptures = flipped ? captures.whiteCaptured : captures.blackCaptured;
+  const bottomCaptures = flipped ? captures.blackCaptured : captures.whiteCaptured;
+  const topSide: "white" | "black" = flipped ? "white" : "black";
+  const bottomSide: "white" | "black" = flipped ? "black" : "white";
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="mx-auto" style={{ maxWidth: "420px" }}>
+        {/* Captured pieces (top — black's captures when white perspective) */}
+        <div className="px-5 mb-1 min-h-[1.5rem]">
+          <CapturedPieces pieces={topCaptures} advantage={captures.advantage} side={topSide} />
+        </div>
+
         {/* Column labels (top) */}
         <div className="flex" style={{ paddingLeft: "20px", paddingRight: "20px" }}>
           {cols.map((c) => (
@@ -371,6 +464,11 @@ export default function ChessBoard({
               {colToFile(c)}
             </div>
           ))}
+        </div>
+
+        {/* Captured pieces (bottom — white's captures when white perspective) */}
+        <div className="px-5 mt-1 min-h-[1.5rem]">
+          <CapturedPieces pieces={bottomCaptures} advantage={captures.advantage} side={bottomSide} />
         </div>
       </div>
     </div>
