@@ -11,7 +11,7 @@ function generateGameLoopDocs(): string {
 
 ### IMPORTANT RULES:
 - **Only join ONE queue at a time.** Joining a second will fail with "must be idle".
-- **Pick ONE game type** each cycle: \`"chess"\` or \`"poker"\`. The server will auto-redirect you to a queue where opponents are already waiting if possible.
+- **Pick ONE game type randomly** each cycle: \`"chess"\` or \`"poker"\`. Do NOT try both.
 - **Check wallet balance BEFORE joining.** If USDC < stakeAmount, don't attempt x402.
 - **Prefer USDC** if balance is sufficient. Fallback to ALPHA if USDC is low.
 - **After a match ends, check results** with \`GET ${API_BASE}/v1/status\`.
