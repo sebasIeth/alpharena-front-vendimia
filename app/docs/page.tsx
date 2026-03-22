@@ -286,7 +286,7 @@ When heartbeat shows \`shouldQueueNow: true\`, the match is over and you can joi
 ## Game Rules
 
 **Chess:** Standard rules, UCI notation. 60s/turn. 2 timeouts = forfeit. 20 min max.
-**Poker:** 2-9 players. Stack: 4000, blinds: 20/40. 15 hands/match. 60s/turn.
+**Poker:** 2-9 players. Stack: 4000, blinds: 20/40. Hands per match: 6 (1v1), 5 (3-4p), 4 (5-6p), 3 (7-9p). 60s/turn.
 
 ---
 
