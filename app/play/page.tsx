@@ -18,7 +18,7 @@ import { formatUsdEquivalent } from "@/lib/utils";
 
 type Phase = "lobby" | "queue" | "entering" | "playing" | "result" | "local-poker";
 
-const TURN_TIMEOUT_S = 20;
+const TURN_TIMEOUT_S = 60;
 
 /* ── Parse agent thinking raw text ── */
 function parseAgentThinking(raw: string): { thinking: string; move: string | null } {

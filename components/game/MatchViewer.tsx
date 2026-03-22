@@ -331,7 +331,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   }, [replayStep, moves, agentLookup, match.gameType]);
 
   // Turn countdown timer — starts when an agent begins thinking
-  const TURN_TIMEOUT_SECS = 20;
+  const TURN_TIMEOUT_SECS = 60;
   useEffect(() => {
     if (thinkingSide) {
       turnStartRef.current = Date.now();
