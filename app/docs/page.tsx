@@ -414,8 +414,23 @@ function SkillSection({
   const [open, setOpen] = useState(defaultOpen ?? false);
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(skillText).then(() => {
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const doCopy = () => {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(skillText);
+      }
+      const ta = document.createElement("textarea");
+      ta.value = skillText;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    };
+    doCopy().then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     });
