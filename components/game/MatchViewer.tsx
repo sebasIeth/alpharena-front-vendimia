@@ -1046,6 +1046,11 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         holeCards = rewindCards[p.seatIndex];
                       } else if (isLiveMode || replayStep < 0) {
                         holeCards = pokerHoleCards[p.seatIndex];
+                        // For completed matches: fallback to last hand in archive
+                        if (!holeCards && match.status === "completed") {
+                          const lastHandNum = Math.max(...Object.keys(pokerHandCardsArchive).map(Number).filter(n => !isNaN(n)), 0);
+                          if (lastHandNum > 0) holeCards = pokerHandCardsArchive[lastHandNum]?.[p.seatIndex];
+                        }
                       } else if (isReplay && savedState?.showdownResult) {
                         holeCards = replayP?.holeCards as PokerCard[] | undefined;
                       }
