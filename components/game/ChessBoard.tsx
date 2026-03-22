@@ -149,7 +149,7 @@ function CapturedPieces({ pieces, advantage, side }: { pieces: number[]; advanta
       {pieces.map((p, i) => (
         <span
           key={`${p}-${i}`}
-          className="text-[clamp(0.85rem,2.5vw,1.2rem)] leading-none select-none opacity-80"
+          className="text-[clamp(1.1rem,3.2vw,1.6rem)] leading-none select-none opacity-80"
           style={{
             filter: isWhitePiece(p)
               ? "drop-shadow(0 1px 1px rgba(0,0,0,0.2))"
