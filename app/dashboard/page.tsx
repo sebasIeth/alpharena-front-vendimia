@@ -1020,8 +1020,8 @@ function DashboardContent() {
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3.5 bg-white/50 border border-purple-200/60 rounded-xl hover:border-purple-400/60 hover:bg-purple-50/30 transition-all group"
           >
-            <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-purple-600">J</span>
+            <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0">
+              <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-arena-text-bright">Buy on Jupiter</div>
