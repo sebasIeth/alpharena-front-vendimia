@@ -352,7 +352,7 @@ export default function TokenomicsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
         {/* Left: Donut */}
         <div className="flex flex-col items-center">
-          <div className="dash-glass-card rounded-2xl p-8 w-full flex flex-col items-center">
+          <div className="dash-glass-card rounded-2xl p-8 w-full flex flex-col items-center h-full">
             <DonutChart allocations={ALLOCATIONS} size={300} />
             <div className="mt-6 text-center">
               <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-1">Trade Tax</div>
@@ -360,31 +360,31 @@ export default function TokenomicsPage() {
               <div className="text-xs text-arena-muted mt-1">fee on every buy &amp; sell</div>
             </div>
           </div>
-
-          {/* Flywheel */}
-          <div className="dash-glass-card rounded-2xl p-6 mt-4 w-full">
-            <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-4 text-center">The Flywheel</h3>
-            <div className="flex items-center justify-center gap-2 text-sm text-arena-text flex-wrap">
-              <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPHA</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full font-medium">Tax Collected</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-medium">30% Buyback</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full font-medium">Supply Decreases</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-medium">Value Grows</span>
-            </div>
-          </div>
         </div>
 
         {/* Right: Breakdown */}
         <div className="space-y-6">
-          <div className="dash-glass-card rounded-2xl p-6">
-            <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-5">Revenue Allocation</h2>
+          <div className="dash-glass-card rounded-2xl p-8 h-full">
+            <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-6">Revenue Allocation</h2>
             <BarChart allocations={ALLOCATIONS} />
           </div>
 
+        </div>
+      </div>
+
+      {/* Flywheel — full width */}
+      <div className="dash-glass-card rounded-2xl p-6 mt-6">
+        <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-4 text-center">The Flywheel</h3>
+        <div className="flex items-center justify-center gap-2 text-sm text-arena-text flex-wrap">
+          <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPHA</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full font-medium">Tax Collected</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-medium">30% Buyback</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full font-medium">Supply Decreases</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-medium">Value Grows</span>
         </div>
       </div>
 
