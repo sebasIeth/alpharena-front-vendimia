@@ -290,29 +290,36 @@ function PlayContent() {
     }
   }, [phase, fetchBalance]);
 
-  // ── Queue polling fallback (3s) ──
+  // ── Queue polling fallback (3s with ±500ms jitter) ──
   useEffect(() => {
     if (phase !== "queue") {
-      if (queuePollRef.current) clearInterval(queuePollRef.current);
+      if (queuePollRef.current) clearTimeout(queuePollRef.current);
       return;
     }
-    queuePollRef.current = setInterval(async () => {
-      try {
-        const status = await api.playStatus();
-        if (status.inMatch && status.matchId) {
-          setMatchId(status.matchId);
-          setAgentId(status.agentId || null);
-          if (status.gameType) setGameType(status.gameType);
-          setPhase("entering");
-        } else if (!status.inQueue) {
-          setPhase("lobby");
+    const scheduleQueuePoll = () => {
+      const jitter = Math.floor(Math.random() * 1000) - 500; // ±500ms
+      queuePollRef.current = setTimeout(async () => {
+        try {
+          const status = await api.playStatus();
+          if (status.inMatch && status.matchId) {
+            setMatchId(status.matchId);
+            setAgentId(status.agentId || null);
+            if (status.gameType) setGameType(status.gameType);
+            setPhase("entering");
+            return; // Stop polling once matched
+          } else if (!status.inQueue) {
+            setPhase("lobby");
+            return;
+          }
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
-      }
-    }, 3000);
+        scheduleQueuePoll(); // Schedule next poll
+      }, 3000 + jitter);
+    };
+    scheduleQueuePoll();
     return () => {
-      if (queuePollRef.current) clearInterval(queuePollRef.current);
+      if (queuePollRef.current) clearTimeout(queuePollRef.current);
     };
   }, [phase]);
 
@@ -320,7 +327,13 @@ function PlayContent() {
   const attachMatchListeners = useCallback((socket: Socket) => {
     socket.onAny((eventName: string, raw: unknown) => {
       if (eventName !== "message") return;
-      const msg = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      let msg: Record<string, unknown>;
+      try {
+        msg = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      } catch (err) {
+        console.error("[play:match] Failed to parse WebSocket message:", err, raw);
+        return;
+      }
       const type = msg?.type as string | undefined;
       const data = msg?.data as Record<string, unknown> | undefined;
       if (!type || !data) return;
@@ -634,12 +647,9 @@ function PlayContent() {
     });
   }, [t.play.draw, t.play.youWin, t.play.youLose, t.play.checkmate]);
 
-  // Switch from queue socket to match socket
+  // Switch from queue socket to match socket — keep old socket alive until new one connects
   const switchToMatchSocket = useCallback((mid: string) => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
+    const oldSocket = socketRef.current;
     const matchSocket = api.connectMatchSocket(mid, "player");
     if (!matchSocket) return;
     socketRef.current = matchSocket;
@@ -647,6 +657,10 @@ function PlayContent() {
 
     // Fetch initial state via HTTP since we likely missed match:start / match:your_turn
     matchSocket.on("connect", () => {
+      // Now that the new socket is connected, disconnect the old one
+      if (oldSocket) {
+        oldSocket.disconnect();
+      }
       fetchMatchState(mid);
     });
   }, [attachMatchListeners, fetchMatchState]);
@@ -663,12 +677,31 @@ function PlayContent() {
 
     if (socketRef.current) return;
 
-    // Restoring mid-match
+    // Restoring mid-match — validate matchId is still active before connecting
     if (matchIdRef.current) {
-      const socket = api.connectMatchSocket(matchIdRef.current, "player");
-      if (!socket) return;
-      socketRef.current = socket;
-      attachMatchListeners(socket);
+      const mid = matchIdRef.current;
+      api.playStatus().then((status) => {
+        // If the match is no longer active, go back to lobby
+        if (!status.inMatch || status.matchId !== mid) {
+          setPhase("lobby");
+          setMatchId(null);
+          setAgentId(null);
+          matchIdRef.current = null;
+          return;
+        }
+        if (socketRef.current) return; // Socket already set up while we were checking
+        const socket = api.connectMatchSocket(mid, "player");
+        if (!socket) return;
+        socketRef.current = socket;
+        attachMatchListeners(socket);
+      }).catch(() => {
+        // On error, still try to connect (optimistic)
+        if (socketRef.current) return;
+        const socket = api.connectMatchSocket(mid, "player");
+        if (!socket) return;
+        socketRef.current = socket;
+        attachMatchListeners(socket);
+      });
       return;
     }
 
@@ -679,7 +712,13 @@ function PlayContent() {
 
     socket.onAny((eventName: string, raw: unknown) => {
       if (eventName !== "message") return;
-      const msg = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      let msg: Record<string, unknown>;
+      try {
+        msg = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      } catch (err) {
+        console.error("[play:queue] Failed to parse WebSocket message:", err, raw);
+        return;
+      }
       const type = msg?.type as string | undefined;
       const data = msg?.data as Record<string, unknown> | undefined;
       if (!type || !data) return;
@@ -741,7 +780,10 @@ function PlayContent() {
   }, [isMyTurn, turnTimer !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ──
+  const joiningRef = useRef(false);
   const handleJoinQueue = async () => {
+    if (joiningRef.current) return; // Prevent duplicate clicks
+    joiningRef.current = true;
     setError("");
     setJoining(true);
     try {
@@ -761,6 +803,7 @@ function PlayContent() {
       setError(err instanceof Error ? err.message : t.play.joinFailed);
     } finally {
       setJoining(false);
+      joiningRef.current = false;
     }
   };
 
