@@ -10,7 +10,7 @@ import AgentAvatar from "@/components/ui/AgentAvatar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import type { Match, Chain, BettingInfo, BettingPoolResponse, UserBets } from "@/lib/types";
-import { normalizeMatchAgents, formatRelativeTime, formatEarnings } from "@/lib/utils";
+import { normalizeMatchAgents, formatRelativeTime, formatEarnings, copyToClipboard } from "@/lib/utils";
 
 const PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6"];
 const PLAYER_GRADIENTS = [
@@ -603,15 +603,17 @@ export default function MatchDetailPage() {
   }, [matchId]);
 
   const copyMatchId = () => {
-    navigator.clipboard.writeText(match?.id || "");
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+    copyToClipboard(match?.id || "").then(() => {
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    });
   };
 
   const shareMatch = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    copyToClipboard(window.location.href).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
   };
 
   if (loading) return <DetailSkeleton />;

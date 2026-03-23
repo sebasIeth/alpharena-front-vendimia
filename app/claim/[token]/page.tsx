@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { copyToClipboard } from "@/lib/utils";
 
 const API = "/api/backend";
 
@@ -101,7 +102,7 @@ export default function ClaimPage() {
 
   // Copy challenge text
   const copyChallenge = useCallback(() => {
-    navigator.clipboard.writeText(challengeText).then(() => {
+    copyToClipboard(challengeText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
