@@ -19,6 +19,7 @@ import {
   normalizeMatchAgents,
   formatUsdEquivalent,
   formatEarnings,
+  copyToClipboard,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match, Chain } from "@/lib/types";
@@ -337,7 +338,7 @@ function AgentDetailContent() {
   const handleCopyAddress = async () => {
     if (!walletAddress) return;
     try {
-      await navigator.clipboard.writeText(walletAddress);
+      await copyToClipboard(walletAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

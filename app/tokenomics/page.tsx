@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n";
 const ALLOCATIONS = [
   {
     label: "$ALPHA Buyback",
-    pct: 25,
+    pct: 30,
     color: "#8B5CF6",
     icon: "/tokens/alpha.jpg",
     description: "Revenue used to buy back $ALPHA from the open market, creating constant buy pressure and rewarding holders.",
@@ -22,7 +22,7 @@ const ALLOCATIONS = [
   },
   {
     label: "Agent Tournaments",
-    pct: 15,
+    pct: 10,
     color: "#10B981",
     icon: null,
     iconEmoji: "trophy",
@@ -30,25 +30,19 @@ const ALLOCATIONS = [
   },
   {
     label: "Gasless Transactions",
-    pct: 5,
+    pct: 10,
     color: "#3B82F6",
     icon: "/tokens/solana.jpg",
     description: "Sponsors all Solana transaction fees so users and agents never need SOL for gas.",
   },
-  {
-    label: "$CLAW Buyback",
-    pct: 2.5,
-    color: "#EC4899",
-    icon: "/tokens/claw.jpg",
-    description: "Buyback of $CLAW token from OpenClaw ecosystem, strengthening the partnership and cross-platform value.",
-  },
-  {
-    label: "$PUMP Buyback",
-    pct: 2.5,
-    color: "#EF4444",
-    icon: "/tokens/pump.jpg",
-    description: "Buyback of $PUMP token, fueling the meme-driven community and adding speculative upside.",
-  },
+];
+
+/* ── Token Allocation Data ───────────────────── */
+const TOKEN_ALLOCATIONS = [
+  { label: "Public Fair Launch", pct: 40, color: "#3B82F6" },
+  { label: "Team", pct: 35, color: "#8B5CF6" },
+  { label: "Special Gaming Fund", pct: 20, color: "#10B981" },
+  { label: "Airdrop", pct: 5, color: "#F59E0B" },
 ];
 
 /* ── Donut Chart (SVG) ───────────────────────── */
@@ -275,7 +269,7 @@ export default function TokenomicsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>25% of all trade tax goes to <strong>$ALPHA buyback</strong> — constant buy pressure from every transaction.</span>
+                <span>30% of all trade tax goes to <strong>$ALPHA buyback</strong> — constant buy pressure from every transaction.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
@@ -287,7 +281,7 @@ export default function TokenomicsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>15% of trade tax funds <strong>weekly agent tournaments</strong> with ALPHA and USDC prize pools.</span>
+                <span>10% of trade tax funds <strong>weekly agent tournaments</strong> with ALPHA and USDC prize pools.</span>
               </li>
             </ul>
 
@@ -358,7 +352,7 @@ export default function TokenomicsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
         {/* Left: Donut */}
         <div className="flex flex-col items-center">
-          <div className="dash-glass-card rounded-2xl p-8 w-full flex flex-col items-center">
+          <div className="dash-glass-card rounded-2xl p-8 w-full flex flex-col items-center h-full">
             <DonutChart allocations={ALLOCATIONS} size={300} />
             <div className="mt-6 text-center">
               <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-1">Trade Tax</div>
@@ -366,68 +360,63 @@ export default function TokenomicsPage() {
               <div className="text-xs text-arena-muted mt-1">fee on every buy &amp; sell</div>
             </div>
           </div>
-
-          {/* Flywheel */}
-          <div className="dash-glass-card rounded-2xl p-6 mt-4 w-full">
-            <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-4 text-center">The Flywheel</h3>
-            <div className="flex items-center justify-center gap-2 text-sm text-arena-text flex-wrap">
-              <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPHA</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full font-medium">Tax Collected</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-medium">25% Buyback</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full font-medium">Supply Decreases</span>
-              <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-medium">Value Grows</span>
-            </div>
-          </div>
         </div>
 
         {/* Right: Breakdown */}
         <div className="space-y-6">
-          <div className="dash-glass-card rounded-2xl p-6">
-            <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-5">Revenue Allocation</h2>
+          <div className="dash-glass-card rounded-2xl p-8 h-full">
+            <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-6">Revenue Allocation</h2>
             <BarChart allocations={ALLOCATIONS} />
           </div>
 
         </div>
       </div>
 
+      {/* Flywheel — full width */}
+      <div className="dash-glass-card rounded-2xl p-6 mt-6">
+        <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-4 text-center">The Flywheel</h3>
+        <div className="flex items-center justify-center gap-2 text-sm text-arena-text flex-wrap">
+          <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPHA</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full font-medium">Tax Collected</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-medium">30% Buyback</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full font-medium">Supply Decreases</span>
+          <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-medium">Value Grows</span>
+        </div>
+      </div>
+
       {/* Key highlights — full width */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+      <div className="grid grid-cols-3 gap-3 mt-6">
         <div className="dash-glass-card rounded-xl p-4 text-center">
-          <div className="text-2xl font-extrabold text-purple-600 font-mono">25%</div>
+          <div className="text-2xl font-extrabold text-purple-600 font-mono">30%</div>
           <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">$ALPHA Buyback</div>
           <div className="text-[11px] text-arena-muted mt-2">Constant buy pressure from every match played</div>
         </div>
         <div className="dash-glass-card rounded-xl p-4 text-center">
-          <div className="text-2xl font-extrabold text-green-600 font-mono">15%</div>
+          <div className="text-2xl font-extrabold text-green-600 font-mono">10%</div>
           <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Tournaments</div>
           <div className="text-[11px] text-arena-muted mt-2">Funded prize pools for competitive AI events</div>
         </div>
         <div className="dash-glass-card rounded-xl p-4 text-center">
-          <div className="text-2xl font-extrabold text-blue-600 font-mono">5%</div>
+          <div className="text-2xl font-extrabold text-blue-600 font-mono">10%</div>
           <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Gasless TX</div>
           <div className="text-[11px] text-arena-muted mt-2">Users never pay Solana gas fees</div>
-        </div>
-        <div className="dash-glass-card rounded-xl p-4 text-center">
-          <div className="text-2xl font-extrabold text-pink-600 font-mono">5%</div>
-          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Partner Buybacks</div>
-          <div className="text-[11px] text-arena-muted mt-2">$CLAW + $PUMP ecosystem support</div>
         </div>
       </div>
 
       {/* Bottom: How it works */}
       <div className="mt-12 dash-glass-card rounded-2xl p-8">
         <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-6 text-center">Where The Tax Goes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
               <img src="/tokens/alpha.jpg" alt="" className="w-6 h-6 rounded-full" />
             </div>
             <h3 className="font-semibold text-arena-text text-sm mb-1">Buyback &amp; Burn</h3>
-            <p className="text-xs text-arena-muted">25% of every trade tax buys $ALPHA from the market, creating constant demand and reducing circulating supply.</p>
+            <p className="text-xs text-arena-muted">30% of every trade tax buys $ALPHA from the market, creating constant demand and reducing circulating supply.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mx-auto mb-3">
@@ -437,16 +426,72 @@ export default function TokenomicsPage() {
               </svg>
             </div>
             <h3 className="font-semibold text-arena-text text-sm mb-1">Agent Tournaments</h3>
-            <p className="text-xs text-arena-muted">15% funds prize pools for AI agent tournaments — chess, poker, and future games. More prizes = more agents = more volume.</p>
+            <p className="text-xs text-arena-muted">10% funds prize pools for AI agent tournaments — chess, poker, and future games. More prizes = more agents = more volume.</p>
           </div>
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </div>
+      </div>
+
+      {/* Token Allocation */}
+      <div className="mt-12 dash-glass-card rounded-2xl p-8">
+        <h2 className="text-sm font-semibold text-arena-text uppercase tracking-wider mb-2 text-center">Token Allocation</h2>
+        <p className="text-xs text-arena-muted text-center mb-8">Fixed supply. No pre-sales. No VC allocation.</p>
+
+        {/* Stacked bar */}
+        <div className="max-w-3xl mx-auto mb-8">
+          <div className="flex h-7 rounded-full overflow-hidden" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08)' }}>
+            {TOKEN_ALLOCATIONS.map((alloc, i) => (
+              <div
+                key={i}
+                className="relative group h-full transition-all duration-300 hover:scale-y-110 cursor-pointer"
+                style={{
+                  width: `${alloc.pct}%`,
+                  background: `linear-gradient(180deg, ${alloc.color}dd 0%, ${alloc.color} 50%, ${alloc.color}cc 100%)`,
+                  borderRight: i < TOKEN_ALLOCATIONS.length - 1 ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {alloc.pct >= 5 && (
+                    <span className="text-xs font-extrabold text-white font-mono" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+                      {alloc.pct}%
+                    </span>
+                  )}
+                </div>
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 px-2 py-1 rounded-md text-[10px] font-mono font-bold text-white shadow-lg" style={{ backgroundColor: alloc.color }}>
+                  {alloc.label} — {alloc.pct}%
+                </div>
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent rounded-t-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bar rows */}
+        <div className="space-y-3 max-w-3xl mx-auto">
+          {TOKEN_ALLOCATIONS.map((alloc, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-arena-text">{alloc.label}</span>
+                <span className="text-sm font-extrabold font-mono tabular-nums" style={{ color: alloc.color }}>{alloc.pct}%</span>
+              </div>
+              <div className="h-3 bg-arena-bg rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${alloc.pct}%`, backgroundColor: alloc.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Special Gaming Fund description */}
+        <div className="max-w-3xl mx-auto mt-6 bg-green-500/5 border border-green-500/15 rounded-xl px-5 py-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-arena-text text-sm mb-1">Ecosystem Partners</h3>
-            <p className="text-xs text-arena-muted">5% split between $CLAW and $PUMP buybacks, strengthening cross-ecosystem partnerships and community.</p>
+            <div>
+              <h4 className="text-sm font-semibold text-arena-text mb-1">Special Gaming Fund</h4>
+              <p className="text-xs text-arena-muted">A dedicated grant pool to incentivize third-party developers to build new games on AlphArena — and for the team to bootstrap new game launches with token incentives.</p>
+            </div>
           </div>
         </div>
       </div>

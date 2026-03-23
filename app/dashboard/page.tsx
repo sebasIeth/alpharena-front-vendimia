@@ -20,6 +20,7 @@ import {
   formatUsdEquivalent,
   formatEarnings,
   truncateAddress,
+  copyToClipboard,
 } from "@/lib/utils";
 import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import { getExplorerTxUrl } from "@/lib/api";
@@ -324,7 +325,7 @@ function DashboardContent() {
   const handleCopyAddress = async () => {
     if (!playBalance?.walletAddress) return;
     try {
-      await navigator.clipboard.writeText(playBalance.walletAddress);
+      await copyToClipboard(playBalance.walletAddress);
       setAddressCopied(true);
       setTimeout(() => setAddressCopied(false), 2000);
     } catch { /* ignore */ }

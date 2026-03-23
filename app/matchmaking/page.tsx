@@ -113,6 +113,7 @@ function AgentCard({
   balanceLoading,
   priceUsd,
   disabled,
+  lowBalance,
 }: {
   agent: Agent;
   selected: boolean;
@@ -121,6 +122,7 @@ function AgentCard({
   balanceLoading: boolean;
   priceUsd: number | null;
   disabled?: boolean;
+  lowBalance?: boolean;
 }) {
   const wins = agent.stats?.wins || 0;
   const losses = agent.stats?.losses || 0;
@@ -201,6 +203,16 @@ function AgentCard({
         </div>
       )}
 
+      {/* Low balance warning indicator (shown before selection) */}
+      {!selected && lowBalance && (
+        <div className="flex items-center gap-1 text-[10px] text-arena-accent font-mono mb-1">
+          <svg className="w-3 h-3 text-arena-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          Low balance
+        </div>
+      )}
+
       {/* Balance */}
       {selected && (
         <div className="pt-2 border-t border-arena-border-light/60 mt-1">
@@ -245,9 +257,11 @@ function MatchmakingContent() {
   const [gameType] = useState("chess");
   const [joining, setJoining] = useState(false);
 
-  // Agent balance state
+  // Agent balance state (per-agent map for upfront fetching)
+  const [agentBalances, setAgentBalances] = useState<Record<string, AgentBalance>>({});
   const [agentBalance, setAgentBalance] = useState<AgentBalance | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   // Queue state
   const [queuedAgents, setQueuedAgents] = useState<QueuedAgent[]>([]);
@@ -281,6 +295,30 @@ function MatchmakingContent() {
     }
     fetchAgents();
   }, [t.matchmaking.joinFailed]);
+
+  // Fetch all agent balances upfront when agents load
+  useEffect(() => {
+    if (agents.length === 0) return;
+    let cancelled = false;
+    async function fetchAllBalances() {
+      setBalancesLoading(true);
+      const idleIds = agents.filter((a) => a.status === "idle").map((a) => a.id);
+      const results = await Promise.allSettled(
+        idleIds.map((id) => api.getAgentBalance(id).then((b) => ({ id, balance: b })))
+      );
+      if (cancelled) return;
+      const map: Record<string, AgentBalance> = {};
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          map[r.value.id] = r.value.balance;
+        }
+      }
+      setAgentBalances(map);
+      setBalancesLoading(false);
+    }
+    fetchAllBalances();
+    return () => { cancelled = true; };
+  }, [agents]);
 
   // Fetch agent balance when selection changes
   useEffect(() => {
@@ -338,7 +376,13 @@ function MatchmakingContent() {
 
     socket.onAny((eventName: string, raw: any) => {
       if (eventName !== "message") return;
-      const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      let msg: any;
+      try {
+        msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch (err) {
+        console.error("[matchmaking] Failed to parse WebSocket message:", err, raw);
+        return;
+      }
       const type = msg?.type;
       const data = msg?.data;
       if (!type || !data) return;
@@ -391,65 +435,76 @@ function MatchmakingContent() {
   useEffect(() => {
     if (queuedAgents.length === 0) {
       if (pollRef.current) {
-        clearInterval(pollRef.current);
+        clearTimeout(pollRef.current);
         pollRef.current = null;
       }
       return;
     }
 
-    pollRef.current = setInterval(async () => {
-      const current = queuedAgentsRef.current;
-      if (current.length === 0) return;
+    const scheduleNextPoll = () => {
+      const jitter = Math.floor(Math.random() * 1000) - 500; // ±500ms
+      pollRef.current = setTimeout(async () => {
+        const current = queuedAgentsRef.current;
+        if (current.length === 0) return;
 
-      const agentIds = current.map((qa) => qa.agentId);
-      const updates = await Promise.allSettled(
-        agentIds.map((id) => api.getQueueStatus(id))
-      );
+        const agentIds = current.map((qa) => qa.agentId);
+        const updates = await Promise.allSettled(
+          agentIds.map((id) => api.getQueueStatus(id))
+        );
 
-      const statusMap = new Map<string, QueueStatus>();
-      const failedIds = new Set<string>();
+        const statusMap = new Map<string, QueueStatus>();
+        const failedIds = new Set<string>();
 
-      agentIds.forEach((id, i) => {
-        if (updates[i].status === "fulfilled") {
-          const value = updates[i].value;
-          statusMap.set(id, value);
-          if (value.matchId) {
-            router.push(`/matches/${value.matchId}`);
+        agentIds.forEach((id, i) => {
+          if (updates[i].status === "fulfilled") {
+            const value = updates[i].value;
+            statusMap.set(id, value);
+            if (value.matchId) {
+              router.push(`/matches/${value.matchId}`);
+            }
+          } else {
+            failedIds.add(id);
           }
-        } else {
-          failedIds.add(id);
-        }
-      });
+        });
 
-      setQueuedAgents((prev) =>
-        prev
-          .map((qa) => {
-            const newStatus = statusMap.get(qa.agentId);
-            return newStatus ? { ...qa, status: newStatus } : qa;
-          })
-          .filter((qa) => {
-            if (failedIds.has(qa.agentId)) return false;
-            const s = qa.status?.status;
-            return s !== "matched" && s !== "cancelled";
-          })
-      );
-    }, 2000);
+        setQueuedAgents((prev) =>
+          prev
+            .map((qa) => {
+              const newStatus = statusMap.get(qa.agentId);
+              return newStatus ? { ...qa, status: newStatus } : qa;
+            })
+            .filter((qa) => {
+              if (failedIds.has(qa.agentId)) return false;
+              const s = qa.status?.status;
+              return s !== "matched" && s !== "cancelled";
+            })
+        );
+
+        // Schedule next poll with jitter
+        scheduleNextPoll();
+      }, 2000 + jitter);
+    };
+    scheduleNextPoll();
 
     return () => {
       if (pollRef.current) {
-        clearInterval(pollRef.current);
+        clearTimeout(pollRef.current);
         pollRef.current = null;
       }
     };
   }, [queuedAgents.length, router]);
 
+  const joiningRef = useRef(false);
   const handleJoinQueue = async () => {
+    if (joiningRef.current) return; // Prevent duplicate clicks
+    joiningRef.current = true;
     setError("");
     setJoining(true);
 
     if (!selectedAgentId) {
       setError(t.matchmaking.selectAgentError);
       setJoining(false);
+      joiningRef.current = false;
       return;
     }
 
@@ -472,6 +527,7 @@ function MatchmakingContent() {
       );
     } finally {
       setJoining(false);
+      joiningRef.current = false;
     }
   };
 
@@ -772,18 +828,25 @@ function MatchmakingContent() {
                     {t.matchmaking.selectAgent}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {idleAgents.map((agent) => (
-                      <AgentCard
-                        key={agent.id}
-                        agent={agent}
-                        selected={selectedAgentId === agent.id}
-                        onSelect={() => setSelectedAgentId(agent.id)}
-                        balance={selectedAgentId === agent.id ? agentBalance : null}
-                        balanceLoading={selectedAgentId === agent.id ? balanceLoading : false}
-                        priceUsd={priceUsd}
-                        disabled={allQueuedIds.has(agent.id)}
-                      />
-                    ))}
+                    {idleAgents.map((agent) => {
+                      const preloadedBalance = agentBalances[agent.id];
+                      const isLowBalance = preloadedBalance
+                        ? parseFloat(preloadedBalance.alpha) < FIXED_STAKE
+                        : false;
+                      return (
+                        <AgentCard
+                          key={agent.id}
+                          agent={agent}
+                          selected={selectedAgentId === agent.id}
+                          onSelect={() => setSelectedAgentId(agent.id)}
+                          balance={selectedAgentId === agent.id ? agentBalance : null}
+                          balanceLoading={selectedAgentId === agent.id ? balanceLoading : false}
+                          priceUsd={priceUsd}
+                          disabled={allQueuedIds.has(agent.id)}
+                          lowBalance={isLowBalance}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
 
