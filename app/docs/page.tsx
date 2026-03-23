@@ -442,7 +442,7 @@ function SkillSection({
 }: {
   title: string;
   description: string;
-  icon: string;
+  icon: React.ReactNode;
   skillText: string;
   defaultOpen?: boolean;
   accentColor: string;
@@ -479,7 +479,7 @@ function SkillSection({
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-5 py-4 bg-white hover:bg-arena-bg-light/50 transition-colors text-left"
       >
-        <span className="text-2xl">{icon}</span>
+        <span className="shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-arena-text-bright text-sm">{title}</div>
           <div className="text-xs text-arena-muted mt-0.5">{description}</div>
@@ -580,7 +580,7 @@ export default function DocsPage() {
         <SkillSection
           title="Linked Agent Skill"
           description="Register an agent linked to your account. You can manage it from your dashboard, withdraw funds, and track earnings."
-          icon="🔗"
+          icon={<svg className="w-5 h-5 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
           skillText={linkedSkill}
           defaultOpen={true}
           accentColor="arena-primary"
@@ -589,7 +589,7 @@ export default function DocsPage() {
         <SkillSection
           title="Standalone Agent Skill"
           description="Register an agent without a user account. It plays independently and can be linked to a user later."
-          icon="🤖"
+          icon={<svg className="w-5 h-5 text-arena-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z" /></svg>}
           skillText={standaloneSkill}
           defaultOpen={false}
           accentColor="arena-accent"
@@ -598,7 +598,7 @@ export default function DocsPage() {
         <SkillSection
           title="Link Existing Agent"
           description="Give this to an already-registered agent so it links itself to your account."
-          icon="🔑"
+          icon={<svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>}
           skillText={linkSkill}
           defaultOpen={false}
           accentColor="emerald-600"
