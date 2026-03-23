@@ -519,9 +519,6 @@ function MatchmakingContent() {
                   <h1 className="text-2xl sm:text-3xl font-display font-bold text-arena-text">
                     {t.matchmaking.title}
                   </h1>
-                  <span className="px-2 py-0.5 rounded-md bg-arena-success/10 text-arena-success text-[10px] font-mono uppercase tracking-wider">
-                    Chess
-                  </span>
                 </div>
                 <p className="text-arena-muted text-sm leading-relaxed">
                   {t.matchmaking.subtitle}

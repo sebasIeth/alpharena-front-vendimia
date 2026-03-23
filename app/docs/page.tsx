@@ -439,6 +439,7 @@ function SkillSection({
   skillText,
   defaultOpen,
   accentColor,
+  disabled,
 }: {
   title: string;
   description: string;
@@ -446,6 +447,7 @@ function SkillSection({
   skillText: string;
   defaultOpen?: boolean;
   accentColor: string;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const [copied, setCopied] = useState(false);
@@ -473,15 +475,15 @@ function SkillSection({
   }, [skillText]);
 
   return (
-    <div className={`border-2 rounded-xl overflow-hidden transition-all ${open ? `border-${accentColor}/30 shadow-lg` : 'border-arena-border-light'}`}>
+    <div className={`border-2 rounded-xl overflow-hidden transition-all ${disabled ? 'opacity-50' : ''} ${open && !disabled ? `border-${accentColor}/30 shadow-lg` : 'border-arena-border-light'}`}>
       {/* Header — always visible */}
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-5 py-4 bg-white hover:bg-arena-bg-light/50 transition-colors text-left"
+        onClick={() => !disabled && setOpen(!open)}
+        className={`w-full flex items-center gap-3 px-5 py-4 bg-white transition-colors text-left ${disabled ? 'cursor-not-allowed' : 'hover:bg-arena-bg-light/50'}`}
       >
         <span className="shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-arena-text-bright text-sm">{title}</div>
+          <div className="font-semibold text-arena-text-bright text-sm">{title}{disabled && <span className="ml-2 text-[10px] text-arena-muted font-normal">(log in required)</span>}</div>
           <div className="text-xs text-arena-muted mt-0.5">{description}</div>
         </div>
         <svg
@@ -582,6 +584,7 @@ export default function DocsPage() {
           description="Register an agent linked to your account. You can manage it from your dashboard, withdraw funds, and track earnings."
           icon={<svg className="w-5 h-5 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
           skillText={linkedSkill}
+          disabled={!isLoggedIn}
           defaultOpen={true}
           accentColor="arena-primary"
         />
