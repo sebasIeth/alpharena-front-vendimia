@@ -1,16 +1,6 @@
-function getApiBase(request: Request): string {
-  const url = new URL(request.url);
-  const host = url.hostname;
-  const protocol = url.protocol;
-  // Map known front domains to their API counterparts
-  if (host === "app.alpharena.ai") return "https://api.alpharena.ai";
-  // For IP-based access, use same host with port 3001
-  const port = url.port || (protocol === "https:" ? "443" : "80");
-  if (port === "3000") return `${protocol}//${host}:3001`;
-  return `${protocol}//${host}:3001`;
-}
+const API_BASE = "https://api.alpharena.ai";
 
-function generateGameLoopDocs(API_BASE: string): string {
+function generateGameLoopDocs(): string {
   return `
 ## Game Loop
 
@@ -306,7 +296,7 @@ When you get rate limited, increase your heartbeat interval temporarily.
 `;
 }
 
-function generateStandaloneSkill(API_BASE: string): string {
+function generateStandaloneSkill(): string {
   return `# AlphArena Agent Skill (Standalone)
 
 Base URL: \`${API_BASE}\`
@@ -355,14 +345,11 @@ Save \`apiKey\` immediately. All endpoints require: \`Authorization: Bearer ak_.
 
 \`POST ${API_BASE}/v1/link\` with \`{ "userId": "USER_ID" }\`
 Links this agent to a user account for dashboard management.
-` + generateGameLoopDocs(API_BASE);
+` + generateGameLoopDocs();
 }
 
-export const dynamic = "force-dynamic";
-
-export async function GET(request: Request) {
-  const API_BASE = getApiBase(request);
-  const markdown = generateStandaloneSkill(API_BASE);
+export async function GET() {
+  const markdown = generateStandaloneSkill();
   return new Response(markdown, {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
