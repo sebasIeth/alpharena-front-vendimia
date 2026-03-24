@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const ALPHA_TOKEN = "0x324f2BD09e908f28217CC19Bb9599b199c736bA3";
+const ALPHA_TOKEN = "4GQ1eYpTat1Tf1CjHG5nzWXLP5GV8GopQTqMEdbuMLux";
 const DEX_URL = `https://api.dexscreener.com/latest/dex/tokens/${ALPHA_TOKEN}`;
 const POLL_INTERVAL = 60_000; // 60 seconds
 
