@@ -2,8 +2,8 @@
 set -e
 
 # ── Config ─────────────────────────────────────────────────
-VPS_HOST="root@187.77.47.112"
-VPS_PASSWORD="45359800@aaA"
+VPS_HOST="root@187.77.63.248"
+VPS_PASSWORD="45359800@aAa"
 REMOTE_DIR="/root/alpharena-front"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -78,7 +78,7 @@ docker compose ps
 echo ""
 if docker compose ps | grep -qE "(running|Up)"; then
   echo "✅ AlphArena Frontend deployed successfully!"
-  echo "🌐 http://187.77.47.112:3000"
+  echo "🌐 http://187.77.63.248:3000"
 else
   echo "❌ Container not running. Logs:"
   docker compose logs --tail 30
@@ -89,5 +89,5 @@ REMOTE_DEPLOY
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Deploy complete!"
-echo "🌐 Frontend: http://187.77.47.112:3000"
+echo "🌐 Frontend: http://187.77.63.248:3000"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
