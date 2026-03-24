@@ -999,11 +999,11 @@ function PlayContent() {
                     <div className="space-y-2">
                       {/* ALPHA */}
                       <div className="flex items-center gap-2.5 bg-arena-primary/5 border border-arena-primary/10 rounded-lg px-3 py-2">
-                        <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-7 h-7 rounded-full shrink-0" />
+                        <img src="/tokens/alpha.jpg" alt="ALPH" className="w-7 h-7 rounded-full shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-lg font-extrabold font-mono tabular-nums text-arena-primary">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                            <span className="text-[10px] text-arena-muted font-mono">ALPHA</span>
+                            <span className="text-[10px] text-arena-muted font-mono">ALPH</span>
                             {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">({usd})</span> : null; })()}
                           </div>
                         </div>

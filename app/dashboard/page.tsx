@@ -518,7 +518,7 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-3 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-5 h-5 rounded-full" />
+                  <img src="/tokens/alpha.jpg" alt="ALPH" className="w-5 h-5 rounded-full" />
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">
                     {formatEarnings(stats.earningsAlpha || stats.earnings)}
                   </span>
@@ -790,7 +790,7 @@ function DashboardContent() {
                 <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3.5 py-2.5">
                   <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPH</div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">{Number(playBalance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                       {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}

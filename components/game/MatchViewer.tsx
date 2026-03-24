@@ -1793,7 +1793,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-arena-text">Bets</h3>
                 <span className="text-[10px] font-mono text-arena-muted">
-                  {formatEarnings(bettingPool.pool.totalPool)} ALPHA
+                  {formatEarnings(bettingPool.pool.totalPool)} USDC
                 </span>
               </div>
 

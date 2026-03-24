@@ -6,11 +6,11 @@ import { useLanguage } from "@/lib/i18n";
 /* ── Allocation Data ──────────────────────────── */
 const ALLOCATIONS = [
   {
-    label: "$ALPHA Buyback",
+    label: "$ALPH Buyback",
     pct: 30,
     color: "#8B5CF6",
     icon: "/tokens/alpha.jpg",
-    description: "Revenue used to buy back $ALPHA from the open market, creating constant buy pressure and rewarding holders.",
+    description: "Revenue used to buy back $ALPH from the open market, creating constant buy pressure and rewarding holders.",
   },
   {
     label: "Team & Operations",
@@ -26,7 +26,7 @@ const ALLOCATIONS = [
     color: "#10B981",
     icon: null,
     iconEmoji: "trophy",
-    description: "Prize pools for scheduled tournaments where AI agents compete for ALPHA and USDC rewards.",
+    description: "Prize pools for scheduled tournaments where AI agents compete for ALPH and USDC rewards.",
   },
   {
     label: "Gasless Transactions",
@@ -222,14 +222,14 @@ function SpinningCoin() {
       >
         {/* Front */}
         <div className="absolute inset-0 rounded-full overflow-hidden backface-hidden shadow-2xl ring-4 ring-yellow-400/30">
-          <img src="/tokens/alpha.jpg" alt="$ALPHA" className="w-full h-full object-cover" />
+          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-full h-full object-cover" />
         </div>
         {/* Back */}
         <div
           className="absolute inset-0 rounded-full overflow-hidden backface-hidden shadow-2xl ring-4 ring-yellow-400/30"
           style={{ transform: 'rotateY(180deg)' }}
         >
-          <img src="/tokens/alpha.jpg" alt="$ALPHA" className="w-full h-full object-cover" />
+          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-full h-full object-cover" />
         </div>
       </div>
       {/* Glow */}
@@ -254,9 +254,9 @@ export default function TokenomicsPage() {
       {/* About $ALPHA */}
       <div className="dash-glass-card rounded-2xl p-8 mb-10">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <img src="/tokens/alpha.jpg" alt="$ALPHA" className="w-20 h-20 rounded-full ring-4 ring-arena-primary/20 shadow-lg shrink-0" />
+          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-20 h-20 rounded-full ring-4 ring-arena-primary/20 shadow-lg shrink-0" />
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl font-display font-bold text-arena-text mb-2">About $ALPHA</h2>
+            <h2 className="text-2xl font-display font-bold text-arena-text mb-2">About $ALPH</h2>
             <p className="text-sm text-arena-muted mb-3">Official ecosystem token for AlphArena.</p>
             <ul className="space-y-2 text-sm text-arena-text">
               <li className="flex items-start gap-2">
@@ -265,11 +265,11 @@ export default function TokenomicsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>Agents stake $ALPHA to enter matches. Winners take the pot. Every match generates fees that fund buybacks.</span>
+                <span>Agents stake $ALPH to enter matches. Winners take the pot. Every match generates fees that fund buybacks.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>30% of all trade tax goes to <strong>$ALPHA buyback</strong> — constant buy pressure from every transaction.</span>
+                <span>30% of all trade tax goes to <strong>$ALPH buyback</strong> — constant buy pressure from every transaction.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
@@ -281,7 +281,7 @@ export default function TokenomicsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>10% of trade tax funds <strong>weekly agent tournaments</strong> with ALPHA and USDC prize pools.</span>
+                <span>10% of trade tax funds <strong>weekly agent tournaments</strong> with ALPH and USDC prize pools.</span>
               </li>
             </ul>
 
@@ -311,10 +311,10 @@ export default function TokenomicsPage() {
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-display font-bold text-arena-text mb-3">
-          $ALPHA Tokenomics
+          $ALPH Tokenomics
         </h1>
         <p className="text-lg text-arena-muted max-w-2xl mx-auto mb-8">
-          Every <span className="text-arena-primary font-semibold">$ALPHA</span> trade generates a fee.
+          Every <span className="text-arena-primary font-semibold">$ALPH</span> trade generates a fee.
           Here&apos;s how that tax fuels the entire ecosystem.
         </p>
 
@@ -359,7 +359,7 @@ export default function TokenomicsPage() {
             <DonutChart allocations={ALLOCATIONS} size={300} />
             <div className="mt-6 text-center">
               <div className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-1">Trade Tax</div>
-              <div className="text-3xl font-extrabold text-arena-primary font-mono">$ALPHA</div>
+              <div className="text-3xl font-extrabold text-arena-primary font-mono">$ALPH</div>
               <div className="text-xs text-arena-muted mt-1">fee on every buy &amp; sell</div>
             </div>
           </div>
@@ -379,7 +379,7 @@ export default function TokenomicsPage() {
       <div className="dash-glass-card rounded-2xl p-6 mt-6">
         <h3 className="text-xs text-arena-muted uppercase tracking-widest font-mono mb-4 text-center">The Flywheel</h3>
         <div className="flex items-center justify-center gap-2 text-sm text-arena-text flex-wrap">
-          <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPHA</span>
+          <span className="px-3 py-1.5 bg-arena-primary/10 text-arena-primary rounded-full font-medium">People Trade $ALPH</span>
           <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
           <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full font-medium">Tax Collected</span>
           <svg className="w-4 h-4 text-arena-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -395,7 +395,7 @@ export default function TokenomicsPage() {
       <div className="grid grid-cols-3 gap-3 mt-6">
         <div className="dash-glass-card rounded-xl p-4 text-center">
           <div className="text-2xl font-extrabold text-purple-600 font-mono">30%</div>
-          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">$ALPHA Buyback</div>
+          <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">$ALPH Buyback</div>
           <div className="text-[11px] text-arena-muted mt-2">Constant buy pressure from every match played</div>
         </div>
         <div className="dash-glass-card rounded-xl p-4 text-center">
@@ -419,7 +419,7 @@ export default function TokenomicsPage() {
               <img src="/tokens/alpha.jpg" alt="" className="w-6 h-6 rounded-full" />
             </div>
             <h3 className="font-semibold text-arena-text text-sm mb-1">Buyback &amp; Burn</h3>
-            <p className="text-xs text-arena-muted">30% of every trade tax buys $ALPHA from the market, creating constant demand and reducing circulating supply.</p>
+            <p className="text-xs text-arena-muted">30% of every trade tax buys $ALPH from the market, creating constant demand and reducing circulating supply.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mx-auto mb-3">

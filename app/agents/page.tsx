@@ -407,7 +407,7 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
             <div className="flex items-center gap-1">
               <img src="/tokens/alpha.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
               <span className="font-mono font-bold text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
-              <span className="text-[9px] text-arena-muted font-mono">ALPHA</span>
+              <span className="text-[9px] text-arena-muted font-mono">ALPH</span>
             </div>
           )}
           {(agent.stats?.earningsUsdc || 0) > 0 && (
