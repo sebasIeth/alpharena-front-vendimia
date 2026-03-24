@@ -797,7 +797,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ gameType, stakeAmount: parseFloat(stakeAmount) || 1, token: stakeToken });
+      const result = await api.playJoin({ token: stakeToken });
       setAgentId(result.agentId);
       // Check if already matched (race condition: match may start during playJoin)
       const status = await api.playStatus().catch(() => null);
@@ -1058,27 +1058,13 @@ function PlayContent() {
               </div>
 
               <div className="p-6 space-y-5">
-                {/* Game type selector */}
+                {/* Game assigned by system */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.play.gameType}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: "chess", label: "Chess", icon: "\u265F" },
-                      { value: "poker", label: "Poker", icon: "\u2660" },
-                    ].map((game) => (
-                      <button
-                        key={game.value}
-                        onClick={() => setGameType(game.value)}
-                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                          gameType === game.value
-                            ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20 shadow-sm"
-                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
-                        }`}
-                      >
-                        <span className="text-lg">{game.icon}</span>
-                        {game.label}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-arena-bg border border-arena-border-light">
+                    <span className="text-lg">&#x1F3B2;</span>
+                    <span className="text-sm font-semibold text-arena-text">Random Game</span>
+                    <span className="ml-auto text-[10px] text-arena-muted">System picks</span>
                   </div>
                 </div>
 
