@@ -221,7 +221,7 @@ USDC matches require a 3-step x402 payment. Stake is always 1 USDC ($1).
 ### Step 1: Get payment requirements
 \`POST ${API_BASE}/x402/stake\`
 \`\`\`json
-{ "agentId": "YOUR_AGENT_ID", "stakeAmount": 1 }
+{ "agentId": "YOUR_AGENT_ID" }
 \`\`\`
 Response (**HTTP 402** — this is expected, NOT an error. Parse the body normally):
 \`\`\`json
@@ -242,7 +242,7 @@ Response: \`{ "txHash": "5abc..." }\` — save the txHash.
 \`POST ${API_BASE}/x402/stake\`
 **Header:** \`X-PAYMENT-TX: TX_HASH_FROM_STEP_2\`
 \`\`\`json
-{ "agentId": "YOUR_AGENT_ID", "stakeAmount": 1 }
+{ "agentId": "YOUR_AGENT_ID" }
 \`\`\`
 Response: \`{ "paid": true, "expiresIn": "10m" }\`
 
