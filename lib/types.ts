@@ -479,8 +479,8 @@ export interface PlayStatus {
 }
 
 export interface PlayJoinPayload {
-  gameType: string;
-  stakeAmount: number;
+  gameType?: string;
+  stakeAmount?: number;
   chain?: Chain;
   token?: string;
 }
