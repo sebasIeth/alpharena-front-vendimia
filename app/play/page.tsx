@@ -81,10 +81,19 @@ function PlayContent() {
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
   const [stakeToken, setStakeToken] = useState<"ALPHA" | "USDC">("ALPHA");
-  const [stakeAmount, setStakeAmount] = useState("1");
+  const [stakeAmount, setStakeAmount] = useState("");
   const selectedChain: Chain = "solana";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // Set default stake: $1 USD equivalent
+  useEffect(() => {
+    if (stakeToken === "USDC") {
+      setStakeAmount("1");
+    } else if (stakeToken === "ALPHA" && priceUsd && priceUsd > 0) {
+      setStakeAmount(Math.ceil(1 / priceUsd).toString());
+    }
+  }, [stakeToken, priceUsd]);
 
   // Match state
   const [agentId, setAgentId] = useState<string | null>(null);

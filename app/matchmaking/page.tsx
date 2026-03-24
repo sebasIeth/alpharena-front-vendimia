@@ -239,11 +239,11 @@ function AgentCard({
   );
 }
 
-const FIXED_STAKE = 1_000_000;
-
 function MatchmakingContent() {
   const { t } = useLanguage();
   const { priceUsd } = useAlphaPrice();
+  // $1 USD equivalent in ALPHA, fallback to 1 if price unknown
+  const FIXED_STAKE = priceUsd && priceUsd > 0 ? Math.ceil(1 / priceUsd) : 1;
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedAgentId = searchParams.get("agentId") || "";
