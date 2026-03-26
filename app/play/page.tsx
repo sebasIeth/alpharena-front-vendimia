@@ -967,6 +967,12 @@ function PlayContent() {
     setPokerCurrentPlayerIndex(0);
     setPokerDealerIndex(0);
     setPokerLobbyInfo(null);
+    setRpsRounds([]);
+    setRpsCurrentRound(1);
+    setRpsTotalRounds(3);
+    setRpsScoreA(0);
+    setRpsScoreB(0);
+    setRpsPhase("waiting");
     fetchBalance();
   };
 
