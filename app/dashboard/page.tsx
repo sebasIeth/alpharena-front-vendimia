@@ -334,6 +334,7 @@ function DashboardContent() {
   const handlePlayWithdraw = async () => {
     const value = parseFloat(withdrawAmt);
     if (!value || value <= 0) { setWithdrawError(t.matchmaking.insufficientBalance); return; }
+    if (withdrawToken === "USDC" && value < 10) { setWithdrawError("Minimum USDC withdrawal is 10 USDC."); return; }
     if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid Solana address"); return; }
     const balanceMap: Record<string, number> = {
       ALPHA: parseFloat(playBalance?.alpha || "0"),
