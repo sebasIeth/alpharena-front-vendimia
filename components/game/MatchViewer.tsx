@@ -1358,20 +1358,24 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             )}
 
             {/* ── Live Scrub Bar ── */}
-            {(match.status === "active" || match.status === "starting") && (
+            {(match.status === "active" || match.status === "starting") && (() => {
+              const isRps = match.gameType === "rps";
+              const scrubItems = isRps ? rpsRounds : moves;
+              const scrubLabel = isRps ? "Round" : "Move";
+              return (
               <div className="mt-4 dash-glass-card rounded-xl p-3 space-y-2">
                 {/* Timeline slider */}
-                {moves.length > 0 && (
+                {scrubItems.length > 0 && (
                   <div className="relative">
                     <input
                       type="range"
                       min={0}
-                      max={Math.max(0, moves.length - 1)}
-                      value={isLiveMode ? Math.max(0, moves.length - 1) : (replayStep >= 0 ? Math.min(replayStep, moves.length - 1) : Math.max(0, moves.length - 1))}
+                      max={Math.max(0, scrubItems.length - 1)}
+                      value={isLiveMode ? Math.max(0, scrubItems.length - 1) : (replayStep >= 0 ? Math.min(replayStep, scrubItems.length - 1) : Math.max(0, scrubItems.length - 1))}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
                         setReplayStep(val);
-                        if (val >= moves.length - 1) {
+                        if (val >= scrubItems.length - 1) {
                           setIsLiveMode(true);
                         } else {
                           setIsLiveMode(false);
@@ -1388,12 +1392,12 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 {/* Bottom row: move info + LIVE button */}
                 <div className="flex items-center justify-between">
                   <div className="text-arena-muted text-[11px] font-mono">
-                    {moves.length === 0 ? (
-                      <>Waiting for moves...</>
+                    {scrubItems.length === 0 ? (
+                      <>Waiting for {scrubLabel.toLowerCase()}s...</>
                     ) : !isLiveMode && replayStep >= 0 ? (
-                      <>Move {replayStep + 1} / {moves.length}</>
+                      <>{scrubLabel} {replayStep + 1} / {scrubItems.length}</>
                     ) : (
-                      <>Move {moves.length}</>
+                      <>{scrubLabel} {scrubItems.length}</>
                     )}
                   </div>
                   <button
@@ -1412,18 +1416,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   </button>
                 </div>
               </div>
-            )}
+            );
+            })()}
 
             {/* ── Replay Controls ── */}
-            {canReplay && (
+            {canReplay && (() => {
+              const isRpsReplay = match.gameType === "rps";
+              const replayItems = isRpsReplay ? rpsRounds : moves;
+              const replayLabel = isRpsReplay ? "Round" : "Move";
+              return (
               <div className="mt-4 dash-glass-card rounded-xl p-4 space-y-3">
                 {/* Timeline slider */}
                 <div className="relative">
                   <input
                     type="range"
                     min={0}
-                    max={moves.length - 1}
-                    value={replayStep >= 0 ? replayStep : moves.length - 1}
+                    max={replayItems.length - 1}
+                    value={replayStep >= 0 ? replayStep : replayItems.length - 1}
                     onChange={(e) => { setIsLiveMode(false); setReplayStep(parseInt(e.target.value)); setIsAutoPlaying(false); }}
                     className="w-full h-1.5 bg-arena-border/40 rounded-full appearance-none cursor-pointer
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
@@ -1444,7 +1453,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <button
                       onClick={() => {
                         setIsLiveMode(false);
-                        setReplayStep(prev => Math.max(0, (prev < 0 ? moves.length - 1 : prev) - 1));
+                        setReplayStep(prev => Math.max(0, (prev < 0 ? replayItems.length - 1 : prev) - 1));
                         setIsAutoPlaying(false);
                       }}
                       className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
@@ -1455,7 +1464,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                         setIsLiveMode(false);
                         if (replayStep < 0) setReplayStep(0);
                         // If at the end, restart
-                        if (replayStep >= moves.length - 1) {
+                        if (replayStep >= replayItems.length - 1) {
                           setReplayStep(0);
                           setIsAutoPlaying(true);
                         } else {
@@ -1472,7 +1481,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     <button
                       onClick={() => {
                         setIsLiveMode(false);
-                        setReplayStep(prev => Math.min(moves.length - 1, (prev < 0 ? moves.length - 1 : prev) + 1));
+                        setReplayStep(prev => Math.min(replayItems.length - 1, (prev < 0 ? replayItems.length - 1 : prev) + 1));
                         setIsAutoPlaying(false);
                       }}
                       className="w-8 h-8 rounded-lg bg-white hover:bg-white/80 text-arena-muted hover:text-arena-text border border-arena-border-light/40 shadow-sm flex items-center justify-center transition-all text-sm"
@@ -1488,7 +1497,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   {/* Move counter + info */}
                   <div className="flex-1 text-center min-w-0">
                     <div className="text-arena-text text-xs font-mono font-semibold">
-                      Move {replayStep >= 0 ? replayStep + 1 : moves.length} / {moves.length}
+                      {replayLabel} {replayStep >= 0 ? replayStep + 1 : replayItems.length} / {replayItems.length}
                     </div>
                     {replayMoveInfo && (
                       <div className="text-arena-muted text-[10px] font-mono truncate mt-0.5">
@@ -1515,36 +1524,47 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   </select>
                 </div>
               </div>
-            )}
+            );
+            })()}
 
             {/* Match Info Below Board */}
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              {match.gameType === "rps" ? (
-                <>
-                  <div className="bg-arena-bg rounded-lg p-2 text-center">
-                    <div className="text-arena-muted text-xs">Round</div>
-                    <div className="text-arena-text font-medium">
-                      {rpsCurrentRound} / {rpsTotalRounds}
+              {match.gameType === "rps" ? (() => {
+                // Compute scores at current replay step
+                const viewIdx = (!isLiveMode && replayStep >= 0) ? Math.min(replayStep, rpsRounds.length - 1) : rpsRounds.length - 1;
+                const roundsUpTo = rpsRounds.slice(0, viewIdx + 1);
+                const replayScoreA = roundsUpTo.filter(r => r.winner === "a").length;
+                const replayScoreB = roundsUpTo.filter(r => r.winner === "b").length;
+                const displayRound = viewIdx >= 0 ? roundsUpTo.length : 0;
+                const displayScoreA = isLiveMode || replayStep < 0 ? rpsScoreA : replayScoreA;
+                const displayScoreB = isLiveMode || replayStep < 0 ? rpsScoreB : replayScoreB;
+                return (
+                  <>
+                    <div className="bg-arena-bg rounded-lg p-2 text-center">
+                      <div className="text-arena-muted text-xs">Round</div>
+                      <div className="text-arena-text font-medium">
+                        {displayRound} / {rpsTotalRounds}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-arena-bg rounded-lg p-2 text-center">
-                    <div className="text-arena-muted text-xs">Score</div>
-                    <div className="text-arena-primary font-medium">
-                      {rpsScoreA} — {rpsScoreB}
+                    <div className="bg-arena-bg rounded-lg p-2 text-center">
+                      <div className="text-arena-muted text-xs">Score</div>
+                      <div className="text-arena-primary font-medium">
+                        {displayScoreA} — {displayScoreB}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-arena-bg rounded-lg p-2 text-center">
-                    <div className="text-arena-muted text-xs">Stake</div>
-                    <div className="text-arena-primary font-medium">
-                      {match.stakeAmount}
+                    <div className="bg-arena-bg rounded-lg p-2 text-center">
+                      <div className="text-arena-muted text-xs">Best Of</div>
+                      <div className="text-arena-text font-medium">{rpsTotalRounds}</div>
                     </div>
-                  </div>
-                  <div className="bg-arena-bg rounded-lg p-2 text-center">
-                    <div className="text-arena-muted text-xs">Pot</div>
-                    <div className="text-arena-primary font-medium">{pot}</div>
-                  </div>
-                </>
-              ) : match.gameType === "poker" ? (
+                    <div className="bg-arena-bg rounded-lg p-2 text-center">
+                      <div className="text-arena-muted text-xs">Status</div>
+                      <div className="text-arena-primary font-medium capitalize">
+                        {match.status === "completed" ? "Finished" : rpsPhase === "waiting" ? "Choosing" : rpsPhase}
+                      </div>
+                    </div>
+                  </>
+                );
+              })() : match.gameType === "poker" ? (
                 <>
                   <div className="bg-arena-bg rounded-lg p-2 text-center">
                     <div className="text-arena-muted text-xs">Hand</div>
