@@ -44,6 +44,7 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
     earningsAlpha: raw.earningsAlpha ?? stats.earningsAlpha ?? 0,
     earningsUsdc: raw.earningsUsdc ?? stats.earningsUsdc ?? 0,
     xUsername: raw.xUsername ?? null,
+    statsByGameType: raw.statsByGameType ?? undefined,
   };
 }
 
@@ -254,16 +255,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
   const rc = getRankColor(agent.rank);
   const rankLabel = agent.rank <= 3 ? ["", "1st", "2nd", "3rd"][agent.rank] : `#${agent.rank}`;
 
-  const [statsByGame, setStatsByGame] = useState<Record<string, { wins: number; losses: number; draws: number; totalMatches: number }> | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api.getAgentStats(agent.id).then((res) => {
-      if (!cancelled && res.statsByGameType) setStatsByGame(res.statsByGameType);
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [agent.id]);
-
+  const statsByGame = agent.statsByGameType || null;
   const GAME_LABELS: Record<string, string> = { chess: "Chess", poker: "Poker", rps: "RPS" };
 
   return (
@@ -301,19 +293,24 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
       </div>
 
       {/* Wins by game type */}
-      {statsByGame && Object.keys(statsByGame).length > 0 && (
-        <div>
-          <div className="text-xs uppercase tracking-wider text-arena-muted mb-2">Wins by Game</div>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(statsByGame).map(([gameType, s]) => (
-              <div key={gameType} className="bg-arena-bg-light rounded-lg p-3 text-center">
-                <div className="text-[10px] uppercase tracking-wider text-arena-muted mb-1">{GAME_LABELS[gameType] || gameType}</div>
-                <div className="text-lg font-extrabold text-emerald-600 font-mono tabular-nums">{s.wins}</div>
-                <div className="text-[10px] text-arena-muted font-mono">{s.losses}L · {s.draws}D</div>
-                <div className="text-[10px] text-arena-muted">{s.totalMatches} played</div>
+      {statsByGame && (
+        <div className="bg-arena-bg-light rounded-xl px-4">
+          <div className="text-[10px] uppercase tracking-wider text-arena-muted pt-2.5 pb-1">Games</div>
+          {["chess", "poker", "rps"].map((gameType) => {
+            const s = statsByGame[gameType] || { wins: 0, losses: 0, draws: 0, totalMatches: 0 };
+            return (
+              <div key={gameType} className="flex items-center justify-between py-2.5 border-b border-arena-border/30 last:border-0">
+                <span className="text-sm text-arena-muted">{GAME_LABELS[gameType]}</span>
+                <span className="text-sm font-bold tabular-nums text-arena-text-bright">
+                  <span className="text-emerald-600">{s.wins}W</span>
+                  {" · "}
+                  <span className="text-rose-600">{s.losses}L</span>
+                  {" · "}
+                  <span>{s.draws}D</span>
+                </span>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 
