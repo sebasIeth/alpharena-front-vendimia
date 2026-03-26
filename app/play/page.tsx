@@ -508,7 +508,7 @@ function PlayContent() {
           setIsMyTurn(true);
           setTurnExpired(false);
           setIsCheck(check);
-          setTurnTimer(TURN_TIMEOUT_S);
+          setTurnTimer(isRpsGame ? 70 : TURN_TIMEOUT_S);
           setAgentThinking(null); // Clear agent reasoning when it's our turn
           if (timeMs) setMatchClock(Math.ceil(timeMs / 1000));
           if (moves) setGameLegalMoves(moves);
