@@ -462,6 +462,7 @@ export default function LeaderboardPage() {
                   { value: "", label: "All" },
                   { value: "chess", label: "Chess" },
                   { value: "poker", label: "Poker" },
+                  { value: "rps", label: "RPS" },
                 ].map((opt) => (
                   <button
                     key={opt.value}
