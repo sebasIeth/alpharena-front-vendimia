@@ -1787,18 +1787,23 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               {match.gameType === "poker" ? "Hand History" : match.gameType === "rps" ? "Round History" : "Move History"}
             </h3>
             <div data-move-list className="max-h-[422px] overflow-y-auto space-y-1.5 pr-1">
-              {match.gameType === "rps" ? (
-                rpsRounds.length === 0 ? (
+              {match.gameType === "rps" ? (() => {
+                const visibleIdx = (!isLiveMode && replayStep >= 0) ? replayStep + 1 : rpsRounds.length;
+                const visibleRounds = rpsRounds.slice(0, visibleIdx);
+                return visibleRounds.length === 0 ? (
                   <div className="text-center text-sm text-arena-muted py-4">No rounds yet</div>
                 ) : (
-                  rpsRounds.map((round) => {
+                  visibleRounds.map((round, idx) => {
                     const isWinA = round.winner === "a";
                     const isWinB = round.winner === "b";
                     const isDraw = round.winner === "draw";
                     const pAName = agents[0]?.agentName || "A";
                     const pBName = agents[1]?.agentName || "B";
+                    const isActive = !isLiveMode && replayStep >= 0 && idx === replayStep;
                     return (
-                      <div key={round.roundNumber} className="flex items-center gap-2 text-sm px-2 py-2 rounded-lg bg-white/5 border border-white/5">
+                      <div key={round.roundNumber} className={`flex items-center gap-2 text-sm px-2 py-2 rounded-lg border transition-all ${
+                        isActive ? "bg-arena-primary/10 border-arena-primary/30 ring-1 ring-arena-primary/20" : "bg-white/5 border-white/5"
+                      }`}>
                         <span className="text-[10px] text-arena-muted font-mono font-bold w-6 shrink-0">R{round.roundNumber}</span>
                         <span className={`flex items-center gap-1 ${isWinA ? "text-arena-primary" : isDraw ? "text-arena-muted" : "text-arena-muted/30"}`}>
                           <span className="text-[10px] font-mono truncate max-w-[60px]">{pAName}</span>
@@ -1821,8 +1826,8 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       </div>
                     );
                   })
-                )
-              ) : loadingMoves ? (
+                );
+              })() : loadingMoves ? (
                 <div className="text-center text-sm text-arena-muted py-4">
                   {match.gameType === "poker" ? "Loading hands..." : "Loading moves..."}
                 </div>
