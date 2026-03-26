@@ -542,14 +542,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
         if (type === "match:move") {
           // After a move, the OTHER player starts thinking
-          const moveSide = data.side as string;
+          const moveSide = data.side as string | undefined;
           // N-player: next side is the next letter, wrapping around
-          const sideIdx = moveSide.charCodeAt(0) - 97;
+          const sideIdx = moveSide ? moveSide.charCodeAt(0) - 97 : 0;
           const totalPlayers = pokerPlayers.length || 2;
           const nextSide = String.fromCharCode(97 + ((sideIdx + 1) % totalPlayers));
-          // Brief null to reset timer, then set next player as thinking
-          setThinkingSide(null);
-          setTimeout(() => setThinkingSide(nextSide), 50);
+          // Brief null to reset timer, then set next player as thinking (skip for RPS)
+          if (moveSide && match.gameType !== "rps") {
+            setThinkingSide(null);
+            setTimeout(() => setThinkingSide(nextSide), 50);
+          }
           // Append move to history from WS data (skip street-advance events that have no action)
           const hasAction = data.chessMove || data.move || data.pokerAction;
           if (data.moveNumber != null && data.side && hasAction) {
@@ -590,7 +592,14 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         if (match.gameType === "rps") {
           if (data.rpsRound != null) setRpsCurrentRound(data.rpsRound as number);
           if (data.rpsTotalRounds != null) setRpsTotalRounds(data.rpsTotalRounds as number);
-          if (data.rpsPhase) setRpsPhase(data.rpsPhase as any);
+          if (data.rpsPhase) {
+            const ph = data.rpsPhase as string;
+            const mapped = ph === "waiting_moves" ? "waiting"
+              : ph === "round_result" ? "round_complete"
+              : ph === "match_over" ? "game_over"
+              : ph;
+            setRpsPhase(mapped as any);
+          }
           if (data.rpsScores) {
             const s = data.rpsScores as { a: number; b: number };
             setRpsScoreA(s.a);
