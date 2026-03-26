@@ -10,6 +10,8 @@ import Button from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
+import RpsBoard from "@/components/game/RpsBoard";
+import type { RpsRound } from "@/components/game/RpsBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
@@ -133,6 +135,14 @@ function PlayContent() {
     playerCount: number; countdownMs: number | null; players: { name: string }[];
   } | null>(null);
 
+  // RPS-specific state
+  const [rpsRounds, setRpsRounds] = useState<RpsRound[]>([]);
+  const [rpsCurrentRound, setRpsCurrentRound] = useState(1);
+  const [rpsTotalRounds, setRpsTotalRounds] = useState(3);
+  const [rpsScoreA, setRpsScoreA] = useState(0);
+  const [rpsScoreB, setRpsScoreB] = useState(0);
+  const [rpsPhase, setRpsPhase] = useState<"waiting" | "thinking" | "revealing" | "round_complete" | "game_over">("waiting");
+
   // Result
   const [resultMessage, setResultMessage] = useState("");
   const [resultType, setResultType] = useState<"win" | "lose" | "draw">("draw");
@@ -187,6 +197,20 @@ function PlayContent() {
       } else if (m.gameType === "poker" && m.pokerState) {
         // Poker doesn't use traditional board state
         setPhase("playing");
+      } else if (m.gameType === "rps") {
+        // RPS doesn't use traditional board state
+        setPhase("playing");
+        if (m.rpsState) {
+          const rs = m.rpsState as Record<string, unknown>;
+          if (rs.bestOf != null) setRpsTotalRounds(rs.bestOf as number);
+          if (rs.currentRound != null) setRpsCurrentRound(rs.currentRound as number);
+          if (rs.scores) {
+            const s = rs.scores as { a: number; b: number };
+            setRpsScoreA(s.a);
+            setRpsScoreB(s.b);
+          }
+          if (rs.rounds) setRpsRounds(rs.rounds as RpsRound[]);
+        }
       }
 
       const agents = m.agents as Record<string, Record<string, unknown>> | undefined;
@@ -373,6 +397,18 @@ function PlayContent() {
           }
         }
         if (data.pokerHandNumber != null) setPokerHandNumber(data.pokerHandNumber as number);
+        // RPS: init state on match start
+        if (gt === "rps") {
+          setPhase("playing");
+          if (data.rpsTotalRounds != null) setRpsTotalRounds(data.rpsTotalRounds as number);
+          if (data.rpsRound != null) setRpsCurrentRound(data.rpsRound as number);
+          if (data.rpsPhase) setRpsPhase("waiting");
+          if (data.rpsScores) {
+            const s = data.rpsScores as { a: number; b: number };
+            setRpsScoreA(s.a);
+            setRpsScoreB(s.b);
+          }
+        }
       }
 
       if (type === "match:your_turn") {
@@ -443,12 +479,29 @@ function PlayContent() {
         // If mySide is not yet set (hand 1 race condition), accept the turn — the backend only sends
         // match:your_turn to the correct player via resendPendingTurn
         const isPoker = data.gameType === "poker" || (data.pokerPlayers && !boardData);
+        const isRpsGame = data.gameType === "rps" || data.rpsPhase;
         const mySideUnknown = mySideRef.current == null;
         const isForMe = mySideUnknown
-          ? true // Accept — backend verified it's our turn before sending
+          ? !isRpsGame // For RPS: don't accept blindly, wait for mySide to be set; for others: accept
           : isPoker
           ? (mySeat != null && activeSeat != null && mySeat === activeSeat) || (side != null && side === mySideRef.current)
           : side != null && side === mySideRef.current;
+
+        // RPS: update state from your_turn
+        if (data.gameType === "rps" || data.rpsPhase) {
+          if (data.rpsRound != null) setRpsCurrentRound(data.rpsRound as number);
+          if (data.rpsTotalRounds != null) setRpsTotalRounds(data.rpsTotalRounds as number);
+          if (data.rpsPhase) {
+            const ph = data.rpsPhase as string;
+            if (ph === "waiting_moves") setRpsPhase("waiting");
+            else setRpsPhase(ph as any);
+          }
+          if (data.rpsScores) {
+            const s = data.rpsScores as { a: number; b: number };
+            setRpsScoreA(s.a);
+            setRpsScoreB(s.b);
+          }
+        }
 
         if (isForMe) {
           if (side) setMySide(side);
@@ -466,9 +519,14 @@ function PlayContent() {
           }
         } else {
           // Not our turn — clear turn-related state
-          setIsMyTurn(false);
-          setPokerLegalActions(null);
-          setTurnTimer(null);
+          // For RPS: both players get your_turn simultaneously, so don't clear
+          // when receiving the opponent's your_turn event
+          const isRps = data.gameType === "rps" || data.rpsPhase;
+          if (!isRps) {
+            setIsMyTurn(false);
+            setPokerLegalActions(null);
+            setTurnTimer(null);
+          }
         }
       }
 
@@ -488,6 +546,41 @@ function PlayContent() {
           setPokerLegalActions(null);
           setTurnTimer(null);
         }
+        // RPS: update state from match:move
+        if (data.rpsRound != null) setRpsCurrentRound(data.rpsRound as number);
+        if (data.rpsTotalRounds != null) setRpsTotalRounds(data.rpsTotalRounds as number);
+        if (data.rpsPhase) {
+          const ph = data.rpsPhase as string;
+          if (ph === "waiting_moves") setRpsPhase("waiting");
+          else if (ph === "revealing") setRpsPhase("revealing");
+          else if (ph === "round_result") setRpsPhase("round_complete");
+          else if (ph === "match_over") setRpsPhase("game_over");
+          else setRpsPhase(ph as any);
+          // On reveal/round_complete, clear turn state
+          if (ph === "revealing" || ph === "round_result" || ph === "match_over") {
+            setIsMyTurn(false);
+            setTurnTimer(null);
+          }
+        }
+        if (data.rpsScores) {
+          const s = data.rpsScores as { a: number; b: number };
+          setRpsScoreA(s.a);
+          setRpsScoreB(s.b);
+        }
+        if (data.rpsResult) {
+          const r = data.rpsResult as { roundNumber: number; throwA: string; throwB: string; winner: string };
+          setRpsRounds((prev) => {
+            const exists = prev.some((rd) => rd.roundNumber === r.roundNumber);
+            if (exists) return prev;
+            return [...prev, {
+              roundNumber: r.roundNumber,
+              throwA: r.throwA as any,
+              throwB: r.throwB as any,
+              winner: r.winner as any,
+            }];
+          });
+        }
+
         // Poker: update shared state from any move (N-player)
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
         if (data.pokerPot != null) setPokerPot(data.pokerPot as number);
@@ -797,7 +890,7 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
-      const result = await api.playJoin({ token: stakeToken });
+      const result = await api.playJoin({ token: stakeToken, gameType });
       setAgentId(result.agentId);
       // Check if already matched (race condition: match may start during playJoin)
       const status = await api.playStatus().catch(() => null);
@@ -953,6 +1046,26 @@ function PlayContent() {
         />
       );
     }
+    if (gameType === "rps") {
+      const winsNeeded = Math.ceil(rpsTotalRounds / 2);
+      const isGameOver = rpsPhase === "game_over" || rpsScoreA >= winsNeeded || rpsScoreB >= winsNeeded;
+      return (
+        <RpsBoard
+          rounds={rpsRounds}
+          currentRound={rpsCurrentRound}
+          totalRounds={rpsTotalRounds}
+          scoreA={rpsScoreA}
+          scoreB={rpsScoreB}
+          playerAName={playerA || "Player A"}
+          playerBName={playerB || "Player B"}
+          phase={isGameOver ? "game_over" : rpsPhase}
+          isMyTurn={canInteract ? isMyTurn : false}
+          mySide={mySide}
+          onMove={canInteract ? (choice: "rock" | "paper" | "scissors") => handleGameMove(choice) : undefined}
+          winnerName={isGameOver ? (rpsScoreA > rpsScoreB ? (playerA || "Player A") : (playerB || "Player B")) : null}
+        />
+      );
+    }
     return (
       <div className="text-center text-arena-muted py-8">Unsupported game type</div>
     );
@@ -1058,13 +1171,28 @@ function PlayContent() {
               </div>
 
               <div className="p-6 space-y-5">
-                {/* Game assigned by system */}
+                {/* Game type selector */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.play.gameType}</label>
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-arena-bg border border-arena-border-light">
-                    <span className="text-lg">&#x1F3B2;</span>
-                    <span className="text-sm font-semibold text-arena-text">Random Game</span>
-                    <span className="ml-auto text-[10px] text-arena-muted">System picks</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: "chess", label: "Chess", icon: "\u265A" },
+                      { value: "rps", label: "RPS", icon: "\u270A" },
+                      { value: "poker", label: "Poker", icon: "\uD83C\uDCCF" },
+                    ]).map((g) => (
+                      <button
+                        key={g.value}
+                        onClick={() => setGameType(g.value)}
+                        className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                          gameType === g.value
+                            ? "bg-arena-primary/10 text-arena-primary border-arena-primary/30 ring-1 ring-arena-primary/20 shadow-sm"
+                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
+                        }`}
+                      >
+                        <span className="text-lg">{g.icon}</span>
+                        {g.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -1324,7 +1452,9 @@ function PlayContent() {
                       <div className="flex items-center gap-2.5">
                         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isMyTurn ? "bg-arena-primary animate-pulse" : "bg-arena-muted/40"}`} />
                         <span className="text-base font-display font-bold">
-                          {isMyTurn ? t.play.yourTurn : t.play.opponentTurn}
+                          {gameType === "rps"
+                            ? (isMyTurn ? "Choose your throw!" : rpsPhase === "revealing" ? "Revealing..." : rpsPhase === "game_over" ? "Game Over" : "Waiting...")
+                            : (isMyTurn ? t.play.yourTurn : t.play.opponentTurn)}
                         </span>
                       </div>
                       {turnTimer !== null && isMyTurn && (
@@ -1420,6 +1550,44 @@ function PlayContent() {
                     )}
                   </div>
                 </Card>
+
+                {/* RPS Round History */}
+                {gameType === "rps" && rpsRounds.length > 0 && (
+                  <Card>
+                    <div className="p-4">
+                      <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-3">Round History</h3>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {rpsRounds.map((round) => {
+                          const throwLabel = (t: string) => t === "rock" ? "\u270A" : t === "paper" ? "\u270B" : "\u2702\uFE0F";
+                          const isWinA = round.winner === "a";
+                          const isWinB = round.winner === "b";
+                          const isDraw = round.winner === "draw";
+                          return (
+                            <div key={round.roundNumber} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg bg-arena-bg/50">
+                              <span className="text-[10px] text-arena-muted font-mono w-4">R{round.roundNumber}</span>
+                              <span className={`text-lg ${isWinA ? "scale-110" : isDraw ? "opacity-50" : "opacity-30"}`} title={round.throwA}>
+                                {round.throwA ? throwLabel(round.throwA) : "?"}
+                              </span>
+                              <span className="text-[10px] text-arena-muted/40 font-mono">vs</span>
+                              <span className={`text-lg ${isWinB ? "scale-110" : isDraw ? "opacity-50" : "opacity-30"}`} title={round.throwB}>
+                                {round.throwB ? throwLabel(round.throwB) : "?"}
+                              </span>
+                              <span className="ml-auto text-[10px] font-mono font-bold">
+                                {isDraw ? (
+                                  <span className="text-arena-muted">Draw</span>
+                                ) : isWinA ? (
+                                  <span className="text-arena-primary">{playerA || "A"} wins</span>
+                                ) : (
+                                  <span className="text-arena-primary">{playerB || "B"} wins</span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Card>
+                )}
 
                 {/* Match info + Abandon */}
                 <div className="pt-1 space-y-2">
