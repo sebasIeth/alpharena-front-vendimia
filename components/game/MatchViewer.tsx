@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 import type { Match, Move, PokerCard, BettingPoolResponse } from "@/lib/types";
 import ChessBoard from "./ChessBoard";
 import PokerBoard from "./PokerBoard";
+import RpsBoard, { RpsThrowIcon } from "./RpsBoard";
+import type { RpsRound } from "./RpsBoard";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents, formatEarnings } from "@/lib/utils";
 
@@ -147,6 +149,16 @@ function formatMoveDisplay(
     return { text: "action" };
   }
 
+  // RPS: show throw
+  if (gameType === "rps") {
+    const rpsThrow = md.rpsThrow || md.throw || md.action;
+    if (rpsThrow) {
+      const label = rpsThrow.charAt(0).toUpperCase() + rpsThrow.slice(1);
+      return { text: label };
+    }
+    return { text: "choosing..." };
+  }
+
   // Fallback: show cleaned JSON
   const cleaned = { ...md };
   delete cleaned.thinking;
@@ -252,6 +264,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     }
     return {};
   });
+  // RPS state — initialize from match.rpsState if available
+  const initRps = match.rpsState && typeof match.rpsState === "object" ? match.rpsState as any : null;
+  const [rpsRounds, setRpsRounds] = useState<RpsRound[]>(initRps?.rounds || []);
+  const [rpsCurrentRound, setRpsCurrentRound] = useState(initRps?.currentRound || 1);
+  const [rpsTotalRounds, setRpsTotalRounds] = useState(initRps?.bestOf || 3);
+  const [rpsScoreA, setRpsScoreA] = useState(initRps?.scores?.a || 0);
+  const [rpsScoreB, setRpsScoreB] = useState(initRps?.scores?.b || 0);
+  const [rpsPhase, setRpsPhase] = useState<"waiting" | "thinking" | "revealing" | "round_complete" | "game_over">(
+    match.status === "completed" ? "game_over" : (initRps?.phase === "match_over" ? "game_over" : "waiting")
+  );
+
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
@@ -562,6 +585,32 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
         }
 
         if (data.score) setScore(data.score);
+
+        // RPS-specific
+        if (match.gameType === "rps") {
+          if (data.rpsRound != null) setRpsCurrentRound(data.rpsRound as number);
+          if (data.rpsTotalRounds != null) setRpsTotalRounds(data.rpsTotalRounds as number);
+          if (data.rpsPhase) setRpsPhase(data.rpsPhase as any);
+          if (data.rpsScores) {
+            const s = data.rpsScores as { a: number; b: number };
+            setRpsScoreA(s.a);
+            setRpsScoreB(s.b);
+          }
+          if (data.rpsResult) {
+            const r = data.rpsResult as { roundNumber: number; throwA: string; throwB: string; winner: string };
+            setRpsRounds((prev) => {
+              const exists = prev.some((rd) => rd.roundNumber === r.roundNumber);
+              if (exists) return prev;
+              return [...prev, {
+                roundNumber: r.roundNumber,
+                throwA: r.throwA as any,
+                throwB: r.throwB as any,
+                winner: r.winner as any,
+              }];
+            });
+          }
+        }
+
         // Poker-specific (N-player)
         // IMPORTANT: handle hand number change BEFORE setting community cards,
         // so a new hand clears old cards first, then the new ones (if any) get set.
@@ -1267,6 +1316,26 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   />
                 );
               })()
+            ) : match.gameType === "rps" ? (
+              <RpsBoard
+                rounds={rpsRounds}
+                currentRound={rpsCurrentRound}
+                totalRounds={rpsTotalRounds}
+                scoreA={rpsScoreA}
+                scoreB={rpsScoreB}
+                playerAName={agents[0]?.agentName || "Player A"}
+                playerBName={agents[1]?.agentName || "Player B"}
+                phase={match.status === "completed" ? "game_over" : rpsPhase}
+                winnerName={match.status === "completed" && match.winnerId
+                  ? (agents.find(a => a.agentId === match.winnerId)?.agentName || "Winner")
+                  : null}
+                winReason={match.status === "completed"
+                  ? (typeof match.result === "string" ? match.result : (match.result as any)?.reason) || null
+                  : null}
+                replayRound={!isLiveMode && replayStep >= 0 && replayStep < rpsRounds.length
+                  ? rpsRounds[replayStep]?.roundNumber
+                  : null}
+              />
             ) : (
               <div className="text-center text-arena-muted py-8">Unsupported game type</div>
             )}
@@ -1441,7 +1510,32 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
 
             {/* Match Info Below Board */}
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              {match.gameType === "poker" ? (
+              {match.gameType === "rps" ? (
+                <>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Round</div>
+                    <div className="text-arena-text font-medium">
+                      {rpsCurrentRound} / {rpsTotalRounds}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Score</div>
+                    <div className="text-arena-primary font-medium">
+                      {rpsScoreA} — {rpsScoreB}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Stake</div>
+                    <div className="text-arena-primary font-medium">
+                      {match.stakeAmount}
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Pot</div>
+                    <div className="text-arena-primary font-medium">{pot}</div>
+                  </div>
+                </>
+              ) : match.gameType === "poker" ? (
                 <>
                   <div className="bg-arena-bg rounded-lg p-2 text-center">
                     <div className="text-arena-muted text-xs">Hand</div>
@@ -1661,10 +1755,45 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           {/* Move History */}
           <div className="dash-glass-card rounded-xl p-4">
             <h3 className="text-sm font-semibold text-arena-text mb-3">
-              {match.gameType === "poker" ? "Hand History" : "Move History"}
+              {match.gameType === "poker" ? "Hand History" : match.gameType === "rps" ? "Round History" : "Move History"}
             </h3>
             <div data-move-list className="max-h-[422px] overflow-y-auto space-y-1.5 pr-1">
-              {loadingMoves ? (
+              {match.gameType === "rps" ? (
+                rpsRounds.length === 0 ? (
+                  <div className="text-center text-sm text-arena-muted py-4">No rounds yet</div>
+                ) : (
+                  rpsRounds.map((round) => {
+                    const isWinA = round.winner === "a";
+                    const isWinB = round.winner === "b";
+                    const isDraw = round.winner === "draw";
+                    const pAName = agents[0]?.agentName || "A";
+                    const pBName = agents[1]?.agentName || "B";
+                    return (
+                      <div key={round.roundNumber} className="flex items-center gap-2 text-sm px-2 py-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="text-[10px] text-arena-muted font-mono font-bold w-6 shrink-0">R{round.roundNumber}</span>
+                        <span className={`flex items-center gap-1 ${isWinA ? "text-arena-primary" : isDraw ? "text-arena-muted" : "text-arena-muted/30"}`}>
+                          <span className="text-[10px] font-mono truncate max-w-[60px]">{pAName}</span>
+                          {round.throwA ? <RpsThrowIcon type={round.throwA} size={18} /> : <span>?</span>}
+                        </span>
+                        <span className="text-[9px] text-arena-muted/30 font-mono">vs</span>
+                        <span className={`flex items-center gap-1 ${isWinB ? "text-arena-primary" : isDraw ? "text-arena-muted" : "text-arena-muted/30"}`}>
+                          {round.throwB ? <RpsThrowIcon type={round.throwB} size={18} /> : <span>?</span>}
+                          <span className="text-[10px] font-mono truncate max-w-[60px]">{pBName}</span>
+                        </span>
+                        <span className="ml-auto text-[10px] font-mono font-bold shrink-0">
+                          {isDraw ? (
+                            <span className="text-arena-muted">Draw</span>
+                          ) : isWinA ? (
+                            <span className="text-green-400">{pAName} wins</span>
+                          ) : (
+                            <span className="text-green-400">{pBName} wins</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })
+                )
+              ) : loadingMoves ? (
                 <div className="text-center text-sm text-arena-muted py-4">
                   {match.gameType === "poker" ? "Loading hands..." : "Loading moves..."}
                 </div>

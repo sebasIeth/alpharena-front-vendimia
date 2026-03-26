@@ -148,6 +148,13 @@ export interface Match {
     handNumber?: number;
     dealerIndex?: number;
   };
+  rpsState?: {
+    bestOf?: number;
+    currentRound?: number;
+    scores?: { a: number; b: number };
+    rounds?: { roundNumber: number; throwA: string; throwB: string; winner: string }[];
+    phase?: string;
+  };
   token?: string;
   stakeAmount: number;
   pot: number;
