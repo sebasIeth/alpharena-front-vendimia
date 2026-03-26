@@ -2014,32 +2014,6 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             </div>
           )}
 
-          {/* Match Details (non-poker only, poker details are in the info grid) */}
-          {match.gameType !== "poker" && (
-            <div className="dash-glass-card rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-arena-text mb-3">Details</h3>
-              <dl className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <dt className="text-arena-muted">Match ID</dt>
-                  <dd className="text-arena-text font-mono">{(matchId || "unknown").slice(0, 12)}...</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-arena-muted">Game Type</dt>
-                  <dd className="text-arena-text capitalize">{match.gameType}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-arena-muted">Created</dt>
-                  <dd className="text-arena-text">{formatDate(match.createdAt)}</dd>
-                </div>
-                {(match.completedAt || (match as any).endedAt) && (
-                  <div className="flex justify-between">
-                    <dt className="text-arena-muted">Completed</dt>
-                    <dd className="text-arena-text">{formatDate(match.completedAt || (match as any).endedAt)}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          )}
         </div>
       </div>
 
