@@ -10,7 +10,7 @@ import Button from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
-import RpsBoard from "@/components/game/RpsBoard";
+import RpsBoard, { RpsThrowIcon, THROW_LABELS } from "@/components/game/RpsBoard";
 import type { RpsRound } from "@/components/game/RpsBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
 import type { Socket } from "socket.io-client";
@@ -1400,6 +1400,25 @@ function PlayContent() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Board */}
               <div className="lg:col-span-2 relative">
+                {gameType === "rps" ? (
+                  <div className="rounded-xl overflow-hidden shadow-arena-sm border border-arena-border">
+                    <div className="flex items-center justify-end px-4 pt-3" style={{ background: "#1e2d3d" }}>
+                      <span className="flex items-center gap-1 text-xs font-medium text-white/40"
+                        style={{
+                          transform: viewerFlash ? "scale(1.3)" : "scale(1)",
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        {viewers}
+                      </span>
+                    </div>
+                    {renderBoard(true)}
+                  </div>
+                ) : (
                 <Card>
                   <div className="flex items-center justify-end px-4 pt-3 sm:px-6 sm:pt-4">
                     <span
@@ -1420,6 +1439,7 @@ function PlayContent() {
                   </div>
                   <div className="p-4 sm:p-6 pt-2 sm:pt-2">{renderBoard(true)}</div>
                 </Card>
+                )}
                 {turnExpired && phase === "playing" && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                     <div className="text-center space-y-3 px-6">
@@ -1558,27 +1578,26 @@ function PlayContent() {
                       <h3 className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-3">Round History</h3>
                       <div className="space-y-1.5 max-h-48 overflow-y-auto">
                         {rpsRounds.map((round) => {
-                          const throwLabel = (t: string) => t === "rock" ? "\u270A" : t === "paper" ? "\u270B" : "\u2702\uFE0F";
                           const isWinA = round.winner === "a";
                           const isWinB = round.winner === "b";
                           const isDraw = round.winner === "draw";
                           return (
                             <div key={round.roundNumber} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg bg-arena-bg/50">
-                              <span className="text-[10px] text-arena-muted font-mono w-4">R{round.roundNumber}</span>
-                              <span className={`text-lg ${isWinA ? "scale-110" : isDraw ? "opacity-50" : "opacity-30"}`} title={round.throwA}>
-                                {round.throwA ? throwLabel(round.throwA) : "?"}
+                              <span className="text-[10px] text-arena-muted font-mono w-6">R{round.roundNumber}</span>
+                              <span className={`flex items-center ${isWinA ? "text-arena-primary" : isDraw ? "text-arena-muted" : "text-arena-muted/30"}`} title={round.throwA}>
+                                {round.throwA ? <RpsThrowIcon type={round.throwA} size={20} /> : <span>?</span>}
                               </span>
-                              <span className="text-[10px] text-arena-muted/40 font-mono">vs</span>
-                              <span className={`text-lg ${isWinB ? "scale-110" : isDraw ? "opacity-50" : "opacity-30"}`} title={round.throwB}>
-                                {round.throwB ? throwLabel(round.throwB) : "?"}
+                              <span className="text-[9px] text-arena-muted/30 font-mono">vs</span>
+                              <span className={`flex items-center ${isWinB ? "text-arena-primary" : isDraw ? "text-arena-muted" : "text-arena-muted/30"}`} title={round.throwB}>
+                                {round.throwB ? <RpsThrowIcon type={round.throwB} size={20} /> : <span>?</span>}
                               </span>
                               <span className="ml-auto text-[10px] font-mono font-bold">
                                 {isDraw ? (
                                   <span className="text-arena-muted">Draw</span>
                                 ) : isWinA ? (
-                                  <span className="text-arena-primary">{playerA || "A"} wins</span>
+                                  <span className="text-arena-primary">{playerA || "A"}</span>
                                 ) : (
-                                  <span className="text-arena-primary">{playerB || "B"} wins</span>
+                                  <span className="text-arena-primary">{playerB || "B"}</span>
                                 )}
                               </span>
                             </div>
