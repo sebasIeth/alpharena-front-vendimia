@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -266,6 +267,7 @@ function DashboardContent() {
   const [playBalance, setPlayBalance] = useState<PlayBalance | null>(null);
   const [balanceRefreshing, setBalanceRefreshing] = useState(false);
   const [addressCopied, setAddressCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const refreshBalance = async () => {
     setBalanceRefreshing(true);
@@ -830,26 +832,57 @@ function DashboardContent() {
                   <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.play.depositAddress}</div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-mono text-arena-text break-all">{truncateAddress(playBalance.walletAddress, 10)}</span>
-                    <button
-                      onClick={handleCopyAddress}
-                      className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded-md bg-arena-primary/10 text-arena-primary hover:bg-arena-primary/20 transition-colors"
-                    >
-                      {addressCopied ? (
-                        <>
-                          <IconCheck className="w-3 h-3" />
-                          {t.matchDetail.copied}
-                        </>
-                      ) : (
-                        <>
-                          <IconCopy className="w-3 h-3" />
-                          Copy
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={handleCopyAddress}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded-md bg-arena-primary/10 text-arena-primary hover:bg-arena-primary/20 transition-colors"
+                      >
+                        {addressCopied ? (
+                          <>
+                            <IconCheck className="w-3 h-3" />
+                            {t.matchDetail.copied}
+                          </>
+                        ) : (
+                          <>
+                            <IconCopy className="w-3 h-3" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShowQR(true)}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded-md bg-arena-primary/10 text-arena-primary hover:bg-arena-primary/20 transition-colors"
+                        title="Show QR Code"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm14 3h.01M17 17h.01M14 14h3v3h-3v-3zm3 3h3v3h-3v-3z" />
+                        </svg>
+                        QR
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* QR Modal */}
+            {showQR && playBalance?.walletAddress && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowQR(false)}>
+                <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-xs w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-sm font-bold text-gray-900 mb-4">Deposit Address</h3>
+                  <div className="flex justify-center mb-4">
+                    <QRCodeSVG value={playBalance.walletAddress} size={200} level="H" />
+                  </div>
+                  <p className="text-[10px] font-mono text-gray-500 break-all mb-4">{playBalance.walletAddress}</p>
+                  <button
+                    onClick={() => setShowQR(false)}
+                    className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-arena-primary text-white hover:bg-arena-primary/90 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Right: Withdraw */}
             <div className="space-y-3">
