@@ -166,6 +166,42 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
   const colorA = agents[0]?.color || PLAYER_COLORS[0];
   const colorB = agents[1]?.color || PLAYER_COLORS[1];
 
+  // ELO-implied odds (what ELO predicts, independent of pool)
+  const eloImpliedOdds = useMemo(() => {
+    const map = new Map<string, number>();
+    const validAgents = agents.filter((a: any) => a?.elo > 0 && a?.agentId);
+    if (validAgents.length < 2) return map;
+
+    const fee = 0.95;
+
+    if (validAgents.length === 2) {
+      // 2-player: standard ELO expected score
+      const eA = validAgents[0].elo;
+      const eB = validAgents[1].elo;
+      const expectedA = 1 / (1 + Math.pow(10, (eB - eA) / 400));
+      const expectedB = 1 - expectedA;
+      map.set(validAgents[0].agentId, expectedA > 0 ? (1 / expectedA) * fee : 0);
+      map.set(validAgents[1].agentId, expectedB > 0 ? (1 / expectedB) * fee : 0);
+    } else {
+      // N-player: pairwise expected score against all opponents, normalized
+      const scores: number[] = validAgents.map((agent: any, i: number) => {
+        let totalExpected = 0;
+        for (let j = 0; j < validAgents.length; j++) {
+          if (i === j) continue;
+          totalExpected += 1 / (1 + Math.pow(10, (validAgents[j].elo - agent.elo) / 400));
+        }
+        return totalExpected;
+      });
+      const totalScores = scores.reduce((s, v) => s + v, 0);
+      validAgents.forEach((agent: any, i: number) => {
+        const winProb = totalScores > 0 ? scores[i] / totalScores : 1 / validAgents.length;
+        map.set(agent.agentId, winProb > 0 ? (1 / winProb) * fee : 0);
+      });
+    }
+
+    return map;
+  }, [agents]);
+
   return (
     <div
       className={`
@@ -308,6 +344,11 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                           <span className="text-arena-text-bright text-[11px] font-mono font-semibold truncate max-w-[100px]">
                             {agent.name}
                           </span>
+                          {agent.elo > 0 && (
+                            <span className="text-[9px] font-mono text-arena-muted/60 tabular-nums" title={`ELO-implied odds: ${(eloImpliedOdds.get(agent.agentId) ?? 0).toFixed(2)}x`}>
+                              {agent.elo} ({(eloImpliedOdds.get(agent.agentId) ?? 0).toFixed(2)}x)
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-mono font-semibold" style={{ color }}>
@@ -427,7 +468,14 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
                         } : undefined}
                       >
                         <div className="truncate">{agent.name}</div>
-                        {odds > 0 && <div className="text-[10px] font-mono opacity-70">{odds.toFixed(2)}x</div>}
+                        <div className="flex flex-col items-center gap-0.5">
+                          {odds > 0 && <span className="text-[10px] font-mono opacity-70">{odds.toFixed(2)}x</span>}
+                          {agent.elo > 0 && (
+                            <span className="text-[8px] font-mono opacity-40">
+                              ELO {agent.elo} &middot; {(eloImpliedOdds.get(agent.agentId) ?? 0).toFixed(2)}x
+                            </span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
