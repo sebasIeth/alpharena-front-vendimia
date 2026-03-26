@@ -444,6 +444,7 @@ export interface LeaderboardAgent {
   totalEarnings: number;
   earningsAlpha?: number;
   earningsUsdc?: number;
+  statsByGameType?: Record<string, GameTypeStats>;
 }
 
 export interface LeaderboardUser {
