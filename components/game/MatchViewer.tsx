@@ -274,6 +274,30 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [rpsPhase, setRpsPhase] = useState<"waiting" | "thinking" | "revealing" | "round_complete" | "game_over">(
     match.status === "completed" ? "game_over" : (initRps?.phase === "match_over" ? "game_over" : "waiting")
   );
+  const RPS_TURN_TIMEOUT_SECS = 70;
+  const [rpsSecondsLeft, setRpsSecondsLeft] = useState<number | null>(null);
+  const rpsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rpsTimerStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (match.gameType === "rps" && rpsPhase === "waiting" && match.status !== "completed") {
+      rpsTimerStartRef.current = Date.now();
+      setRpsSecondsLeft(RPS_TURN_TIMEOUT_SECS);
+      if (rpsTimerRef.current) clearInterval(rpsTimerRef.current);
+      rpsTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - (rpsTimerStartRef.current || Date.now())) / 1000);
+        const remaining = Math.max(0, RPS_TURN_TIMEOUT_SECS - elapsed);
+        setRpsSecondsLeft(remaining);
+        if (remaining <= 0 && rpsTimerRef.current) clearInterval(rpsTimerRef.current);
+      }, 1000);
+    } else {
+      if (rpsTimerRef.current) clearInterval(rpsTimerRef.current);
+      rpsTimerRef.current = null;
+      rpsTimerStartRef.current = null;
+      setRpsSecondsLeft(null);
+    }
+    return () => { if (rpsTimerRef.current) clearInterval(rpsTimerRef.current); };
+  }, [rpsPhase, match.gameType, match.status]);
 
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
@@ -1682,17 +1706,27 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       </div>
                     </div>
                     <div className="text-right">
-                      {isThinking ? (
+                      {isThinking || (match.gameType === "rps" && rpsPhase === "waiting" && match.status !== "completed") ? (
                         <div className="flex flex-col items-end gap-0.5">
                           <span className="text-xs text-arena-primary animate-pulse">
-                            Thinking...
+                            {match.gameType === "rps" ? "Choosing..." : "Thinking..."}
                           </span>
-                          {turnSecondsLeft != null && (
-                            <span className={`text-[11px] font-mono font-bold tabular-nums ${
-                              turnSecondsLeft <= 5 ? "text-red-500" : turnSecondsLeft <= 10 ? "text-amber-500" : "text-arena-muted"
-                            }`}>
-                              {turnSecondsLeft}s
-                            </span>
+                          {match.gameType === "rps" ? (
+                            rpsSecondsLeft != null && (
+                              <span className={`text-[11px] font-mono font-bold tabular-nums ${
+                                rpsSecondsLeft <= 5 ? "text-red-500" : rpsSecondsLeft <= 10 ? "text-amber-500" : "text-arena-muted"
+                              }`}>
+                                {rpsSecondsLeft}s
+                              </span>
+                            )
+                          ) : (
+                            turnSecondsLeft != null && (
+                              <span className={`text-[11px] font-mono font-bold tabular-nums ${
+                                turnSecondsLeft <= 5 ? "text-red-500" : turnSecondsLeft <= 10 ? "text-amber-500" : "text-arena-muted"
+                              }`}>
+                                {turnSecondsLeft}s
+                              </span>
+                            )
                           )}
                         </div>
                       ) : (
