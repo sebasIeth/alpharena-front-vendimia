@@ -360,6 +360,10 @@ function AgentDetailContent() {
       setWithdrawError("Amount must be greater than 0.");
       return;
     }
+    if (withdrawToken === "USDC" && value < 10) {
+      setWithdrawError("Minimum USDC withdrawal is 10 USDC.");
+      return;
+    }
     const balanceMap: Record<string, string> = {
       ALPHA: balance?.alpha || "0",
       USDC: balance?.usdc || "0",
