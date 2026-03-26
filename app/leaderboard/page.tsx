@@ -254,6 +254,18 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
   const rc = getRankColor(agent.rank);
   const rankLabel = agent.rank <= 3 ? ["", "1st", "2nd", "3rd"][agent.rank] : `#${agent.rank}`;
 
+  const [statsByGame, setStatsByGame] = useState<Record<string, { wins: number; losses: number; draws: number; totalMatches: number }> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getAgentStats(agent.id).then((res) => {
+      if (!cancelled && res.statsByGameType) setStatsByGame(res.statsByGameType);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [agent.id]);
+
+  const GAME_LABELS: Record<string, string> = { chess: "Chess", poker: "Poker", rps: "RPS" };
+
   return (
     <div className="space-y-5">
       <div className={`rounded-xl p-4 flex items-center gap-4 border ${rc.border}`} style={{ background: "rgba(245, 240, 235, 0.9)" }}>
@@ -287,6 +299,23 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
           <TokenEarnings alpha={agent.earningsAlpha || 0} usdc={agent.earningsUsdc || 0} />
         </div>
       </div>
+
+      {/* Wins by game type */}
+      {statsByGame && Object.keys(statsByGame).length > 0 && (
+        <div>
+          <div className="text-xs uppercase tracking-wider text-arena-muted mb-2">Wins by Game</div>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(statsByGame).map(([gameType, s]) => (
+              <div key={gameType} className="bg-arena-bg-light rounded-lg p-3 text-center">
+                <div className="text-[10px] uppercase tracking-wider text-arena-muted mb-1">{GAME_LABELS[gameType] || gameType}</div>
+                <div className="text-lg font-extrabold text-emerald-600 font-mono tabular-nums">{s.wins}</div>
+                <div className="text-[10px] text-arena-muted font-mono">{s.losses}L · {s.draws}D</div>
+                <div className="text-[10px] text-arena-muted">{s.totalMatches} played</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="text-xs uppercase tracking-wider text-arena-muted mb-2">{t.leaderboard.recentForm}</div>
@@ -462,6 +491,7 @@ export default function LeaderboardPage() {
                   { value: "", label: "All" },
                   { value: "chess", label: "Chess" },
                   { value: "poker", label: "Poker" },
+                  { value: "rps", label: "RPS" },
                 ].map((opt) => (
                   <button
                     key={opt.value}

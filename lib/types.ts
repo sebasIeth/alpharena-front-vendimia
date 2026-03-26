@@ -456,9 +456,17 @@ export interface LeaderboardUser {
   agentCount: number;
 }
 
+export interface GameTypeStats {
+  wins: number;
+  losses: number;
+  draws: number;
+  totalMatches: number;
+}
+
 export interface AgentStatsResponse {
   agent: Agent;
   recentMatches: Match[];
+  statsByGameType?: Record<string, GameTypeStats>;
 }
 
 // ========== WebSocket ==========
