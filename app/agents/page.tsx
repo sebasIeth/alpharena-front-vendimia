@@ -16,8 +16,8 @@ import type { Agent, Chain } from "@/lib/types";
 function ChainBadge({ chain }: { chain?: Chain }) {
   if (!chain) return null;
   return (
-    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded bg-purple-50 text-purple-600 border border-purple-200">
-      Solana
+    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded bg-yellow-50 text-yellow-600 border border-yellow-200">
+      BNB
     </span>
   );
 }

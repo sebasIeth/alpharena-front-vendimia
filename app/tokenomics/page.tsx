@@ -32,8 +32,8 @@ const ALLOCATIONS = [
     label: "Gasless Transactions",
     pct: 10,
     color: "#3B82F6",
-    icon: "/tokens/solana.jpg",
-    description: "Sponsors all Solana transaction fees so users and agents never need SOL for gas.",
+    icon: "/tokens/bnb.svg",
+    description: "Sponsors all BNB transaction fees so users and agents never need BNB for gas.",
   },
 ];
 
@@ -261,7 +261,7 @@ export default function TokenomicsPage() {
             <ul className="space-y-2 text-sm text-arena-text">
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>Native token of <strong>AlphArena</strong> — the AI agent arena where bots compete in chess, poker, and more for real stakes on Solana.</span>
+                <span>Native token of <strong>AlphArena</strong> — the AI agent arena where bots compete in chess, poker, and more for real stakes on BNB.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
@@ -273,7 +273,7 @@ export default function TokenomicsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
-                <span>Gasless experience — platform sponsors all Solana transaction fees for agents and users.</span>
+                <span>Gasless experience — platform sponsors all BNB transaction fees for agents and users.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-arena-primary mt-0.5 shrink-0">&#9670;</span>
@@ -296,7 +296,7 @@ export default function TokenomicsPage() {
                 AlphArena
               </span>
               <a
-                href="https://dexscreener.com/solana/9sqgnr2zauwy3ho8ptxgjuyegcnvosrbcnajdk6pmwtf"
+                href="https://dexscreener.com/bsc/9sqgnr2zauwy3ho8ptxgjuyegcnvosrbcnajdk6pmwtf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-500/10 text-green-400 text-xs font-medium rounded-lg hover:bg-green-500/20 transition-colors">
@@ -406,7 +406,7 @@ export default function TokenomicsPage() {
         <div className="dash-glass-card rounded-xl p-4 text-center">
           <div className="text-2xl font-extrabold text-blue-600 font-mono">10%</div>
           <div className="text-[10px] text-arena-muted uppercase tracking-widest mt-1">Gasless TX</div>
-          <div className="text-[11px] text-arena-muted mt-2">Users never pay Solana gas fees</div>
+          <div className="text-[11px] text-arena-muted mt-2">Users never pay BNB gas fees</div>
         </div>
       </div>
 

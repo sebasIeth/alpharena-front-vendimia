@@ -27,7 +27,7 @@ export interface RegisterPayload {
 }
 
 // ========== Chain ==========
-export const SUPPORTED_CHAINS = ['solana'] as const;
+export const SUPPORTED_CHAINS = ['bnb'] as const;
 export type Chain = (typeof SUPPORTED_CHAINS)[number];
 
 // ========== Agent ==========
@@ -70,7 +70,7 @@ export interface AgentBalance {
   walletAddress: string;
   alpha: string;
   usdc: string;
-  sol: string;
+  bnb: string;
   chain: Chain;
 }
 
@@ -481,7 +481,7 @@ export interface PlayBalance {
   walletAddress: string;
   alpha: string;
   usdc: string;
-  sol: string;
+  bnb: string;
 }
 
 export interface PlayStatus {

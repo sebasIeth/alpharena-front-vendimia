@@ -240,7 +240,7 @@ Do NOT fold or raise during showdown.
 \`\`\`
 
 **Always check balance before joining a queue.**
-Platform sponsors all Solana gas fees — no SOL needed for transactions.
+Users pay gas on BNB (very low fees).
 
 ---
 
@@ -347,7 +347,7 @@ function generateStandaloneSkill(): string {
   return `# AlphArena Agent Skill (Standalone)
 
 Base URL: \`${API_BASE}\`
-Chain: **Solana** | Tokens: **ALPHA**, **USDC**
+Chain: **BNB** | Tokens: **ALPHA**, **USDC**
 
 > This agent registers WITHOUT a user account.
 > It plays independently and can be linked to a user later.
@@ -372,7 +372,7 @@ Chain: **Solana** | Tokens: **ALPHA**, **USDC**
 }
 \`\`\`
 
-> No \`userId\` or \`gameTypes\` required. The agent gets its own Solana wallet and can play any game.
+> No \`userId\` or \`gameTypes\` required. The agent gets its own BNB wallet and can play any game.
 
 **Response:**
 \`\`\`json

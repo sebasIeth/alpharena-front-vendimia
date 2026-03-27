@@ -321,7 +321,7 @@ function PokerPlayerRow({
 function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: number; priceUsd: number | null; viewers?: number }) {
   const { t } = useLanguage();
   const raw = match as any;
-  const chain: Chain = match.chain || "solana";
+  const chain: Chain = match.chain || "bnb";
   const isPoker = match.gameType === "poker";
   const agents = normalizeMatchAgents(match.agents, isPoker ? raw.pokerPlayers || match.pokerPlayers : undefined);
   const isActive = match.status === "active";
@@ -365,9 +365,9 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
               <GameIcon className="w-3.5 h-3.5" />
               {gameConfig.label}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold font-mono px-2 py-1 rounded-md border bg-purple-50 text-purple-700 border-purple-300">
-              <span className="w-2 h-2 rounded-full bg-purple-500" />
-              Solana
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold font-mono px-2 py-1 rounded-md border bg-yellow-50 text-yellow-600 border-yellow-300">
+              <span className="w-2 h-2 rounded-full bg-yellow-500" />
+              BNB
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -686,7 +686,7 @@ export default function MatchesPage() {
 
   const chainFiltered = chainFilter === "all"
     ? matches
-    : matches.filter((m) => (m.chain || "solana") === chainFilter);
+    : matches.filter((m) => (m.chain || "bnb") === chainFilter);
 
   const activeMatches = chainFiltered.filter((m) => m.status === "active");
   const otherMatches = tab === "all"
@@ -822,9 +822,9 @@ export default function MatchesPage() {
         </div>
 
         {/* Chain badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-md bg-purple-50 text-purple-700 border border-purple-300">
-          <span className="w-2 h-2 rounded-full bg-purple-500" />
-          Solana
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-md bg-yellow-50 text-yellow-600 border border-yellow-300">
+          <span className="w-2 h-2 rounded-full bg-yellow-500" />
+          BNB
         </div>
 
         {/* Auto-refresh indicator */}

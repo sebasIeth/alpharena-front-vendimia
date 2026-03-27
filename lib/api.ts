@@ -35,7 +35,7 @@ import type {
   ScheduledMatchResponse,
 } from "./types";
 
-/** Pass through balance as-is (no normalization needed for Solana). */
+/** Pass through balance as-is (no normalization needed for BNB). */
 function normalizeBalance<T>(raw: T): T {
   return raw;
 }
@@ -398,6 +398,6 @@ export const api = new ApiClient(API_URL);
 export function getExplorerTxUrl(txHash: string, chain: Chain): string {
   const isTestnet = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "testnet";
   return isTestnet
-    ? `https://explorer.solana.com/tx/${txHash}?cluster=devnet`
-    : `https://explorer.solana.com/tx/${txHash}`;
+    ? `https://testnet.bscscan.com/tx/${txHash}`
+    : `https://bscscan.com/tx/${txHash}`;
 }

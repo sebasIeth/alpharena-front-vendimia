@@ -184,7 +184,7 @@ function EloComparisonBar({
 function BettingPanel({ match }: { match: Match }) {
   const { t } = useLanguage();
   const matchAgents = normalizeMatchAgents(match.agents);
-  const chain = match.chain || "solana";
+  const chain = match.chain || "bnb";
 
   const [info, setInfo] = useState<BettingInfo | null>(null);
   const [poolResp, setPoolResp] = useState<BettingPoolResponse | null>(null);
@@ -681,8 +681,8 @@ export default function MatchDetailPage() {
               <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2.5 py-1 rounded">
                 {match.gameType}
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                Solana
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600 border border-yellow-200">
+                BNB
               </span>
               {!isActive && <Badge status={match.status} />}
               {isActive && (
@@ -752,7 +752,7 @@ export default function MatchDetailPage() {
                   </div>
                   {(Array.isArray((match as any).txHashes?.escrow) ? (match as any).txHashes.escrow[0] : (match as any).txHashes?.escrow) && (
                     <a
-                      href={getExplorerTxUrl((match as any).txHashes.escrow[0], match.chain || "solana")}
+                      href={getExplorerTxUrl((match as any).txHashes.escrow[0], match.chain || "bnb")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-end gap-1 mt-1 text-[9px] font-mono text-purple-500 hover:text-purple-700 transition-colors"
@@ -813,7 +813,7 @@ export default function MatchDetailPage() {
                   </div>
                   {(Array.isArray((match as any).txHashes?.escrow) && (match as any).txHashes.escrow[1]) && (
                     <a
-                      href={getExplorerTxUrl((match as any).txHashes.escrow[1], match.chain || "solana")}
+                      href={getExplorerTxUrl((match as any).txHashes.escrow[1], match.chain || "bnb")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 mt-1 text-[9px] font-mono text-purple-500 hover:text-purple-700 transition-colors"
@@ -1086,7 +1086,7 @@ export default function MatchDetailPage() {
               <div className="mt-3 space-y-1.5">
                 {(match as any).txHashes.payout && (
                   <a
-                    href={getExplorerTxUrl((match as any).txHashes.payout, match.chain || "solana")}
+                    href={getExplorerTxUrl((match as any).txHashes.payout, match.chain || "bnb")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-mono text-emerald-600 hover:text-emerald-800 transition-colors"
@@ -1099,7 +1099,7 @@ export default function MatchDetailPage() {
                 )}
                 {(match as any).txHashes.fee && (
                   <a
-                    href={getExplorerTxUrl((match as any).txHashes.fee, match.chain || "solana")}
+                    href={getExplorerTxUrl((match as any).txHashes.fee, match.chain || "bnb")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-mono text-arena-muted hover:text-arena-text transition-colors"
@@ -1112,7 +1112,7 @@ export default function MatchDetailPage() {
                 )}
                 {match.token && (
                   <div className="mt-1 text-[10px] text-arena-muted font-mono">
-                    Settled in {match.token} on Solana
+                    Settled in {match.token} on BNB
                   </div>
                 )}
               </div>

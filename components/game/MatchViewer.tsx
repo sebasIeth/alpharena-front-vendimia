@@ -1759,7 +1759,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       if (!agentTx?.txSignature) return null;
                       return (
                         <a
-                          href={`https://explorer.solana.com/tx/${agentTx.txSignature}?cluster=devnet`}
+                          href={`https://bscscan.com/tx/${agentTx.txSignature}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-[9px] font-mono text-blue-500 hover:text-blue-700 mt-1.5 transition-colors"
@@ -1795,7 +1795,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 {/* On-chain TX links */}
                 <div className="space-y-1 mt-2">
                   {(match as any).txHashes?.payout && (
-                    <a href={`https://explorer.solana.com/tx/${(match as any).txHashes.payout}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
+                    <a href={`https://bscscan.com/tx/${(match as any).txHashes.payout}`} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 hover:text-emerald-800 transition-colors">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                       Payout TX: {(match as any).txHashes.payout.slice(0, 10)}...
@@ -1803,7 +1803,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     </a>
                   )}
                   {(match as any).txHashes?.fee && (
-                    <a href={`https://explorer.solana.com/tx/${(match as any).txHashes.fee}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
+                    <a href={`https://bscscan.com/tx/${(match as any).txHashes.fee}`} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-1.5 text-[10px] font-mono text-amber-600 hover:text-amber-800 transition-colors">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       Fee TX: {(match as any).txHashes.fee.slice(0, 10)}...

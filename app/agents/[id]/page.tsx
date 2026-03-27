@@ -30,9 +30,9 @@ function ChainBadge({ chain, size = "sm" }: { chain?: Chain; size?: "sm" | "md" 
   if (!chain) return null;
   const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]";
   return (
-    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} bg-purple-50 text-purple-700 border border-purple-200`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-      Solana
+    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} bg-yellow-50 text-yellow-600 border border-yellow-200`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+      BNB
     </span>
   );
 }
@@ -226,7 +226,7 @@ function AgentDetailContent() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
-  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
+  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "BNB">("ALPHA");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -352,7 +352,7 @@ function AgentDetailContent() {
     setWithdrawSuccess("");
     const addr = withdrawAddress.trim();
     if (!addr || addr.length < 32) {
-      setWithdrawError("Enter a valid Solana address.");
+      setWithdrawError("Enter a valid BNB address.");
       return;
     }
     const value = Number(withdrawAmount);
@@ -367,7 +367,7 @@ function AgentDetailContent() {
     const balanceMap: Record<string, string> = {
       ALPHA: balance?.alpha || "0",
       USDC: balance?.usdc || "0",
-      SOL: (balance as any)?.sol || (balance as any)?.eth || "0",
+      BNB: (balance as any)?.bnb || "0",
     };
     const available = parseFloat(balanceMap[withdrawToken]);
     if (value > available) {
@@ -377,7 +377,7 @@ function AgentDetailContent() {
     setWithdrawLoading(true);
     try {
       const data = await api.withdrawAgent(agentId, value, addr, withdrawToken);
-      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "solana");
+      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "bnb");
       setWithdrawSuccess(`Withdrawn ${value} ${withdrawToken}! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmount("");
       fetchBalance();
@@ -861,14 +861,14 @@ function AgentDetailContent() {
                   </div>
                 </div>
               </div>
-              {/* SOL */}
+              {/* BNB */}
               <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
-                <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+                <img src="/tokens/bnb.svg" alt="BNB" className="w-8 h-8 rounded-full shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">BNB</div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-bold font-mono tabular-nums text-purple-600">
-                      {balanceLoading ? "..." : Number(balance?.sol || 0).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                      {balanceLoading ? "..." : Number(balance?.bnb || 0).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                     </span>
                   </div>
                 </div>
@@ -908,9 +908,9 @@ function AgentDetailContent() {
 
             {/* Token selector */}
             <div className="flex gap-1.5">
-              {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+              {(["ALPHA", "USDC", "BNB"] as const).map((token) => {
                 const isActive = withdrawToken === token;
-                const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+                const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", BNB: "/tokens/bnb.svg" };
                 return (
                   <button
                     key={token}
@@ -932,7 +932,7 @@ function AgentDetailContent() {
               type="text"
               value={withdrawAddress}
               onChange={(e) => { setWithdrawAddress(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-              placeholder="Destination Solana address"
+              placeholder="Destination BNB address"
               className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
             <div className="flex items-center gap-2">

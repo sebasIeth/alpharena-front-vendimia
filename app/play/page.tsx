@@ -84,7 +84,7 @@ function PlayContent() {
   const [gameType, setGameType] = useState("chess");
   const [stakeToken, setStakeToken] = useState<"ALPHA" | "USDC">("ALPHA");
   const [stakeAmount, setStakeAmount] = useState("");
-  const selectedChain: Chain = "solana";
+  const selectedChain: Chain = "bnb";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -1108,8 +1108,8 @@ function PlayContent() {
             <Card>
               <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30 flex items-center justify-between">
                 <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.balance}</h2>
-                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                  Solana
+                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-yellow-50 text-yellow-600 border border-yellow-200">
+                  BNB
                 </span>
               </div>
               <div className="p-6">
@@ -1135,19 +1135,19 @@ function PlayContent() {
                           <span className="text-[10px] text-arena-muted font-mono">USDC</span>
                         </div>
                       </div>
-                      {/* SOL */}
+                      {/* BNB */}
                       <div className="flex items-center gap-2.5 bg-purple-50/30 border border-purple-100/50 rounded-lg px-3 py-1.5">
-                        <img src="/tokens/solana.jpg" alt="SOL" className="w-6 h-6 rounded-full shrink-0" />
+                        <img src="/tokens/bnb.svg" alt="BNB" className="w-6 h-6 rounded-full shrink-0" />
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-sm font-bold font-mono tabular-nums text-purple-600">{Number(balance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                          <span className="text-[10px] text-arena-muted font-mono">SOL</span>
+                          <span className="text-sm font-bold font-mono tabular-nums text-purple-600">{Number(balance.bnb || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                          <span className="text-[10px] text-arena-muted font-mono">BNB</span>
                         </div>
                       </div>
                     </div>
                     {balance.walletAddress && (
                       <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
                         <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
-                          {t.play.depositAddress} (Solana)
+                          {t.play.depositAddress} (BNB)
                         </div>
                         <div className="text-xs font-mono text-arena-text break-all">{balance.walletAddress}</div>
                       </div>
@@ -1205,10 +1205,10 @@ function PlayContent() {
                 {/* Chain badge */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.common.chain}</label>
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-50/80 border border-purple-200/60">
-                    <img src="/tokens/solana.jpg" alt="SOL" className="w-5 h-5 rounded-full" />
-                    <span className="text-sm font-semibold text-purple-700">Solana</span>
-                    <span className="ml-auto w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-50/80 border border-yellow-200/60">
+                    <img src="/tokens/bnb.svg" alt="BNB" className="w-5 h-5 rounded-full" />
+                    <span className="text-sm font-semibold text-yellow-600">BNB</span>
+                    <span className="ml-auto w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
                   </div>
                 </div>
 

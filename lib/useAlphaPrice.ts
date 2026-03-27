@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 
-const ALPHA_TOKEN = "4GQ1eYpTat1Tf1CjHG5nzWXLP5GV8GopQTqMEdbuMLux";
+// TODO: Replace with deployed ALPHA ERC-20 address on BNB
+const ALPHA_TOKEN = "0x0000000000000000000000000000000000000000";
 const DEX_URL = `https://api.dexscreener.com/latest/dex/tokens/${ALPHA_TOKEN}`;
 const POLL_INTERVAL = 60_000; // 60 seconds
 

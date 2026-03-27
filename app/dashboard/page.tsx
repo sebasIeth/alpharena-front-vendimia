@@ -258,7 +258,7 @@ function DashboardContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const { priceUsd } = useAlphaPrice();
-  const { solPriceUsd, usdcPriceUsd } = (require("@/lib/useSolanaPrice") as any).useSolanaPrice();
+  const { bnbPriceUsd, usdcPriceUsd } = (require("@/lib/useBnbPrice") as any).useBnbPrice();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -280,7 +280,7 @@ function DashboardContent() {
   };
   const [withdrawAddr, setWithdrawAddr] = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
-  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
+  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "BNB">("ALPHA");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -337,11 +337,11 @@ function DashboardContent() {
     const value = parseFloat(withdrawAmt);
     if (!value || value <= 0) { setWithdrawError(t.matchmaking.insufficientBalance); return; }
     if (withdrawToken === "USDC" && value < 10) { setWithdrawError("Minimum USDC withdrawal is 10 USDC."); return; }
-    if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid Solana address"); return; }
+    if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid BNB address"); return; }
     const balanceMap: Record<string, number> = {
       ALPHA: parseFloat(playBalance?.alpha || "0"),
       USDC: parseFloat((playBalance as any)?.usdc || "0"),
-      SOL: parseFloat((playBalance as any)?.sol || "0"),
+      BNB: parseFloat((playBalance as any)?.bnb || "0"),
     };
     if (value > balanceMap[withdrawToken]) { setWithdrawError(`Exceeds ${withdrawToken} balance (${balanceMap[withdrawToken]})`); return; }
     setWithdrawLoading(true);
@@ -349,7 +349,7 @@ function DashboardContent() {
     setWithdrawSuccess("");
     try {
       const res = await api.playWithdraw(value, withdrawAddr, withdrawToken);
-      const explorerUrl = getExplorerTxUrl(res.txHash, "solana");
+      const explorerUrl = getExplorerTxUrl(res.txHash, "bnb");
       setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${res.txHash.slice(0, 10)}...${res.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmt("");
       setWithdrawAddr("");
@@ -811,15 +811,15 @@ function DashboardContent() {
                     </div>
                   </div>
                 </div>
-                {/* SOL */}
+                {/* BNB */}
                 <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
-                  <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+                  <img src="/tokens/bnb.svg" alt="BNB" className="w-8 h-8 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">BNB</div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-bold font-mono tabular-nums text-purple-600">{Number(playBalance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                      {solPriceUsd && Number(playBalance.sol || 0) > 0 && (
-                        <span className="text-xs text-arena-muted">(~${(Number(playBalance.sol || 0) * solPriceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>
+                      <span className="text-lg font-bold font-mono tabular-nums text-purple-600">{Number(playBalance.bnb || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+                      {bnbPriceUsd && Number(playBalance.bnb || 0) > 0 && (
+                        <span className="text-xs text-arena-muted">(~${(Number(playBalance.bnb || 0) * bnbPriceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>
                       )}
                     </div>
                   </div>
@@ -890,9 +890,9 @@ function DashboardContent() {
 
               {/* Token selector */}
               <div className="flex gap-1.5">
-                {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+                {(["ALPHA", "USDC", "BNB"] as const).map((token) => {
                   const isActive = withdrawToken === token;
-                  const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+                  const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", BNB: "/tokens/bnb.svg" };
                   return (
                     <button
                       key={token}
@@ -983,7 +983,7 @@ function DashboardContent() {
                 type="text"
                 value={withdrawAddr}
                 onChange={(e) => { setWithdrawAddr(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-                placeholder="Destination Solana address"
+                placeholder="Destination BNB address"
                 className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
               />
               <div className="flex items-center gap-2">
@@ -1059,7 +1059,7 @@ function DashboardContent() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-arena-text-bright">Buy on Jupiter</div>
-              <div className="text-[10px] text-arena-muted font-mono">Solana DEX</div>
+              <div className="text-[10px] text-arena-muted font-mono">BNB DEX</div>
             </div>
             <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
           </a>
@@ -1100,8 +1100,8 @@ function DashboardContent() {
                     <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
                       {claim.matchId.slice(0, 8)}...
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                      Solana
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600 border border-yellow-200">
+                      BNB
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
