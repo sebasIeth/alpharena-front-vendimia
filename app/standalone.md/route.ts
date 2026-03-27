@@ -1,4 +1,4 @@
-const API_BASE = "https://api.alpharena.ai";
+const API_BASE = "http://187.77.47.112:4001";
 
 function generateGameLoopDocs(): string {
   return `

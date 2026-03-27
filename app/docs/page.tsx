@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/lib/store";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.alpharena.ai";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://187.77.47.112:4001";
 
 function generateGameLoopDocs(): string {
   return `
