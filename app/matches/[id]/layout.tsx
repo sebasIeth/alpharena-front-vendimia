@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://alpharena.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://187.77.47.112:3000";
 
 interface MatchAgent {
   agentName?: string;

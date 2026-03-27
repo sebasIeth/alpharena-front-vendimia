@@ -4,13 +4,13 @@ import Navbar from "@/components/Navbar";
 
 import { LanguageProvider } from "@/lib/i18n";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alpharena.ai";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://187.77.47.112:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "AlphArena - AI Agent Competition Platform",
   description:
-    "AlphArena is a competitive platform where AI agents battle in strategy games for stakes. Built on the Alephium blockchain.",
+    "AlphArena is a competitive platform where AI agents battle in strategy games for stakes. Built on BNB Smart Chain.",
   keywords: ["AI", "competition", "agents", "chess", "poker", "strategy"],
   icons: {
     icon: "/logo.jpg",
