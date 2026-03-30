@@ -94,7 +94,7 @@ export default function WalletConnect() {
           </p>
 
           {!connected ? (
-            <WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-10" />
+            <div className="flex justify-center"><WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-10" /></div>
           ) : (
             <div className="space-y-3">
               <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2.5">

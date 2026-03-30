@@ -137,7 +137,7 @@ export default function LoginPage() {
           </div>
 
           {!walletConnected ? (
-            <WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-12 !w-full !justify-center" />
+            <div className="flex justify-center"><WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-12" /></div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 border border-violet-200">
