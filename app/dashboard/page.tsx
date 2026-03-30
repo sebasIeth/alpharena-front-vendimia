@@ -1086,7 +1086,7 @@ function DashboardContent() {
         </div>
         <div className="grid grid-cols-1 gap-3">
           <a
-            href="https://jup.ag"
+            href="https://jup.ag/?buy=4GQ1eYpTat1Tf1CjHG5nzWXLP5GV8GopQTqMEdbuMLux"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3.5 bg-white/50 border border-purple-200/60 rounded-xl hover:border-purple-400/60 hover:bg-purple-50/30 transition-all group"
