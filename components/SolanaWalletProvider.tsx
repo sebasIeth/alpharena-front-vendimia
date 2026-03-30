@@ -2,14 +2,19 @@
 
 import { useMemo } from "react";
 import {
-  ConnectionProvider,
-  WalletProvider,
+  ConnectionProvider as _ConnectionProvider,
+  WalletProvider as _WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { WalletModalProvider as _WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
+
+// Cast to any to fix React 18/19 JSX type incompatibility
+const ConnectionProvider = _ConnectionProvider as any;
+const WalletProvider = _WalletProvider as any;
+const WalletModalProvider = _WalletModalProvider as any;
 
 const RPC_ENDPOINT =
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||

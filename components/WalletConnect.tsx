@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletMultiButton as _WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+const WalletMultiButton = _WalletMultiButton as any;
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { truncateAddress } from "@/lib/utils";
