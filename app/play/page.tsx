@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
+import { useAuthStore } from "@/lib/store";
 import AuthGuard from "@/components/AuthGuard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -75,6 +78,11 @@ function PlayContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const { priceUsd } = useAlphaPrice();
+  const { user } = useAuthStore();
+  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
+  const { connection } = useConnection();
+
+  const isExternalWallet = user?.walletType === "external" && !!user?.externalWalletAddress;
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [error, setError] = useState("");
@@ -890,8 +898,46 @@ function PlayContent() {
     setJoining(true);
     try {
       await api.playCancel().catch(() => {});
+
+      // Non-custodial: pre-pay via x402 flow before joining queue
+      // Platform pays gas fees — backend builds tx, user only signs the token transfer
+      if (isExternalWallet) {
+        if (!publicKey || !signTransaction || !walletConnected) {
+          throw new Error("Please connect your Solana wallet to play with an external wallet.");
+        }
+
+        const { Transaction } = await import("@solana/web3.js");
+
+        // 1. Get/create the human agent to get agentId
+        const { agentId: prepAgentId } = await api.playGetAgent();
+
+        // 2. Backend builds tx with platform as fee payer, partially signed
+        const buildRes = await api.x402BuildStake(prepAgentId, stakeToken);
+
+        // 3. Deserialize and user signs
+        const tx = Transaction.from(Buffer.from(buildRes.transaction, "base64"));
+        const signedTx = await signTransaction(tx);
+
+        // 4. Send fully-signed tx
+        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+
+        // 5. Wait for confirmation
+        await connection.confirmTransaction(txSignature, "confirmed");
+
+        // 6. Verify payment with backend
+        const verifyRes = await api.x402Stake(prepAgentId, stakeToken, txSignature);
+        if (!verifyRes.paid) {
+          throw new Error(verifyRes.error || "Payment verification failed");
+        }
+      }
+
+      // Join the queue (custodial: backend handles escrow; non-custodial: x402 payment already verified)
       const result = await api.playJoin({ token: stakeToken, gameType });
       setAgentId(result.agentId);
+
       // Check if already matched (race condition: match may start during playJoin)
       const status = await api.playStatus().catch(() => null);
       if (status?.inMatch && status.matchId) {
@@ -1262,10 +1308,20 @@ function PlayContent() {
                   <p className="text-[10px] text-arena-muted/60 mt-1">{t.play.entryFeeDesc}</p>
                 </div>
 
+                {/* External wallet notice */}
+                {isExternalWallet && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-xs text-violet-700 font-mono">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                    </svg>
+                    <span>External wallet: your wallet will sign the stake transaction</span>
+                  </div>
+                )}
+
                 {/* Join button */}
                 <button
                   onClick={handleJoinQueue}
-                  disabled={joining}
+                  disabled={joining || (isExternalWallet && !walletConnected)}
                   className="w-full relative overflow-hidden px-6 py-4 rounded-xl font-display font-bold text-base text-white bg-gradient-to-r from-arena-primary via-arena-primary to-arena-primary-light shadow-lg shadow-arena-primary/20 hover:shadow-xl hover:shadow-arena-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -1274,7 +1330,7 @@ function PlayContent() {
                     ) : (
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" /></svg>
                     )}
-                    {joining ? t.common.loading : t.play.joinQueue}
+                    {joining ? t.common.loading : isExternalWallet ? "Sign & Join Queue" : t.play.joinQueue}
                   </span>
                 </button>
 

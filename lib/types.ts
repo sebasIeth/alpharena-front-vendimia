@@ -4,6 +4,8 @@ export interface User {
   username: string;
   email?: string;
   walletAddress: string;
+  externalWalletAddress?: string | null;
+  walletType: 'custodial' | 'external';
   createdAt: string;
   updatedAt: string;
 }

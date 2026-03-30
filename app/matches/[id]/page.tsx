@@ -3,7 +3,10 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { api, getExplorerTxUrl } from "@/lib/api";
+import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
 import MatchViewer from "@/components/game/MatchViewer";
 import AgentAvatar from "@/components/ui/AgentAvatar";
@@ -183,6 +186,9 @@ function EloComparisonBar({
 /* ── Betting Panel ── */
 function BettingPanel({ match }: { match: Match }) {
   const { t } = useLanguage();
+  const { user } = useAuthStore();
+  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
+  const { connection } = useConnection();
   const matchAgents = normalizeMatchAgents(match.agents);
   const chain = match.chain || "solana";
 
@@ -237,7 +243,28 @@ function BettingPanel({ match }: { match: Match }) {
     setTxHash(null);
     try {
       const selectedAgentId = betOnA ? matchAgents[0]?.agentId : matchAgents[1]?.agentId;
-      const res = await api.placeBet(match.id, selectedAgentId, amount);
+
+      const isExternal = user?.walletType === "external" && !!user?.externalWalletAddress;
+      let x402TxSig: string | undefined;
+
+      if (isExternal) {
+        // External wallet: build partially-signed tx, user signs, send, then verify
+        if (!publicKey || !signTransaction || !walletConnected) {
+          throw new Error("Please connect your Solana wallet to place a bet.");
+        }
+        const { Transaction } = await import("@solana/web3.js");
+        const buildRes = await api.buildBet(amount);
+        const tx = Transaction.from(Buffer.from(buildRes.transaction, "base64"));
+        const signedTx = await signTransaction(tx);
+        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+        await connection.confirmTransaction(txSignature, "confirmed");
+        x402TxSig = txSignature;
+      }
+
+      const res = await api.placeBet(match.id, selectedAgentId, amount, x402TxSig);
       setTxHash(res.txHash);
       setMsg({ type: "success", text: t.betting.betPlaced });
       setBetAmount("");

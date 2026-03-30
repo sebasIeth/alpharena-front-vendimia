@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import SolanaWalletProvider from "@/components/SolanaWalletProvider";
 
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -46,10 +47,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col">
-        <LanguageProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-        </LanguageProvider>
+        <SolanaWalletProvider>
+          <LanguageProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+          </LanguageProvider>
+        </SolanaWalletProvider>
       </body>
     </html>
   );

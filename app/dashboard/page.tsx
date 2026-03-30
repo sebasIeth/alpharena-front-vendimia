@@ -4,10 +4,13 @@ import React, { useEffect, useState, useMemo } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
 import AuthGuard from "@/components/AuthGuard";
+import WalletConnect from "@/components/WalletConnect";
 import ScheduledMatches from "@/components/scheduled/ScheduledMatches";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -259,6 +262,10 @@ function DashboardContent() {
   const { t } = useLanguage();
   const { priceUsd } = useAlphaPrice();
   const { solPriceUsd, usdcPriceUsd } = (require("@/lib/useSolanaPrice") as any).useSolanaPrice();
+  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
+  const { connection } = useConnection();
+
+  const isExternalWallet = user?.walletType === "external" && !!user?.externalWalletAddress;
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -336,6 +343,7 @@ function DashboardContent() {
   const handlePlayWithdraw = async () => {
     const value = parseFloat(withdrawAmt);
     if (!value || value <= 0) { setWithdrawError(t.matchmaking.insufficientBalance); return; }
+    if (withdrawToken === "SOL") { setWithdrawError("SOL withdrawals coming soon. Use ALPHA or USDC."); return; }
     if (withdrawToken === "USDC" && value < 10) { setWithdrawError("Minimum USDC withdrawal is 10 USDC."); return; }
     if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid Solana address"); return; }
     const balanceMap: Record<string, number> = {
@@ -348,9 +356,33 @@ function DashboardContent() {
     setWithdrawError("");
     setWithdrawSuccess("");
     try {
-      const res = await api.playWithdraw(value, withdrawAddr, withdrawToken);
-      const explorerUrl = getExplorerTxUrl(res.txHash, "solana");
-      setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${res.txHash.slice(0, 10)}...${res.txHash.slice(-6)}|${explorerUrl}`);
+      if (isExternalWallet && walletConnected && publicKey && signTransaction) {
+        // External wallet: backend builds tx with platform as fee payer, user signs
+        const { Transaction } = await import("@solana/web3.js");
+        const buildRes = await api.playBuildWithdraw(value, withdrawAddr, withdrawToken);
+
+        // Deserialize the partially-signed transaction
+        const txBuffer = Buffer.from(buildRes.transaction, "base64");
+        const tx = Transaction.from(txBuffer);
+
+        // User signs with their wallet (Phantom popup)
+        const signedTx = await signTransaction(tx);
+
+        // Send the fully-signed transaction
+        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+        await connection.confirmTransaction(txSignature, "confirmed");
+
+        const explorerUrl = getExplorerTxUrl(txSignature, "solana");
+        setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${txSignature.slice(0, 10)}...${txSignature.slice(-6)}|${explorerUrl}`);
+      } else {
+        // Custodial wallet: backend signs
+        const res = await api.playWithdraw(value, withdrawAddr, withdrawToken);
+        const explorerUrl = getExplorerTxUrl(res.txHash, "solana");
+        setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${res.txHash.slice(0, 10)}...${res.txHash.slice(-6)}|${explorerUrl}`);
+      }
       setWithdrawAmt("");
       setWithdrawAddr("");
       const bal = await api.playBalance();
@@ -756,6 +788,11 @@ function DashboardContent() {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════
+          EXTERNAL WALLET CONNECTION
+          ═══════════════════════════════════════════════════ */}
+      <WalletConnect />
 
       {/* ═══════════════════════════════════════════════════
           PLAY WALLET

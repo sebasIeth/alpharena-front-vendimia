@@ -133,6 +133,14 @@ class ApiClient {
     return this.post<AuthResponse>("/auth/register", payload, false);
   }
 
+  async registerWithWallet(walletAddress: string, signature: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/register-wallet", { walletAddress, signature }, false);
+  }
+
+  async loginWithWallet(walletAddress: string, signature: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/login-wallet", { walletAddress, signature }, false);
+  }
+
   async sendVerificationCode(email: string): Promise<{ message: string }> {
     return this.post<{ message: string }>("/auth/send-verification-code", { email }, false);
   }
@@ -317,6 +325,10 @@ class ApiClient {
     return this.get("/play/status");
   }
 
+  async playGetAgent(): Promise<{ agentId: string; walletAddress: string }> {
+    return this.get("/play/agent");
+  }
+
   async playBalance(chain?: Chain): Promise<PlayBalance> {
     const query = chain ? `?chain=${chain}` : "";
     const raw = await this.get<PlayBalance>(`/play/balance${query}`);
@@ -325,6 +337,10 @@ class ApiClient {
 
   async playWithdraw(amount: number, toAddress: string, token?: string): Promise<WithdrawResponse> {
     return this.post<WithdrawResponse>("/play/withdraw", { amount, to: toAddress, token });
+  }
+
+  async playBuildWithdraw(amount: number, toAddress: string, token?: string): Promise<{ transaction: string; blockhash: string; amount: number; to: string; token: string }> {
+    return this.post("/play/build-withdraw", { amount, to: toAddress, token });
   }
 
   async playMove(matchId: string, move: unknown): Promise<{ success: boolean }> {
@@ -349,8 +365,12 @@ class ApiClient {
     return this.get<UserBets>(`/betting/my-bets/${matchId}`);
   }
 
-  async placeBet(matchId: string, onAgentId: string, amount: number): Promise<PlaceBetResponse> {
-    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentId, amount });
+  async placeBet(matchId: string, onAgentId: string, amount: number, x402TxSignature?: string): Promise<PlaceBetResponse> {
+    return this.post<PlaceBetResponse>("/betting/place", { matchId, onAgentId, amount, x402TxSignature });
+  }
+
+  async buildBet(amount: number): Promise<{ transaction: string; blockhash: string; amount: number; token: string }> {
+    return this.post("/betting/build-bet", { amount });
   }
 
   async claimBet(matchId: string): Promise<ClaimBetResponse> {
@@ -359,6 +379,54 @@ class ApiClient {
 
   async getMyPendingClaims(): Promise<PendingClaimsResponse> {
     return this.get<PendingClaimsResponse>("/betting/my-pending-claims");
+  }
+
+  // ========== Wallet Connection ==========
+  async getWalletNonce(): Promise<{ nonce: string; message: string }> {
+    return this.get<{ nonce: string; message: string }>("/auth/wallet/nonce");
+  }
+
+  async connectWallet(walletAddress: string, signature: string): Promise<{ user: User }> {
+    return this.post<{ user: User }>("/auth/wallet/connect", { walletAddress, signature });
+  }
+
+  async switchWallet(walletType: "custodial" | "external"): Promise<{ user: User }> {
+    return this.post<{ user: User }>("/auth/wallet/switch", { walletType });
+  }
+
+  async disconnectWallet(): Promise<{ user: User }> {
+    return this.post<{ user: User }>("/auth/wallet/disconnect", {});
+  }
+
+  async getTokenInfo(token: string = "USDC"): Promise<{ token: string; tokenMint: string; decimals: number }> {
+    return this.get(`/x402/token-info?token=${token}`);
+  }
+
+  async x402BuildStake(agentId: string, token: string = "USDC"): Promise<{ transaction: string; blockhash: string; amount: number; amountAtomic: number; token: string; recipient: string }> {
+    return this.post("/x402/build-stake", { agentId, token });
+  }
+
+  async x402Stake(
+    agentId: string,
+    token: string = "USDC",
+    paymentTx?: string
+  ): Promise<any> {
+    const headers: Record<string, string> = {};
+    if (paymentTx) {
+      headers["X-PAYMENT-TX"] = paymentTx;
+    }
+    const authToken = this.getToken();
+    if (authToken) {
+      headers["Authorization"] = `Bearer ${authToken}`;
+    }
+    headers["Content-Type"] = "application/json";
+
+    const res = await fetch(`${this.baseUrl}/x402/stake`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ agentId, token }),
+    });
+    return res.json();
   }
 
   // ========== Scheduled Matches ==========
