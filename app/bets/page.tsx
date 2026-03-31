@@ -32,7 +32,7 @@ export default function BetsPage() {
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [claimMsg, setClaimMsg] = useState<{ type: "success" | "error"; text: string; txHash?: string; chain?: Chain } | null>(null);
 
-  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_token");
+  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_user");
 
   const fetchClaims = useCallback(async () => {
     if (!isLoggedIn) return;

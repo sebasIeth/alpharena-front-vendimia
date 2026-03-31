@@ -110,7 +110,7 @@ export default function RegisterPage() {
         email: formData.email.trim(),
         verificationCode: formData.verificationCode.trim(),
       });
-      login(data.token, data.user);
+      login(data.user);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.register.registerFailed);
@@ -139,7 +139,7 @@ export default function RegisterPage() {
 
       // 3. Register with nonce + signature
       const data = await api.registerWithWallet(publicKey.toBase58(), signature, nonce);
-      login(data.token, data.user);
+      login(data.user);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Wallet registration failed");

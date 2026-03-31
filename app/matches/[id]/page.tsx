@@ -203,7 +203,7 @@ function BettingPanel({ match }: { match: Match }) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_token");
+  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_user");
 
   const fetchInfo = useCallback(() => {
     api.getBettingInfo(match.id).then(setInfo).catch(() => {});

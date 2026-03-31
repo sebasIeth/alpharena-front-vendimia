@@ -101,7 +101,7 @@ export default function MatchCard({ match, delay, viewers }: MatchCardProps) {
   const [placing, setPlacing] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_token");
+  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("arena_user");
 
   const fetchBettingData = useCallback(() => {
     if (!match.matchId) return;

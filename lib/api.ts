@@ -54,34 +54,21 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("arena_token");
-  }
-
-  private getHeaders(includeAuth: boolean = true): HeadersInit {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (includeAuth) {
-      const token = this.getToken();
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-    }
-    return headers;
+  private getHeaders(): HeadersInit {
+    // Token is sent automatically via httpOnly cookie + middleware
+    return { "Content-Type": "application/json" };
   }
 
   private async request<T>(
     method: string,
     path: string,
     body?: unknown,
-    includeAuth: boolean = true
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const options: RequestInit = {
       method,
-      headers: this.getHeaders(includeAuth),
+      headers: this.getHeaders(),
+      credentials: "same-origin", // Send cookies with requests
     };
     if (body) {
       options.body = JSON.stringify(body);
@@ -94,7 +81,7 @@ class ApiClient {
         message: `Request failed with status ${response.status}`,
       }));
 
-      if (response.status === 401 && includeAuth) {
+      if (response.status === 401) {
         throw new Error("Your session has expired. Please log in again.");
       }
 
@@ -108,12 +95,12 @@ class ApiClient {
     return response.json();
   }
 
-  async get<T>(path: string, includeAuth: boolean = true): Promise<T> {
-    return this.request<T>("GET", path, undefined, includeAuth);
+  async get<T>(path: string): Promise<T> {
+    return this.request<T>("GET", path);
   }
 
-  async post<T>(path: string, body?: unknown, includeAuth: boolean = true): Promise<T> {
-    return this.request<T>("POST", path, body, includeAuth);
+  async post<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>("POST", path, body);
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
@@ -124,33 +111,65 @@ class ApiClient {
     return this.request<T>("DELETE", path);
   }
 
-  // ========== Auth ==========
-  async login(payload: LoginPayload): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/login", payload, false);
+  // ========== Auth (via cookie-based API routes) ==========
+  async login(payload: LoginPayload): Promise<{ user: User }> {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "same-origin",
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login failed");
+    return data;
   }
 
-  async register(payload: RegisterPayload): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/register", payload, false);
+  async register(payload: RegisterPayload): Promise<{ user: User }> {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "same-origin",
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Register failed");
+    return data;
   }
 
   async getWalletRegisterNonce(walletAddress: string): Promise<{ nonce: string; message: string }> {
-    return this.post("/auth/wallet/register-nonce", { walletAddress }, false);
+    return this.post("/auth/wallet/register-nonce", { walletAddress });
   }
 
-  async registerWithWallet(walletAddress: string, signature: string, nonce: string): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/register-wallet", { walletAddress, signature, nonce }, false);
+  async registerWithWallet(walletAddress: string, signature: string, nonce: string): Promise<{ user: User }> {
+    const res = await fetch("/api/auth/register-wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress, signature, nonce }),
+      credentials: "same-origin",
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Register failed");
+    return data;
   }
 
   async getWalletLoginNonce(walletAddress: string): Promise<{ nonce: string; message: string }> {
-    return this.post("/auth/wallet/login-nonce", { walletAddress }, false);
+    return this.post("/auth/wallet/login-nonce", { walletAddress });
   }
 
-  async loginWithWallet(walletAddress: string, signature: string, nonce: string): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/login-wallet", { walletAddress, signature, nonce }, false);
+  async loginWithWallet(walletAddress: string, signature: string, nonce: string): Promise<{ user: User }> {
+    const res = await fetch("/api/auth/login-wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress, signature, nonce }),
+      credentials: "same-origin",
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login failed");
+    return data;
   }
 
   async sendVerificationCode(email: string): Promise<{ message: string }> {
-    return this.post<{ message: string }>("/auth/send-verification-code", { email }, false);
+    return this.post<{ message: string }>("/auth/send-verification-code", { email });
   }
 
   async getMe(): Promise<{ user: User }> {
@@ -230,11 +249,11 @@ class ApiClient {
 
   // ========== Password Reset ==========
   async forgotPassword(email: string): Promise<{ message: string }> {
-    return this.post<{ message: string }>("/auth/forgot-password", { email }, false);
+    return this.post<{ message: string }>("/auth/forgot-password", { email });
   }
 
   async resetPassword(token: string, password: string): Promise<{ message: string }> {
-    return this.post<{ message: string }>("/auth/reset-password", { token, password }, false);
+    return this.post<{ message: string }>("/auth/reset-password", { token, password });
   }
 
   // ========== Matchmaking ==========
@@ -255,16 +274,16 @@ class ApiClient {
   }
 
   async getQueueSize(gameType: string): Promise<QueueSize> {
-    return this.get<QueueSize>(`/matchmaking/queue-size?gameType=${gameType}`, false);
+    return this.get<QueueSize>(`/matchmaking/queue-size?gameType=${gameType}`);
   }
 
   async getQueueList(gameType?: string): Promise<QueueListResponse> {
     const params = gameType ? `?gameType=${gameType}` : "";
-    return this.get<QueueListResponse>(`/matchmaking/queue${params}`, false);
+    return this.get<QueueListResponse>(`/matchmaking/queue${params}`);
   }
 
   async getPlayingCount(): Promise<PlayingCountResponse> {
-    return this.get<PlayingCountResponse>("/matchmaking/playing-count", false);
+    return this.get<PlayingCountResponse>("/matchmaking/playing-count");
   }
 
   // ========== Matches ==========
@@ -279,23 +298,23 @@ class ApiClient {
     if (params?.page && params?.limit) searchParams.set("offset", ((params.page - 1) * params.limit).toString());
     else if (params?.page) searchParams.set("offset", ((params.page - 1) * 20).toString());
     const query = searchParams.toString();
-    return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`, false);
+    return this.get<MatchesResponse>(`/matches${query ? `?${query}` : ""}`);
   }
 
   async getMatchViewers(): Promise<Record<string, number>> {
-    return this.get<Record<string, number>>("/matches/viewers", false);
+    return this.get<Record<string, number>>("/matches/viewers");
   }
 
   async getActiveMatches(): Promise<{ matches: Match[] }> {
-    return this.get<{ matches: Match[] }>("/matches/active", false);
+    return this.get<{ matches: Match[] }>("/matches/active");
   }
 
   async getMatch(id: string): Promise<{ match: Match }> {
-    return this.get<{ match: Match }>(`/matches/${id}`, false);
+    return this.get<{ match: Match }>(`/matches/${id}`);
   }
 
   async getMatchMoves(id: string): Promise<{ moves: Move[] }> {
-    return this.get<{ moves: Move[] }>(`/matches/${id}/moves`, false);
+    return this.get<{ moves: Move[] }>(`/matches/${id}/moves`);
   }
 
   // ========== Leaderboard ==========
@@ -304,20 +323,20 @@ class ApiClient {
     if (limit) params.set("limit", String(limit));
     if (gameType) params.set("gameType", gameType);
     const query = params.toString() ? `?${params}` : "";
-    const res = await this.get<Record<string, unknown>>(`/leaderboard/agents${query}`, false);
+    const res = await this.get<Record<string, unknown>>(`/leaderboard/agents${query}`);
     const list = (res.agents ?? res.leaderboard ?? []) as LeaderboardAgent[];
     return { agents: list };
   }
 
   async getLeaderboardUsers(limit?: number): Promise<{ users: LeaderboardUser[] }> {
     const query = limit ? `?limit=${limit}` : "";
-    const res = await this.get<Record<string, unknown>>(`/leaderboard/users${query}`, false);
+    const res = await this.get<Record<string, unknown>>(`/leaderboard/users${query}`);
     const list = (res.users ?? res.leaderboard ?? []) as LeaderboardUser[];
     return { users: list };
   }
 
   async getAgentStats(id: string): Promise<AgentStatsResponse> {
-    return this.get<AgentStatsResponse>(`/leaderboard/agents/${id}/stats`, false);
+    return this.get<AgentStatsResponse>(`/leaderboard/agents/${id}/stats`);
   }
 
   // ========== Human Play ==========
@@ -358,15 +377,15 @@ class ApiClient {
   // ========== Betting ==========
   async getBettingContracts(chain?: Chain): Promise<BettingContracts> {
     const query = chain ? `?chain=${chain}` : "";
-    return this.get<BettingContracts>(`/betting/contracts${query}`, false);
+    return this.get<BettingContracts>(`/betting/contracts${query}`);
   }
 
   async getBettingInfo(matchId: string): Promise<BettingInfo> {
-    return this.get<BettingInfo>(`/betting/${matchId}/info`, false);
+    return this.get<BettingInfo>(`/betting/${matchId}/info`);
   }
 
   async getBettingPool(matchId: string): Promise<BettingPoolResponse> {
-    return this.get<BettingPoolResponse>(`/betting/${matchId}/pool`, false);
+    return this.get<BettingPoolResponse>(`/betting/${matchId}/pool`);
   }
 
   async getMyBets(matchId: string): Promise<UserBets> {
@@ -419,19 +438,16 @@ class ApiClient {
     token: string = "USDC",
     paymentTx?: string
   ): Promise<any> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (paymentTx) {
       headers["X-PAYMENT-TX"] = paymentTx;
     }
-    const authToken = this.getToken();
-    if (authToken) {
-      headers["Authorization"] = `Bearer ${authToken}`;
-    }
-    headers["Content-Type"] = "application/json";
 
+    // Cookie is sent automatically, middleware injects Authorization header
     const res = await fetch(`${this.baseUrl}/x402/stake`, {
       method: "POST",
       headers,
+      credentials: "same-origin",
       body: JSON.stringify({ agentId, token }),
     });
     return res.json();
@@ -440,17 +456,16 @@ class ApiClient {
   // ========== Scheduled Matches ==========
   async getScheduledMatches(gameType?: string): Promise<{ matches: ScheduledMatchResponse[] }> {
     const query = gameType ? `?gameType=${gameType}` : "";
-    return this.get<{ matches: ScheduledMatchResponse[] }>(`/scheduled-matches${query}`, false);
+    return this.get<{ matches: ScheduledMatchResponse[] }>(`/scheduled-matches${query}`);
   }
 
   // ========== Socket.IO ==========
   connectMatchSocket(matchId: string, role: "spectator" | "player" = "spectator"): Socket | null {
     if (typeof window === "undefined") return null;
-    const token = this.getToken();
     const { io } = require("socket.io-client");
     const socket: Socket = io(`${SOCKET_URL}/ws`, {
       query: { matchId, role },
-      auth: { token: token || "" },
+      withCredentials: true, // Send cookies (httpOnly arena_token)
       transports: ["websocket", "polling"],
     });
     return socket;
@@ -458,10 +473,9 @@ class ApiClient {
 
   connectSocket(): Socket | null {
     if (typeof window === "undefined") return null;
-    const token = this.getToken();
     const { io } = require("socket.io-client");
     const socket: Socket = io(`${SOCKET_URL}/ws`, {
-      auth: { token: token || "" },
+      withCredentials: true,
       transports: ["websocket", "polling"],
     });
     return socket;

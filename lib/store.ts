@@ -5,10 +5,9 @@ import type { User } from "./types";
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
   setUser: (user: User) => void;
   initialize: () => Promise<void>;
@@ -16,24 +15,24 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: null,
   isLoading: true,
   isAuthenticated: false,
 
-  login: (token: string, user: User) => {
+  login: (user: User) => {
+    // Token is now in httpOnly cookie — only store user data in memory
     if (typeof window !== "undefined") {
-      localStorage.setItem("arena_token", token);
       localStorage.setItem("arena_user", JSON.stringify(user));
     }
-    set({ user, token, isAuthenticated: true, isLoading: false });
+    set({ user, isAuthenticated: true, isLoading: false });
   },
 
   logout: () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("arena_token");
       localStorage.removeItem("arena_user");
+      // Clear httpOnly cookie via API route
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     }
-    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 
   setUser: (user: User) => {
@@ -48,38 +47,34 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isLoading: false });
       return;
     }
-    const token = localStorage.getItem("arena_token");
-    const userStr = localStorage.getItem("arena_user");
-    if (token && userStr) {
-      try {
-        // Validate the token against the backend
-        const response = await fetch("/api/backend/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const user = data.user as User;
-          localStorage.setItem("arena_user", JSON.stringify(user));
-          set({ user, token, isAuthenticated: true, isLoading: false });
-        } else {
-          // Token is invalid/expired — clear session
-          localStorage.removeItem("arena_token");
-          localStorage.removeItem("arena_user");
-          set({ isLoading: false });
-        }
-      } catch {
-        // Network error — use cached data as fallback
+
+    try {
+      // Validate session via httpOnly cookie (sent automatically)
+      const response = await fetch("/api/auth/me");
+      if (response.ok) {
+        const data = await response.json();
+        const user = data.user as User;
+        localStorage.setItem("arena_user", JSON.stringify(user));
+        set({ user, isAuthenticated: true, isLoading: false });
+      } else {
+        // Cookie invalid/expired — clear local data
+        localStorage.removeItem("arena_user");
+        set({ isLoading: false });
+      }
+    } catch {
+      // Network error — use cached user as temporary fallback
+      const userStr = localStorage.getItem("arena_user");
+      if (userStr) {
         try {
           const user = JSON.parse(userStr) as User;
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          set({ user, isAuthenticated: true, isLoading: false });
         } catch {
-          localStorage.removeItem("arena_token");
           localStorage.removeItem("arena_user");
           set({ isLoading: false });
         }
+      } else {
+        set({ isLoading: false });
       }
-    } else {
-      set({ isLoading: false });
     }
   },
 }));
