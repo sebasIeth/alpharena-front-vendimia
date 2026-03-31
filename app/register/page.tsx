@@ -129,12 +129,16 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const message = "Sign this message to register on AlphArena";
+      // 1. Get nonce from backend
+      const { nonce, message } = await api.getWalletRegisterNonce(publicKey.toBase58());
+
+      // 2. Sign the nonce message
       const encodedMessage = new TextEncoder().encode(message);
       const signatureBytes = await signMessage(encodedMessage);
       const signature = bs58.default.encode(signatureBytes);
 
-      const data = await api.registerWithWallet(publicKey.toBase58(), signature);
+      // 3. Register with nonce + signature
+      const data = await api.registerWithWallet(publicKey.toBase58(), signature, nonce);
       login(data.token, data.user);
       router.push("/dashboard");
     } catch (err) {

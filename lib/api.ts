@@ -133,12 +133,20 @@ class ApiClient {
     return this.post<AuthResponse>("/auth/register", payload, false);
   }
 
-  async registerWithWallet(walletAddress: string, signature: string): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/register-wallet", { walletAddress, signature }, false);
+  async getWalletRegisterNonce(walletAddress: string): Promise<{ nonce: string; message: string }> {
+    return this.post("/auth/wallet/register-nonce", { walletAddress }, false);
   }
 
-  async loginWithWallet(walletAddress: string, signature: string): Promise<AuthResponse> {
-    return this.post<AuthResponse>("/auth/login-wallet", { walletAddress, signature }, false);
+  async registerWithWallet(walletAddress: string, signature: string, nonce: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/register-wallet", { walletAddress, signature, nonce }, false);
+  }
+
+  async getWalletLoginNonce(walletAddress: string): Promise<{ nonce: string; message: string }> {
+    return this.post("/auth/wallet/login-nonce", { walletAddress }, false);
+  }
+
+  async loginWithWallet(walletAddress: string, signature: string, nonce: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>("/auth/login-wallet", { walletAddress, signature, nonce }, false);
   }
 
   async sendVerificationCode(email: string): Promise<{ message: string }> {
@@ -439,10 +447,10 @@ class ApiClient {
   connectMatchSocket(matchId: string, role: "spectator" | "player" = "spectator"): Socket | null {
     if (typeof window === "undefined") return null;
     const token = this.getToken();
-    // Dynamic import to avoid SSR issues with socket.io-client
     const { io } = require("socket.io-client");
     const socket: Socket = io(`${SOCKET_URL}/ws`, {
-      query: { token: token || "", matchId, role },
+      query: { matchId, role },
+      auth: { token: token || "" },
       transports: ["websocket", "polling"],
     });
     return socket;
@@ -453,7 +461,7 @@ class ApiClient {
     const token = this.getToken();
     const { io } = require("socket.io-client");
     const socket: Socket = io(`${SOCKET_URL}/ws`, {
-      query: { token: token || "" },
+      auth: { token: token || "" },
       transports: ["websocket", "polling"],
     });
     return socket;
