@@ -16,11 +16,11 @@ const ConnectionProvider = _ConnectionProvider as any;
 const WalletProvider = _WalletProvider as any;
 const WalletModalProvider = _WalletModalProvider as any;
 
+// Use local proxy to avoid exposing Helius API key in the browser bundle
 const RPC_ENDPOINT =
-  process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-  (process.env.NEXT_PUBLIC_CHAIN_ENV === "mainnet"
-    ? "https://api.mainnet-beta.solana.com"
-    : "https://api.devnet.solana.com");
+  typeof window !== "undefined"
+    ? "/api/rpc"
+    : (process.env.SOLANA_RPC_INTERNAL || process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com");
 
 export default function SolanaWalletProvider({
   children,

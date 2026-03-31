@@ -86,6 +86,7 @@ function PlayContent() {
 
   const [phase, setPhase] = useState<Phase>("lobby");
   const [error, setError] = useState("");
+  const [walletStep, setWalletStep] = useState("");
 
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
@@ -908,30 +909,29 @@ function PlayContent() {
 
         const { Transaction } = await import("@solana/web3.js");
 
-        // 1. Get/create the human agent to get agentId
+        setWalletStep("Preparing transaction...");
         const { agentId: prepAgentId } = await api.playGetAgent();
-
-        // 2. Backend builds tx with platform as fee payer, partially signed
         const buildRes = await api.x402BuildStake(prepAgentId, stakeToken);
 
-        // 3. Deserialize and user signs
+        setWalletStep("Waiting for wallet signature...");
         const tx = Transaction.from(Buffer.from(buildRes.transaction, "base64"));
         const signedTx = await signTransaction(tx);
 
-        // 4. Send fully-signed tx
+        setWalletStep("Sending transaction...");
         const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
           skipPreflight: false,
           preflightCommitment: "confirmed",
         });
 
-        // 5. Wait for confirmation
+        setWalletStep("Confirming on-chain...");
         await connection.confirmTransaction(txSignature, "confirmed");
 
-        // 6. Verify payment with backend
+        setWalletStep("Verifying payment...");
         const verifyRes = await api.x402Stake(prepAgentId, stakeToken, txSignature);
         if (!verifyRes.paid) {
           throw new Error(verifyRes.error || "Payment verification failed");
         }
+        setWalletStep("");
       }
 
       // Join the queue (custodial: backend handles escrow; non-custodial: x402 payment already verified)
@@ -951,6 +951,7 @@ function PlayContent() {
       setError(err instanceof Error ? err.message : t.play.joinFailed);
     } finally {
       setJoining(false);
+      setWalletStep("");
       joiningRef.current = false;
     }
   };
@@ -1330,7 +1331,7 @@ function PlayContent() {
                     ) : (
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" /></svg>
                     )}
-                    {joining ? t.common.loading : isExternalWallet ? "Sign & Join Queue" : t.play.joinQueue}
+                    {joining ? (walletStep || t.common.loading) : isExternalWallet ? "Sign & Join Queue" : t.play.joinQueue}
                   </span>
                 </button>
 

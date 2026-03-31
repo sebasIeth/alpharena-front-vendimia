@@ -7,11 +7,12 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
         NEXT_PUBLIC_MARRAKECH_VIEWER_URL: ${NEXT_PUBLIC_MARRAKECH_VIEWER_URL}
-        NEXT_PUBLIC_SOLANA_RPC_URL: ${NEXT_PUBLIC_SOLANA_RPC_URL}
         NEXT_PUBLIC_CHAIN_ENV: ${NEXT_PUBLIC_CHAIN_ENV}
+        SOLANA_RPC_INTERNAL: ${SOLANA_RPC_INTERNAL}
     container_name: alpharena-front
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - SOLANA_RPC_INTERNAL=${SOLANA_RPC_INTERNAL}
     restart: unless-stopped

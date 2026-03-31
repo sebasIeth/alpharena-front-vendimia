@@ -93,6 +93,8 @@ export default function ClaimPage() {
       }
       setClaim((prev) => prev ? { ...prev, claimStatus: "claimed", xUsername: data.xUsername } : prev);
       setStep("verified");
+      // Remove sensitive token from browser URL/history
+      window.history.replaceState({}, document.title, "/claim/success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {

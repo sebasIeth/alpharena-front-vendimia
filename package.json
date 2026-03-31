@@ -17,8 +17,6 @@
     "@solana/wallet-adapter-solflare": "^0.6.32",
     "@solana/web3.js": "^1.98.4",
     "bs58": "^6.0.0",
-    "ether": "^0.0.9",
-    "ethers": "^6.16.0",
     "next": "14.2.15",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
