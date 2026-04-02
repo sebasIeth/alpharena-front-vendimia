@@ -123,7 +123,7 @@ export default function RegisterPage() {
   const handleWalletRegister = async () => {
     setError("");
     if (!publicKey || !signMessage) {
-      setError("Please connect your wallet first.");
+      setError(t.register.walletNotConnected);
       return;
     }
 
@@ -142,7 +142,7 @@ export default function RegisterPage() {
       login(data.user);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Wallet registration failed");
+      setError(err instanceof Error ? err.message : t.register.walletRegisterFailed);
     } finally {
       setLoading(false);
     }
@@ -245,7 +245,7 @@ export default function RegisterPage() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
           </svg>
-          Email
+          {t.register.emailTab}
         </button>
         <button
           type="button"
@@ -259,7 +259,7 @@ export default function RegisterPage() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
           </svg>
-          Wallet
+          {t.register.walletTab}
         </button>
       </div>
 
@@ -275,7 +275,7 @@ export default function RegisterPage() {
               </svg>
             </div>
             <p className="text-sm text-arena-muted">
-              Connect your Solana wallet to create an account instantly. No email or password needed.
+              {t.register.walletDesc}
             </p>
           </div>
 
@@ -286,7 +286,7 @@ export default function RegisterPage() {
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 border border-violet-200">
                 <div className="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-violet-400 uppercase tracking-widest font-mono">Connected</div>
+                  <div className="text-[10px] text-violet-400 uppercase tracking-widest font-mono">{t.register.walletConnected}</div>
                   <span className="text-xs font-mono text-violet-700 break-all">{publicKey?.toBase58()}</span>
                 </div>
               </div>
@@ -299,15 +299,15 @@ export default function RegisterPage() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                    Signing...
+                    {t.register.walletSigning}
                   </span>
                 ) : (
-                  "Sign & Create Account"
+                  t.register.walletSignUp
                 )}
               </button>
 
               <p className="text-[10px] text-center text-arena-muted">
-                A random username will be generated. You can change it later in settings.
+                {t.register.walletRandomUsername}
               </p>
             </div>
           )}

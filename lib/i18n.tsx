@@ -75,7 +75,7 @@ const translations = {
     footer: {
       tagline: "Built for the Alephium ecosystem",
       docs: "Documentation",
-      copyright: "\u00A9 2025 AlphArena. Where AI agents compete and evolve.",
+      copyright: "\u00A9 2025\u20132026 AlphArena. Where AI agents compete and evolve.",
     },
 
     /* ── Home Page ────────────────────────────────────────── */
@@ -131,6 +131,14 @@ const translations = {
       forgotPassword: "Forgot password?",
       noAccount: "Don\u2019t have an account?",
       createOne: "Create one",
+      walletTab: "Wallet",
+      emailTab: "Email",
+      walletNotConnected: "Please connect your wallet first.",
+      walletLoginFailed: "Wallet login failed",
+      walletSignIn: "Sign & Log In",
+      walletSigning: "Signing...",
+      walletDesc: "Sign in with your Solana wallet.",
+      walletConnected: "Connected",
     },
 
     /* ── Forgot Password ─────────────────────────────────────── */
@@ -198,6 +206,15 @@ const translations = {
       resendCode: "Resend code",
       changeEmail: "Change email",
       codeRequired: "Please enter the verification code.",
+      walletTab: "Wallet",
+      emailTab: "Email",
+      walletNotConnected: "Please connect your wallet first.",
+      walletRegisterFailed: "Wallet registration failed",
+      walletSignUp: "Sign & Create Account",
+      walletSigning: "Signing...",
+      walletDesc: "Connect your Solana wallet to create an account instantly. No email or password needed.",
+      walletConnected: "Connected",
+      walletRandomUsername: "A random username will be generated. You can change it later in settings.",
       emailAlreadyRegistered: "This email is already registered.",
     },
 
@@ -234,6 +251,18 @@ const translations = {
       getAlphaDesc: "Buy ALPHA tokens on Uniswap to stake and bet",
       buyOnBase: "Buy ALPHA on Base",
       buyOnCelo: "Buy ALPHA on Celo",
+      externalWallet: "External Wallet",
+      walletConnectDesc: "Connect your Solana wallet (Phantom, Solflare) to sign transactions yourself instead of using the custodial wallet.",
+      walletSignLink: "Sign & Link Wallet",
+      walletSigning: "Signing...",
+      walletSwitchTo: "Switch to",
+      walletUnlink: "Unlink",
+      walletCustodial: "Custodial Wallet",
+      walletExternal: "External Wallet",
+      walletActive: "ACTIVE",
+      walletConnectFailed: "Failed to connect wallet",
+      walletDisconnectFailed: "Failed to disconnect wallet",
+      walletSwitchFailed: "Failed to switch wallet",
     },
 
     /* ── Agents List ──────────────────────────────────────── */
@@ -729,7 +758,7 @@ const translations = {
     footer: {
       tagline: "Construido para el ecosistema Alephium",
       docs: "Documentaci\u00F3n",
-      copyright: "\u00A9 2025 AlphArena. Donde los agentes IA compiten y evolucionan.",
+      copyright: "\u00A9 2025\u20132026 AlphArena. Donde los agentes IA compiten y evolucionan.",
     },
 
     /* ── Home Page ────────────────────────────────────────── */
@@ -785,6 +814,14 @@ const translations = {
       forgotPassword: "\u00BFOlvidaste tu contrase\u00F1a?",
       noAccount: "\u00BFNo tienes cuenta?",
       createOne: "Crea una",
+      walletTab: "Wallet",
+      emailTab: "Email",
+      walletNotConnected: "Por favor conecta tu wallet primero.",
+      walletLoginFailed: "Inicio con wallet fallido",
+      walletSignIn: "Firmar e Iniciar",
+      walletSigning: "Firmando...",
+      walletDesc: "Inicia sesi\u00F3n con tu wallet de Solana.",
+      walletConnected: "Conectada",
     },
 
     /* ── Forgot Password ─────────────────────────────────────── */
@@ -853,6 +890,15 @@ const translations = {
       changeEmail: "Cambiar email",
       codeRequired: "Por favor ingresa el c\u00F3digo de verificaci\u00F3n.",
       emailAlreadyRegistered: "Este email ya est\u00E1 registrado.",
+      walletTab: "Wallet",
+      emailTab: "Email",
+      walletNotConnected: "Por favor conecta tu wallet primero.",
+      walletRegisterFailed: "Registro con wallet fallido",
+      walletSignUp: "Firmar y Crear Cuenta",
+      walletSigning: "Firmando...",
+      walletDesc: "Conecta tu wallet de Solana para crear una cuenta al instante. Sin email ni contrase\u00F1a.",
+      walletConnected: "Conectada",
+      walletRandomUsername: "Se generar\u00E1 un nombre aleatorio. Puedes cambiarlo despu\u00E9s en configuraci\u00F3n.",
     },
 
     /* ── Dashboard ────────────────────────────────────────── */
@@ -888,6 +934,18 @@ const translations = {
       getAlphaDesc: "Compra tokens ALPHA en Uniswap para apostar",
       buyOnBase: "Comprar ALPHA en Base",
       buyOnCelo: "Comprar ALPHA en Celo",
+      externalWallet: "Wallet Externa",
+      walletConnectDesc: "Conecta tu wallet de Solana (Phantom, Solflare) para firmar transacciones en lugar de usar la wallet custodiada.",
+      walletSignLink: "Firmar y Vincular Wallet",
+      walletSigning: "Firmando...",
+      walletSwitchTo: "Cambiar a",
+      walletUnlink: "Desvincular",
+      walletCustodial: "Wallet Custodiada",
+      walletExternal: "Wallet Externa",
+      walletActive: "ACTIVA",
+      walletConnectFailed: "Error al conectar wallet",
+      walletDisconnectFailed: "Error al desvincular wallet",
+      walletSwitchFailed: "Error al cambiar wallet",
     },
 
     /* ── Agents List ──────────────────────────────────────── */

@@ -57,13 +57,13 @@ function TokenEarnings({ alpha, usdc, size = "sm" }: { alpha: number; usdc: numb
     <span className="inline-flex flex-col gap-0.5">
       {alpha > 0 && (
         <span className="inline-flex items-center gap-0.5">
-          <img src="/tokens/alpha.jpg" alt="" className={`${imgCls} rounded-full`} />
+          <img src="/tokens/alpha.jpg" alt="ALPHA token"className={`${imgCls} rounded-full`} />
           <span className={`${textCls} font-mono text-arena-accent tabular-nums`}>{formatEarnings(alpha)}</span>
         </span>
       )}
       {usdc > 0 && (
         <span className="inline-flex items-center gap-0.5">
-          <img src="/tokens/usdc.jpg" alt="" className={`${imgCls} rounded-full`} />
+          <img src="/tokens/usdc.jpg" alt="USDC token"className={`${imgCls} rounded-full`} />
           <span className={`${textCls} font-mono text-emerald-600 tabular-nums`}>{formatEarnings(usdc)}</span>
         </span>
       )}

@@ -222,14 +222,14 @@ function SpinningCoin() {
       >
         {/* Front */}
         <div className="absolute inset-0 rounded-full overflow-hidden backface-hidden shadow-2xl ring-4 ring-yellow-400/30">
-          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-full h-full object-cover" />
+          <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-full h-full object-cover" />
         </div>
         {/* Back */}
         <div
           className="absolute inset-0 rounded-full overflow-hidden backface-hidden shadow-2xl ring-4 ring-yellow-400/30"
           style={{ transform: 'rotateY(180deg)' }}
         >
-          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-full h-full object-cover" />
+          <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-full h-full object-cover" />
         </div>
       </div>
       {/* Glow */}
@@ -254,7 +254,7 @@ export default function TokenomicsPage() {
       {/* About $ALPHA */}
       <div className="dash-glass-card rounded-2xl p-8 mb-10">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <img src="/tokens/alpha.jpg" alt="$ALPH" className="w-20 h-20 rounded-full ring-4 ring-arena-primary/20 shadow-lg shrink-0" />
+          <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-20 h-20 rounded-full ring-4 ring-arena-primary/20 shadow-lg shrink-0" />
           <div className="flex-1 text-center md:text-left">
             <h2 className="text-2xl font-display font-bold text-arena-text mb-2">About $ALPH</h2>
             <p className="text-sm text-arena-muted mb-3">Official ecosystem token for AlphArena.</p>
@@ -416,7 +416,7 @@ export default function TokenomicsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
-              <img src="/tokens/alpha.jpg" alt="" className="w-6 h-6 rounded-full" />
+              <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-6 h-6 rounded-full" />
             </div>
             <h3 className="font-semibold text-arena-text text-sm mb-1">Buyback &amp; Burn</h3>
             <p className="text-xs text-arena-muted">30% of every trade tax buys $ALPH from the market, creating constant demand and reducing circulating supply.</p>

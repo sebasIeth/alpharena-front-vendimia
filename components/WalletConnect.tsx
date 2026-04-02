@@ -6,11 +6,13 @@ import { WalletMultiButton as _WalletMultiButton } from "@solana/wallet-adapter-
 const WalletMultiButton = _WalletMultiButton as any;
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { useLanguage } from "@/lib/i18n";
 import { truncateAddress } from "@/lib/utils";
 import * as bs58 from "bs58";
 
 export default function WalletConnect() {
   const { user, setUser } = useAuthStore();
+  const { t } = useLanguage();
   const { publicKey, signMessage, connected, disconnect } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,7 +22,7 @@ export default function WalletConnect() {
 
   const handleLinkWallet = useCallback(async () => {
     if (!publicKey || !signMessage) {
-      setError("Please connect your wallet first");
+      setError(t.login.walletNotConnected);
       return;
     }
 
@@ -40,7 +42,7 @@ export default function WalletConnect() {
       const result = await api.connectWallet(publicKey.toBase58(), signature);
       setUser(result.user);
     } catch (err: any) {
-      setError(err?.message || "Failed to connect wallet");
+      setError(err?.message || t.dashboard.walletConnectFailed);
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ export default function WalletConnect() {
       setUser(result.user);
       disconnect();
     } catch (err: any) {
-      setError(err?.message || "Failed to disconnect wallet");
+      setError(err?.message || t.dashboard.walletDisconnectFailed);
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function WalletConnect() {
       const result = await api.switchWallet(walletType);
       setUser(result.user);
     } catch (err: any) {
-      setError(err?.message || "Failed to switch wallet");
+      setError(err?.message || t.dashboard.walletSwitchFailed);
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ export default function WalletConnect() {
           </svg>
         </div>
         <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">
-          External Wallet
+          {t.dashboard.externalWallet}
         </h3>
       </div>
 
@@ -90,7 +92,7 @@ export default function WalletConnect() {
         /* Not linked yet */
         <div className="space-y-4">
           <p className="text-xs text-arena-muted">
-            Connect your Solana wallet (Phantom, Solflare) to sign transactions yourself instead of using the custodial wallet.
+            {t.dashboard.walletConnectDesc}
           </p>
 
           {!connected ? (
@@ -98,7 +100,7 @@ export default function WalletConnect() {
           ) : (
             <div className="space-y-3">
               <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2.5">
-                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">Connected Wallet</div>
+                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.login.walletConnected}</div>
                 <span className="text-xs font-mono text-arena-text">{publicKey?.toBase58()}</span>
               </div>
               <button
@@ -106,7 +108,7 @@ export default function WalletConnect() {
                 disabled={loading}
                 className="w-full px-4 py-2.5 text-sm font-mono font-semibold rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? "Signing..." : "Sign & Link Wallet"}
+                {loading ? t.dashboard.walletSigning : t.dashboard.walletSignLink}
               </button>
             </div>
           )}
@@ -119,19 +121,19 @@ export default function WalletConnect() {
             <div className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 border ${isExternal ? 'bg-violet-50/50 border-violet-200' : 'bg-arena-bg/50 border-arena-border-light'}`}>
               <div className={`w-2 h-2 rounded-full ${isExternal ? 'bg-violet-500' : 'bg-gray-300'}`} />
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">External Wallet</div>
+                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.dashboard.walletExternal}</div>
                 <span className="text-xs font-mono text-arena-text">{truncateAddress(user!.externalWalletAddress!, 8)}</span>
               </div>
-              {isExternal && <span className="text-[10px] font-mono font-semibold text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">ACTIVE</span>}
+              {isExternal && <span className="text-[10px] font-mono font-semibold text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">{t.dashboard.walletActive}</span>}
             </div>
 
             <div className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 border ${!isExternal ? 'bg-emerald-50/50 border-emerald-200' : 'bg-arena-bg/50 border-arena-border-light'}`}>
               <div className={`w-2 h-2 rounded-full ${!isExternal ? 'bg-emerald-500' : 'bg-gray-300'}`} />
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">Custodial Wallet</div>
+                <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">{t.dashboard.walletCustodial}</div>
                 <span className="text-xs font-mono text-arena-text">{truncateAddress(user!.walletAddress, 8)}</span>
               </div>
-              {!isExternal && <span className="text-[10px] font-mono font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">ACTIVE</span>}
+              {!isExternal && <span className="text-[10px] font-mono font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">{t.dashboard.walletActive}</span>}
             </div>
           </div>
 
@@ -142,14 +144,14 @@ export default function WalletConnect() {
               disabled={loading}
               className="flex-1 px-3 py-2 text-xs font-mono font-semibold rounded-lg bg-arena-bg border border-arena-border-light text-arena-text hover:border-arena-primary/30 disabled:opacity-50 transition-all"
             >
-              {loading ? "..." : `Switch to ${isExternal ? "Custodial" : "External"}`}
+              {loading ? "..." : `${t.dashboard.walletSwitchTo} ${isExternal ? t.dashboard.walletCustodial : t.dashboard.walletExternal}`}
             </button>
             <button
               onClick={handleDisconnect}
               disabled={loading}
               className="px-3 py-2 text-xs font-mono font-semibold rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-all"
             >
-              {loading ? "..." : "Unlink"}
+              {loading ? "..." : t.dashboard.walletUnlink}
             </button>
           </div>
         </div>

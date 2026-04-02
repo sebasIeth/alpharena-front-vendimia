@@ -41,7 +41,8 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           <h2 className="text-lg font-semibold text-arena-text font-display">{title}</h2>
           <button
             onClick={onClose}
-            className="text-arena-muted hover:text-arena-text transition-colors p-1 rounded-lg hover:bg-arena-card-hover"
+            aria-label="Close"
+            className="text-arena-muted hover:text-arena-text transition-colors p-1 rounded-lg hover:bg-arena-card-hover focus:ring-2 focus:ring-arena-primary/40 focus:outline-none"
           >
             <svg
               className="w-5 h-5"

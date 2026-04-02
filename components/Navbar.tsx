@@ -208,8 +208,9 @@ export default function Navbar() {
             <div className="inline-flex items-center bg-arena-bg-light border border-arena-border-light rounded-lg p-0.5 text-xs">
               <button
                 onClick={() => setLang("en")}
+                aria-label="English"
                 className={classNames(
-                  "px-2 py-1 rounded-md font-semibold transition-all duration-200",
+                  "px-2 py-1 rounded-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                   lang === "en"
                     ? "bg-white text-arena-primary shadow-sm"
                     : "text-arena-muted hover:text-arena-text"
@@ -219,8 +220,9 @@ export default function Navbar() {
               </button>
               <button
                 onClick={() => setLang("es")}
+                aria-label="Espa\u00F1ol"
                 className={classNames(
-                  "px-2 py-1 rounded-md font-semibold transition-all duration-200",
+                  "px-2 py-1 rounded-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                   lang === "es"
                     ? "bg-white text-arena-primary shadow-sm"
                     : "text-arena-muted hover:text-arena-text"
@@ -269,8 +271,9 @@ export default function Navbar() {
                           <button
                             key={key}
                             onClick={() => pickAvatar(key)}
+                            aria-label={`Select ${key} avatar`}
                             className={classNames(
-                              "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all",
+                              "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                               currentSpriteKey === key
                                 ? "ring-2 ring-arena-primary ring-offset-1 scale-110"
                                 : "opacity-60 hover:opacity-100 hover:scale-105"
@@ -338,7 +341,8 @@ export default function Navbar() {
           {/* ── Mobile Hamburger ──────────────────────── */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-arena-muted hover:text-arena-text hover:bg-arena-card-hover transition-all"
+            aria-label="Toggle menu"
+            className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-arena-muted hover:text-arena-text hover:bg-arena-card-hover transition-all focus:ring-2 focus:ring-arena-primary/40 focus:outline-none"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               {mobileOpen ? (
@@ -414,8 +418,9 @@ export default function Navbar() {
               <div className="inline-flex items-center bg-arena-bg-light border border-arena-border-light rounded-lg p-0.5 text-xs">
                 <button
                   onClick={() => setLang("en")}
+                  aria-label="English"
                   className={classNames(
-                    "px-3 py-1.5 rounded-md font-semibold transition-all",
+                    "px-3 py-1.5 rounded-md font-semibold transition-all focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                     lang === "en"
                       ? "bg-white text-arena-primary shadow-sm"
                       : "text-arena-muted hover:text-arena-text"
@@ -425,8 +430,9 @@ export default function Navbar() {
                 </button>
                 <button
                   onClick={() => setLang("es")}
+                  aria-label="Espa\u00F1ol"
                   className={classNames(
-                    "px-3 py-1.5 rounded-md font-semibold transition-all",
+                    "px-3 py-1.5 rounded-md font-semibold transition-all focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                     lang === "es"
                       ? "bg-white text-arena-primary shadow-sm"
                       : "text-arena-muted hover:text-arena-text"
@@ -458,8 +464,9 @@ export default function Navbar() {
                       <button
                         key={key}
                         onClick={() => pickAvatar(key)}
+                        aria-label={`Select ${key} avatar`}
                         className={classNames(
-                          "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all",
+                          "w-7 h-7 rounded-md overflow-hidden agent-sprite transition-all focus:ring-2 focus:ring-arena-primary/40 focus:outline-none",
                           currentSpriteKey === key
                             ? "ring-2 ring-arena-primary ring-offset-1 scale-110"
                             : "opacity-60 hover:opacity-100 hover:scale-105"

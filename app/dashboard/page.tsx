@@ -553,7 +553,7 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-3 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/alpha.jpg" alt="ALPH" className="w-5 h-5 rounded-full" />
+                  <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-5 h-5 rounded-full" />
                   <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">
                     {formatEarnings(stats.earningsAlpha || stats.earnings)}
                   </span>
@@ -639,14 +639,14 @@ function DashboardContent() {
             <div className="space-y-1 mt-1">
               {stats.earningsAlpha > 0 && (
                 <div className="flex items-center gap-1">
-                  <img src="/tokens/alpha.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3.5 h-3.5 rounded-full" />
                   <span className="text-sm font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(stats.earningsAlpha)}</span>
                   {(() => { const usd = formatUsdEquivalent(stats.earningsAlpha, priceUsd); return usd ? <span className="text-[9px] text-arena-muted">({usd})</span> : null; })()}
                 </div>
               )}
               {stats.earningsUsdc > 0 && (
                 <div className="flex items-center gap-1">
-                  <img src="/tokens/usdc.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3.5 h-3.5 rounded-full" />
                   <span className="text-sm font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(stats.earningsUsdc)}</span>
                   <span className="text-[9px] text-arena-muted">(~${stats.earningsUsdc.toFixed(2)})</span>
                 </div>

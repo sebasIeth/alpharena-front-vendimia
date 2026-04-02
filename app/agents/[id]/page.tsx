@@ -732,14 +732,14 @@ function AgentDetailContent() {
             <div className="space-y-1 min-w-0">
               {(agent.stats?.earningsAlpha || 0) > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/alpha.jpg" alt="" className="w-5 h-5 rounded-full" />
+                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-5 h-5 rounded-full" />
                   <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
                   <span className="text-[10px] text-arena-muted font-mono">ALPHA</span>
                 </div>
               )}
               {(agent.stats?.earningsUsdc || 0) > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/usdc.jpg" alt="" className="w-5 h-5 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-5 h-5 rounded-full" />
                   <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-emerald-600 leading-none">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
                   <span className="text-[10px] text-arena-muted font-mono">USDC</span>
                 </div>

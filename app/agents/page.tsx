@@ -286,13 +286,13 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
             <div className="text-center hidden sm:block">
               {(agent.stats?.earningsAlpha || 0) > 0 && (
                 <div className="flex items-center gap-1 justify-center">
-                  <img src="/tokens/alpha.jpg" alt="" className="w-4 h-4 rounded-full" />
+                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-4 h-4 rounded-full" />
                   <span className="text-lg font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
                 </div>
               )}
               {(agent.stats?.earningsUsdc || 0) > 0 && (
                 <div className="flex items-center gap-1 justify-center">
-                  <img src="/tokens/usdc.jpg" alt="" className="w-4 h-4 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-4 h-4 rounded-full" />
                   <span className="text-lg font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
                 </div>
               )}
@@ -405,14 +405,14 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
         <div className="flex flex-col items-end gap-0.5">
           {(agent.stats?.earningsAlpha || 0) > 0 && (
             <div className="flex items-center gap-1">
-              <img src="/tokens/alpha.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+              <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3.5 h-3.5 rounded-full" />
               <span className="font-mono font-bold text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
               <span className="text-[9px] text-arena-muted font-mono">ALPH</span>
             </div>
           )}
           {(agent.stats?.earningsUsdc || 0) > 0 && (
             <div className="flex items-center gap-1">
-              <img src="/tokens/usdc.jpg" alt="" className="w-3.5 h-3.5 rounded-full" />
+              <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3.5 h-3.5 rounded-full" />
               <span className="font-mono font-bold text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
               <span className="text-[9px] text-arena-muted font-mono">USDC</span>
             </div>
@@ -648,13 +648,13 @@ function AgentsContent() {
                 <div className="space-y-0.5 mt-1">
                   {summary.earningsAlpha > 0 && (
                     <div className="flex items-center gap-1">
-                      <img src="/tokens/alpha.jpg" alt="" className="w-3 h-3 rounded-full" />
+                      <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3 h-3 rounded-full" />
                       <span className="text-xs font-bold font-mono text-arena-accent tabular-nums">{formatEarnings(summary.earningsAlpha)}</span>
                     </div>
                   )}
                   {summary.earningsUsdc > 0 && (
                     <div className="flex items-center gap-1">
-                      <img src="/tokens/usdc.jpg" alt="" className="w-3 h-3 rounded-full" />
+                      <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3 h-3 rounded-full" />
                       <span className="text-xs font-bold font-mono text-emerald-600 tabular-nums">{formatEarnings(summary.earningsUsdc)}</span>
                     </div>
                   )}
