@@ -39,12 +39,16 @@ export default function Spinner({ size = "md", className }: SpinnerProps) {
   );
 }
 
-export function PageSpinner() {
+export function PageSpinner({ text }: { text?: string }) {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center">
         <Spinner size="lg" />
-        <p className="mt-4 text-arena-muted">Loading...</p>
+        {text !== undefined ? (
+          text && <p className="mt-4 text-arena-muted">{text}</p>
+        ) : (
+          <p className="mt-4 text-arena-muted">Loading...</p>
+        )}
       </div>
     </div>
   );

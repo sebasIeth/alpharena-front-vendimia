@@ -10,17 +10,10 @@ export default function Badge({ status, className }: BadgeProps) {
   if (status === "completed") {
     return (
       <span
-        style={{
-          backgroundColor: "#dcfce7",
-          color: "#000000",
-          borderRadius: "9999px",
-          padding: "1px 8px",
-          fontSize: "0.7rem",
-          fontWeight: 500,
-          display: "inline-flex",
-          alignItems: "center",
-        }}
-        className={className}
+        className={classNames(
+          "inline-flex items-center px-2 py-0.5 rounded-full text-[0.7rem] font-medium bg-green-100 text-green-800",
+          className
+        )}
       >
         ✓ Completed
       </span>

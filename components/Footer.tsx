@@ -113,7 +113,7 @@ export default function Footer() {
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
-                    className="w-9 h-9 rounded-xl bg-white border border-arena-border-light flex items-center justify-center text-arena-muted hover:text-white hover:bg-gradient-to-br hover:from-arena-primary hover:to-arena-primary-dark hover:border-transparent hover:shadow-arena-sm transition-all duration-300 hover:scale-105"
+                    className="w-11 h-11 rounded-xl bg-white border border-arena-border-light flex items-center justify-center text-arena-muted hover:text-white hover:bg-gradient-to-br hover:from-arena-primary hover:to-arena-primary-dark hover:border-transparent hover:shadow-arena-sm transition-all duration-300 hover:scale-105"
                   >
                     {social.icon}
                   </a>
