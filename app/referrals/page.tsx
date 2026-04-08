@@ -46,6 +46,8 @@ export default function ReferralsPage() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerError, setRegisterError] = useState("");
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [paymentsPage, setPaymentsPage] = useState(0);
+  const paymentsPerPage = 10;
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -94,7 +96,7 @@ export default function ReferralsPage() {
     }
   }
 
-  const chain: Chain = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "mainnet" ? "solana" : "solana";
+  const chain: Chain = "solana";
 
   return (
     <AuthGuard>
@@ -118,7 +120,7 @@ export default function ReferralsPage() {
                 <input
                   readOnly
                   value={stats.referralLink}
-                  className="flex-1 bg-gray-50 border border-arena-border rounded-lg px-3 py-2 text-sm font-mono text-arena-text"
+                  className="flex-1 bg-gray-50 border border-arena-border-light rounded-lg px-3 py-2 text-sm font-mono text-arena-text"
                 />
                 <Button onClick={handleCopy} className="shrink-0">
                   <IconCopy className="w-4 h-4 mr-1 inline" />
@@ -151,7 +153,7 @@ export default function ReferralsPage() {
                   <>
                     <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-arena-primary to-emerald-400 transition-all duration-700 ease-out"
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700 ease-out"
                         style={{ width: `${Math.max(progress, 2)}%` }}
                       />
                     </div>
@@ -166,7 +168,7 @@ export default function ReferralsPage() {
                           className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
                             earned >= m
                               ? "bg-emerald-100 text-emerald-700"
-                              : "bg-gray-50 text-arena-muted border border-arena-border/50"
+                              : "bg-gray-50 text-arena-muted border border-arena-border-light/50"
                           }`}
                         >
                           {m >= 1000 ? `${m / 1000}k` : m}
@@ -199,7 +201,7 @@ export default function ReferralsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-arena-border text-left text-arena-muted">
+                      <tr className="border-b border-arena-border-light text-left text-arena-muted">
                         <th className="pb-2 pr-4">Username</th>
                         <th className="pb-2 pr-4">Joined</th>
                         <th className="pb-2 text-right">Earned for You</th>
@@ -207,7 +209,7 @@ export default function ReferralsPage() {
                     </thead>
                     <tbody>
                       {stats.referrals.map((ref, i) => (
-                        <tr key={i} className="border-b border-arena-border/50 last:border-0">
+                        <tr key={i} className="border-b border-arena-border-light/50 last:border-0">
                           <td className="py-2 pr-4 font-medium text-arena-text">{ref.username}</td>
                           <td className="py-2 pr-4 text-arena-muted">{formatDate(ref.joinedAt)}</td>
                           <td className="py-2 text-right font-mono">{ref.totalGeneratedSOL.toFixed(4)}</td>
@@ -222,11 +224,16 @@ export default function ReferralsPage() {
             {/* Recent Payments */}
             {stats.recentPayments.length > 0 && (
               <Card className="mb-6">
-                <p className="text-sm font-medium text-arena-text mb-3">Recent Payments</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-arena-text">Recent Payments</p>
+                  <p className="text-xs text-arena-muted">
+                    {stats.recentPayments.length} payment{stats.recentPayments.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-arena-border text-left text-arena-muted">
+                      <tr className="border-b border-arena-border-light text-left text-arena-muted">
                         <th className="pb-2 pr-4">Date</th>
                         <th className="pb-2 pr-4">Match</th>
                         <th className="pb-2 pr-4">Amount</th>
@@ -235,8 +242,10 @@ export default function ReferralsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.recentPayments.map((p, i) => (
-                        <tr key={i} className="border-b border-arena-border/50 last:border-0">
+                      {stats.recentPayments
+                        .slice(paymentsPage * paymentsPerPage, (paymentsPage + 1) * paymentsPerPage)
+                        .map((p, i) => (
+                        <tr key={i} className="border-b border-arena-border-light/50 last:border-0">
                           <td className="py-2 pr-4 text-arena-muted">{formatDate(p.date)}</td>
                           <td className="py-2 pr-4 font-mono text-xs">
                             {p.matchId.slice(0, 8)}...
@@ -266,6 +275,27 @@ export default function ReferralsPage() {
                     </tbody>
                   </table>
                 </div>
+                {stats.recentPayments.length > paymentsPerPage && (
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-arena-border-light/50">
+                    <button
+                      onClick={() => setPaymentsPage((p) => Math.max(0, p - 1))}
+                      disabled={paymentsPage === 0}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-arena-border-light disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-arena-text"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-xs text-arena-muted">
+                      Page {paymentsPage + 1} of {Math.ceil(stats.recentPayments.length / paymentsPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setPaymentsPage((p) => Math.min(Math.ceil(stats.recentPayments.length / paymentsPerPage) - 1, p + 1))}
+                      disabled={paymentsPage >= Math.ceil(stats.recentPayments.length / paymentsPerPage) - 1}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-arena-border-light disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-arena-text"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </Card>
             )}
 
@@ -279,7 +309,7 @@ export default function ReferralsPage() {
                     value={registerCode}
                     onChange={(e) => setRegisterCode(e.target.value)}
                     placeholder="Enter referral code"
-                    className="flex-1 bg-gray-50 border border-arena-border rounded-lg px-3 py-2 text-sm text-arena-text"
+                    className="flex-1 bg-gray-50 border border-arena-border-light rounded-lg px-3 py-2 text-sm text-arena-text"
                     onKeyDown={(e) => e.key === "Enter" && handleRegister()}
                   />
                   <Button onClick={handleRegister} disabled={registerLoading || !registerCode.trim()}>
