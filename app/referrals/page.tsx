@@ -131,6 +131,53 @@ export default function ReferralsPage() {
               </div>
             </Card>
 
+            {/* Earnings Progress Bar */}
+            <Card className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-arena-text">Earnings Progress</p>
+                <p className="text-sm font-bold text-arena-text font-mono">
+                  {stats.totalEarnedSOL.toFixed(4)} USDC
+                </p>
+              </div>
+              {(() => {
+                const milestones = [0.1, 1, 10, 50, 100, 500, 1000];
+                const earned = stats.totalEarnedSOL;
+                const currentMilestone = milestones.find((m) => earned < m) || milestones[milestones.length - 1];
+                const prevMilestone = milestones[milestones.indexOf(currentMilestone) - 1] || 0;
+                const progress = currentMilestone === prevMilestone
+                  ? 100
+                  : Math.min(100, ((earned - prevMilestone) / (currentMilestone - prevMilestone)) * 100);
+                return (
+                  <>
+                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-arena-primary to-emerald-400 transition-all duration-700 ease-out"
+                        style={{ width: `${Math.max(progress, 2)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-xs text-arena-muted">{prevMilestone} USDC</span>
+                      <span className="text-xs text-arena-muted font-medium">Next: {currentMilestone} USDC</span>
+                    </div>
+                    <div className="flex gap-1.5 mt-3 flex-wrap">
+                      {milestones.map((m) => (
+                        <span
+                          key={m}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                            earned >= m
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-gray-50 text-arena-muted border border-arena-border/50"
+                          }`}
+                        >
+                          {m >= 1000 ? `${m / 1000}k` : m}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </Card>
+
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <StatCard label="Total Referrals" value={stats.totalReferrals} />
