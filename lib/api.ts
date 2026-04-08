@@ -33,6 +33,8 @@ import type {
   ClaimBetResponse,
   PendingClaimsResponse,
   ScheduledMatchResponse,
+  ReferralStats,
+  ReferralCodeResponse,
 } from "./types";
 
 /** Pass through balance as-is (no normalization needed for Solana). */
@@ -457,6 +459,19 @@ class ApiClient {
   async getScheduledMatches(gameType?: string): Promise<{ matches: ScheduledMatchResponse[] }> {
     const query = gameType ? `?gameType=${gameType}` : "";
     return this.get<{ matches: ScheduledMatchResponse[] }>(`/scheduled-matches${query}`);
+  }
+
+  // ========== Referrals ==========
+  async getReferralStats(): Promise<ReferralStats> {
+    return this.get("/v1/referrals/me");
+  }
+
+  async getReferralCode(): Promise<ReferralCodeResponse> {
+    return this.get("/v1/referrals/code");
+  }
+
+  async registerReferral(referrerCode: string): Promise<{ success: boolean; message: string }> {
+    return this.post("/v1/referrals/register", { referrerCode });
   }
 
   // ========== Socket.IO ==========

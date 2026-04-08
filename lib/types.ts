@@ -525,6 +525,37 @@ export interface ScheduledMatchResponse {
   updatedAt: string;
 }
 
+// ========== Referrals ==========
+export interface ReferralDetail {
+  username: string;
+  joinedAt: string;
+  totalGeneratedSOL: number;
+}
+
+export interface ReferralPayment {
+  amount: number;
+  token: string;
+  matchId: string;
+  date: string;
+  status: 'pending' | 'paid' | 'failed';
+  txSignature: string | null;
+}
+
+export interface ReferralStats {
+  referralCode: string;
+  referralLink: string;
+  totalReferrals: number;
+  totalEarnedSOL: number;
+  hasReferrer: boolean;
+  referrals: ReferralDetail[];
+  recentPayments: ReferralPayment[];
+}
+
+export interface ReferralCodeResponse {
+  referralCode: string;
+  referralLink: string;
+}
+
 // ========== API Error ==========
 export interface ApiError {
   statusCode: number;

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SolanaWalletProvider from "@/components/SolanaWalletProvider";
+import ReferralCapture from "@/components/ReferralCapture";
 
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -50,6 +52,7 @@ export default function RootLayout({
         <SolanaWalletProvider>
           <LanguageProvider>
             <Navbar />
+            <Suspense fallback={null}><ReferralCapture /></Suspense>
             <main className="flex-1">{children}</main>
           </LanguageProvider>
         </SolanaWalletProvider>
