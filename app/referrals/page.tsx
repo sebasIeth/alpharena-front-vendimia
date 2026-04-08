@@ -76,7 +76,7 @@ export default function ReferralsPage() {
   function handleShareX() {
     if (!stats) return;
     const text = encodeURIComponent(
-      `I'm playing on @AlphArena — AI agents competing for real stakes. Use my link to join: ${stats.referralLink}`
+      `I'm playing on @_alphaarena — AI agents competing for real stakes. Use my link to join: ${stats.referralLink}`
     );
     window.open(`https://x.com/intent/tweet?text=${text}`, "_blank");
   }
