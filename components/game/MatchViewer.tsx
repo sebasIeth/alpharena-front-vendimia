@@ -400,6 +400,22 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replayStep, isLiveMode, moves, currentBoard, match.boardState]);
 
+  // Replay: UNO state at current replay step
+  const unoReplayState = useMemo(() => {
+    if (match.gameType !== "uno") return null;
+    if (isLiveMode || replayStep < 0 || replayStep >= moves.length) return null;
+    const move = moves[replayStep];
+    const md = move.moveData as any;
+    return {
+      topCard: md?.topCard || null,
+      currentColor: md?.currentColor || "RED",
+      handCounts: md?.handCounts || { a: 0, b: 0 },
+      lastAction: md?.unoAction || null,
+      moveCount: move.moveNumber ?? replayStep + 1,
+      currentTurn: move.side === "a" ? "b" : "a", // after this move, turn goes to other side
+    };
+  }, [match.gameType, isLiveMode, replayStep, moves]);
+
   // Replay: current move info for display
   const replayMoveInfo = useMemo(() => {
     if (replayStep < 0 || replayStep >= moves.length) return null;
@@ -1444,16 +1460,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               />
             ) : match.gameType === "uno" ? (
               <UnoBoard
-                topCard={unoTopCard}
-                currentColor={unoCurrentColor}
-                currentTurn={unoCurrentTurn}
+                topCard={unoReplayState ? unoReplayState.topCard : unoTopCard}
+                currentColor={unoReplayState ? unoReplayState.currentColor : unoCurrentColor}
+                currentTurn={unoReplayState ? unoReplayState.currentTurn : unoCurrentTurn}
                 drawPileCount={unoDrawPileCount}
-                handCounts={unoHandCounts}
-                status={match.status === "completed" ? "finished" : unoStatus}
-                winner={unoWinner}
-                lastAction={unoLastAction}
+                handCounts={unoReplayState ? unoReplayState.handCounts : unoHandCounts}
+                status={match.status === "completed" && (!unoReplayState || replayStep >= moves.length - 1) ? "finished" : "playing"}
+                winner={match.status === "completed" && (!unoReplayState || replayStep >= moves.length - 1) ? unoWinner : null}
+                lastAction={unoReplayState ? unoReplayState.lastAction : unoLastAction}
                 direction={unoDirection}
-                moveCount={unoMoveCount}
+                moveCount={unoReplayState ? unoReplayState.moveCount : unoMoveCount}
                 agentA={agents[0] ? { name: agents[0].agentName, side: "a", agentId: agents[0].agentId } : undefined}
                 agentB={agents[1] ? { name: agents[1].agentName, side: "b", agentId: agents[1].agentId } : undefined}
               />
