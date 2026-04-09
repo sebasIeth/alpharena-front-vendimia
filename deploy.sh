@@ -2,8 +2,8 @@
 set -e
 
 # ── Config ─────────────────────────────────────────────────
-VPS_HOST="root@187.77.47.112"
-VPS_PASSWORD="45359800@aAa"
+VPS_HOST="root@72.62.176.85"
+VPS_PASSWORD="45359800@aaA"
 REMOTE_DIR="/root/alpharena-front"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
