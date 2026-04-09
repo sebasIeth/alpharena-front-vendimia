@@ -15,6 +15,8 @@ import ChessBoard from "@/components/game/ChessBoard";
 import PokerBoard from "@/components/game/PokerBoard";
 import RpsBoard, { RpsThrowIcon, THROW_LABELS } from "@/components/game/RpsBoard";
 import type { RpsRound } from "@/components/game/RpsBoard";
+import UnoBoard from "@/components/game/UnoBoard";
+import type { UnoCardData } from "@/components/game/UnoCard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
@@ -151,6 +153,20 @@ function PlayContent() {
   const [rpsScoreA, setRpsScoreA] = useState(0);
   const [rpsScoreB, setRpsScoreB] = useState(0);
   const [rpsPhase, setRpsPhase] = useState<"waiting" | "thinking" | "revealing" | "round_complete" | "game_over">("waiting");
+
+  // UNO-specific state
+  const [unoTopCard, setUnoTopCard] = useState<UnoCardData | null>(null);
+  const [unoCurrentColor, setUnoCurrentColor] = useState<string>("RED");
+  const [unoCurrentTurn, setUnoCurrentTurn] = useState<string>("a");
+  const [unoDrawPileCount, setUnoDrawPileCount] = useState<number>(0);
+  const [unoHandCounts, setUnoHandCounts] = useState<Record<string, number>>({ a: 7, b: 7 });
+  const [unoStatus, setUnoStatus] = useState<string>("playing");
+  const [unoWinner, setUnoWinner] = useState<string | null>(null);
+  const [unoLastAction, setUnoLastAction] = useState<any>(null);
+  const [unoDirection, setUnoDirection] = useState<number>(1);
+  const [unoMoveCount, setUnoMoveCount] = useState<number>(0);
+  const [unoMyHand, setUnoMyHand] = useState<UnoCardData[]>([]);
+  const [unoLegalActions, setUnoLegalActions] = useState<any[]>([]);
 
   // Result
   const [resultMessage, setResultMessage] = useState("");
@@ -418,6 +434,16 @@ function PlayContent() {
             setRpsScoreB(s.b);
           }
         }
+        // UNO: init state on match start
+        if (gt === "uno" && data.unoState) {
+          setPhase("playing");
+          const us = data.unoState as any;
+          if (us.topCard) setUnoTopCard(us.topCard);
+          if (us.currentColor) setUnoCurrentColor(us.currentColor);
+          if (us.currentTurn) setUnoCurrentTurn(us.currentTurn);
+          if (us.drawPileCount != null) setUnoDrawPileCount(us.drawPileCount);
+          if (us.handCounts) setUnoHandCounts(us.handCounts);
+        }
       }
 
       if (type === "match:your_turn") {
@@ -526,6 +552,15 @@ function PlayContent() {
           if (isPoker && Array.isArray(moves) && moves.length > 0) {
             setPokerLegalActions(moves[0] as PokerLegalActions);
           }
+          // UNO: capture hand and legal actions
+          if (data.hand) setUnoMyHand(data.hand as UnoCardData[]);
+          if (data.legalActions) setUnoLegalActions(data.legalActions as any[]);
+          // Also update spectator fields from your_turn data
+          if (data.topCard) setUnoTopCard(data.topCard as UnoCardData);
+          if (data.currentColor) setUnoCurrentColor(data.currentColor as string);
+          if (data.currentTurn) setUnoCurrentTurn(data.currentTurn as string);
+          if (data.drawPileCount != null) setUnoDrawPileCount(data.drawPileCount as number);
+          if (data.handCounts) setUnoHandCounts(data.handCounts as Record<string, number>);
         } else {
           // Not our turn — clear turn-related state
           // For RPS: both players get your_turn simultaneously, so don't clear
@@ -589,6 +624,19 @@ function PlayContent() {
             }];
           });
         }
+
+        // UNO: update state from match:move
+        if (data.topCard) setUnoTopCard(data.topCard as UnoCardData);
+        if (data.currentColor) setUnoCurrentColor(data.currentColor as string);
+        if (data.currentTurn) setUnoCurrentTurn(data.currentTurn as string);
+        if (data.drawPileCount != null) setUnoDrawPileCount(data.drawPileCount as number);
+        if (data.handCounts) setUnoHandCounts(data.handCounts as Record<string, number>);
+        if (data.status) setUnoStatus(data.status as string);
+        if (data.winner !== undefined) setUnoWinner(data.winner as string | null);
+        if (data.lastAction) setUnoLastAction(data.lastAction);
+        if (data.unoAction) setUnoLastAction(data.unoAction);
+        if (data.direction != null) setUnoDirection(data.direction as number);
+        if (data.moveCount != null) setUnoMoveCount(data.moveCount as number);
 
         // Poker: update shared state from any move (N-player)
         if (data.pokerCommunityCards) setPokerCommunityCards(data.pokerCommunityCards as PokerCard[]);
@@ -992,6 +1040,16 @@ function PlayContent() {
     handleGameMove(action);
   };
 
+  const handleUnoPlayCard = (cardId: string, chosenColor?: string) => {
+    setUnoLegalActions([]);
+    handleGameMove({ type: "PLAY_CARD", cardId, chosenColor });
+  };
+
+  const handleUnoDrawCard = () => {
+    setUnoLegalActions([]);
+    handleGameMove({ type: "DRAW_CARD" });
+  };
+
   const resetState = () => {
     setPhase("lobby");
     setMatchId(null);
@@ -1020,6 +1078,18 @@ function PlayContent() {
     setRpsScoreA(0);
     setRpsScoreB(0);
     setRpsPhase("waiting");
+    setUnoTopCard(null);
+    setUnoCurrentColor("RED");
+    setUnoCurrentTurn("a");
+    setUnoDrawPileCount(0);
+    setUnoHandCounts({ a: 7, b: 7 });
+    setUnoStatus("playing");
+    setUnoWinner(null);
+    setUnoLastAction(null);
+    setUnoDirection(1);
+    setUnoMoveCount(0);
+    setUnoMyHand([]);
+    setUnoLegalActions([]);
     fetchBalance();
   };
 
@@ -1116,6 +1186,30 @@ function PlayContent() {
           mySide={mySide}
           onMove={canInteract ? (choice: "rock" | "paper" | "scissors") => handleGameMove(choice) : undefined}
           winnerName={isGameOver ? (rpsScoreA > rpsScoreB ? (playerA || "Player A") : (playerB || "Player B")) : null}
+        />
+      );
+    }
+    if (gameType === "uno") {
+      return (
+        <UnoBoard
+          topCard={unoTopCard}
+          currentColor={unoCurrentColor}
+          currentTurn={unoCurrentTurn}
+          drawPileCount={unoDrawPileCount}
+          handCounts={unoHandCounts}
+          status={phase === "result" ? "finished" : unoStatus}
+          winner={unoWinner}
+          lastAction={unoLastAction}
+          direction={unoDirection}
+          moveCount={unoMoveCount}
+          agentA={{ name: playerA || "You", side: "a", agentId: "" }}
+          agentB={{ name: playerB || "AI Bot", side: "b", agentId: "" }}
+          mySide={mySide}
+          myHand={unoMyHand.length > 0 ? unoMyHand : undefined}
+          legalActions={unoLegalActions}
+          isMyTurn={canInteract ? isMyTurn : false}
+          onPlayCard={canInteract ? handleUnoPlayCard : undefined}
+          onDrawCard={canInteract ? handleUnoDrawCard : undefined}
         />
       );
     }
@@ -1227,11 +1321,12 @@ function PlayContent() {
                 {/* Game type selector */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.play.gameType}</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {([
                       { value: "chess", label: "Chess", icon: "\u265A" },
                       { value: "rps", label: "RPS", icon: "\u270A" },
-                      { value: "poker", label: "Poker", icon: "\uD83C\uDCCF" },
+                      { value: "poker", label: "Poker", icon: "\uD83C\uDCA1" },
+                      { value: "uno", label: "UNO", icon: "\uD83C\uDCCF" },
                     ]).map((g) => (
                       <button
                         key={g.value}
@@ -1335,17 +1430,43 @@ function PlayContent() {
                   </span>
                 </button>
 
-                {/* Local poker vs AI */}
-                {gameType === "poker" && (
+                {/* Practice vs AI (Free) — available for poker and uno */}
+                {(gameType === "poker" || gameType === "uno") && (
                   <button
-                    onClick={() => {
-                      setPhase("local-poker");
-                      localPokerControls.startMatchmaking();
+                    onClick={async () => {
+                      if (gameType === "poker") {
+                        setPhase("local-poker");
+                        localPokerControls.startMatchmaking();
+                      } else {
+                        setError("");
+                        setJoining(true);
+                        try {
+                          const { matchId: mid } = await api.createTestMatch(gameType);
+                          matchIdRef.current = mid;
+                          setMatchId(mid);
+                          setGameType(gameType);
+                          setMySide("a");
+                          setPlayerA("You");
+                          setPlayerB("AlphArena Bot");
+                          // Connect socket immediately so we don't miss match:your_turn
+                          const sock = api.connectMatchSocket(mid, "player");
+                          if (sock) {
+                            socketRef.current = sock;
+                            attachMatchListeners(sock);
+                          }
+                          setPhase("playing");
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Failed to create test match");
+                        } finally {
+                          setJoining(false);
+                        }
+                      }
                     }}
-                    className="w-full px-5 py-3.5 rounded-xl border-2 border-dashed border-arena-primary/20 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    disabled={joining}
+                    className="w-full px-5 py-3.5 rounded-xl border-2 border-dashed border-arena-primary/20 text-arena-primary font-display font-semibold text-sm hover:bg-arena-primary/5 hover:border-arena-primary/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
-                    Practice vs AI (Free)
+                    {joining ? "Creating match..." : "Practice vs AI (Free)"}
                   </button>
                 )}
               </div>

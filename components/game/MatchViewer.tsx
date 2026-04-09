@@ -8,6 +8,8 @@ import ChessBoard from "./ChessBoard";
 import PokerBoard from "./PokerBoard";
 import RpsBoard, { RpsThrowIcon } from "./RpsBoard";
 import type { RpsRound } from "./RpsBoard";
+import UnoBoard from "./UnoBoard";
+import type { UnoCardData } from "./UnoCard";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents, formatEarnings } from "@/lib/utils";
 
@@ -159,6 +161,24 @@ function formatMoveDisplay(
     return { text: "choosing..." };
   }
 
+  // UNO: show action
+  if (gameType === "uno") {
+    const unoAction = md.unoAction || md;
+    if (unoAction?.type === "PLAY_CARD") {
+      const tc = md.topCard;
+      if (tc) {
+        if (tc.type === "NUMBER") return { text: `${tc.color} ${tc.value}` };
+        if (tc.type === "WILD") return { text: `Wild \u2192 ${unoAction.chosenColor || "?"}` };
+        if (tc.type === "WILD_DRAW_FOUR") return { text: `Wild +4 \u2192 ${unoAction.chosenColor || "?"}` };
+        return { text: `${tc.color} ${tc.type.replace(/_/g, " ")}` };
+      }
+      return { text: "Played card" };
+    }
+    if (unoAction?.type === "DRAW_CARD") return { text: "Drew a card" };
+    if (unoAction?.type === "PASS") return { text: "Passed" };
+    return { text: "action" };
+  }
+
   // Fallback: show cleaned JSON
   const cleaned = { ...md };
   delete cleaned.thinking;
@@ -298,6 +318,19 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     }
     return () => { if (rpsTimerRef.current) clearInterval(rpsTimerRef.current); };
   }, [rpsPhase, match.gameType, match.status]);
+
+  // UNO state — initialize from match.unoState if available
+  const initUno = match.unoState && typeof match.unoState === "object" ? match.unoState as any : null;
+  const [unoTopCard, setUnoTopCard] = useState<UnoCardData | null>(initUno?.topCard || null);
+  const [unoCurrentColor, setUnoCurrentColor] = useState<string>(initUno?.currentColor || "RED");
+  const [unoCurrentTurn, setUnoCurrentTurn] = useState<string>(initUno?.currentTurn || "a");
+  const [unoDrawPileCount, setUnoDrawPileCount] = useState<number>(initUno?.drawPileCount || 0);
+  const [unoHandCounts, setUnoHandCounts] = useState<Record<string, number>>(initUno?.handCounts || { a: 7, b: 7 });
+  const [unoStatus, setUnoStatus] = useState<string>(initUno?.status || "playing");
+  const [unoWinner, setUnoWinner] = useState<string | null>(initUno?.winner || null);
+  const [unoLastAction, setUnoLastAction] = useState<any>(initUno?.lastAction || null);
+  const [unoDirection, setUnoDirection] = useState<number>(initUno?.direction || 1);
+  const [unoMoveCount, setUnoMoveCount] = useState<number>(initUno?.moveCount || 0);
 
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
@@ -559,6 +592,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           });
         }
         if (data.pokerCurrentPlayerIndex != null) setPokerCurrentPlayerIndex(data.pokerCurrentPlayerIndex as number);
+        // UNO: load initial state
+        if (data.unoState && typeof data.unoState === "object") {
+          const us = data.unoState as any;
+          if (us.topCard) setUnoTopCard(us.topCard);
+          if (us.currentColor) setUnoCurrentColor(us.currentColor);
+          if (us.currentTurn) setUnoCurrentTurn(us.currentTurn);
+          if (us.drawPileCount != null) setUnoDrawPileCount(us.drawPileCount);
+          if (us.handCounts) setUnoHandCounts(us.handCounts);
+          if (us.status) setUnoStatus(us.status);
+        }
       }
 
       if (type === "match:move" || type === "match:state") {
@@ -572,7 +615,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           const totalPlayers = pokerPlayers.length || 2;
           const nextSide = String.fromCharCode(97 + ((sideIdx + 1) % totalPlayers));
           // Brief null to reset timer, then set next player as thinking (skip for RPS)
-          if (moveSide && match.gameType !== "rps") {
+          if (moveSide && match.gameType !== "rps" && match.gameType !== "uno") {
             setThinkingSide(null);
             setTimeout(() => setThinkingSide(nextSide), 50);
           }
@@ -642,6 +685,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               }];
             });
           }
+        }
+
+        // UNO-specific
+        if (match.gameType === "uno") {
+          if (data.topCard) setUnoTopCard(data.topCard as UnoCardData);
+          if (data.currentColor) setUnoCurrentColor(data.currentColor as string);
+          if (data.currentTurn) setUnoCurrentTurn(data.currentTurn as string);
+          if (data.drawPileCount != null) setUnoDrawPileCount(data.drawPileCount as number);
+          if (data.handCounts) setUnoHandCounts(data.handCounts as Record<string, number>);
+          if (data.status) setUnoStatus(data.status as string);
+          if (data.winner !== undefined) setUnoWinner(data.winner as string | null);
+          if (data.lastAction) setUnoLastAction(data.lastAction);
+          if (data.direction != null) setUnoDirection(data.direction as number);
+          if (data.moveCount != null) setUnoMoveCount(data.moveCount as number);
+          if (data.unoAction) setUnoLastAction(data.unoAction);
         }
 
         // Poker-specific (N-player)
@@ -930,6 +988,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                     });
                   }
                 }
+              }
+
+              // Extract UNO state from polled match data
+              const uno = updated.unoState as any;
+              if (uno && typeof uno === "object") {
+                if (uno.topCard) setUnoTopCard(uno.topCard);
+                if (uno.currentColor) setUnoCurrentColor(uno.currentColor);
+                if (uno.currentTurn) setUnoCurrentTurn(uno.currentTurn);
+                if (uno.drawPileCount != null) setUnoDrawPileCount(uno.drawPileCount);
+                if (uno.handCounts) setUnoHandCounts(uno.handCounts);
+                if (uno.status) setUnoStatus(uno.status);
+                if (uno.winner !== undefined) setUnoWinner(uno.winner);
+                if (uno.lastAction) setUnoLastAction(uno.lastAction);
+                if (uno.direction != null) setUnoDirection(uno.direction);
+                if (uno.moveCount != null) setUnoMoveCount(uno.moveCount);
               }
 
               onMatchUpdateRef.current?.({ ...updated, id: updated.id || (updated as any)._id });
@@ -1369,6 +1442,21 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   ? rpsRounds[replayStep]?.roundNumber
                   : null}
               />
+            ) : match.gameType === "uno" ? (
+              <UnoBoard
+                topCard={unoTopCard}
+                currentColor={unoCurrentColor}
+                currentTurn={unoCurrentTurn}
+                drawPileCount={unoDrawPileCount}
+                handCounts={unoHandCounts}
+                status={match.status === "completed" ? "finished" : unoStatus}
+                winner={unoWinner}
+                lastAction={unoLastAction}
+                direction={unoDirection}
+                moveCount={unoMoveCount}
+                agentA={agents[0] ? { name: agents[0].agentName, side: "a", agentId: agents[0].agentId } : undefined}
+                agentB={agents[1] ? { name: agents[1].agentName, side: "b", agentId: agents[1].agentId } : undefined}
+              />
             ) : (
               <div className="text-center text-arena-muted py-8">Unsupported game type</div>
             )}
@@ -1630,6 +1718,28 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                       <div className="text-arena-text font-medium text-[11px]">{formatDate(match.completedAt || (match as any).endedAt)}</div>
                     </div>
                   )}
+                </>
+              ) : match.gameType === "uno" ? (
+                <>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Turn</div>
+                    <div className="text-arena-text font-medium capitalize">{unoCurrentTurn === "a" ? (agents[0]?.agentName || "A") : (agents[1]?.agentName || "B")}</div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Moves</div>
+                    <div className="text-arena-text font-medium">{unoMoveCount || moves.length || 0}</div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Color</div>
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: unoCurrentColor === "RED" ? "#E63022" : unoCurrentColor === "BLUE" ? "#0F6EBD" : unoCurrentColor === "GREEN" ? "#1A9E4A" : unoCurrentColor === "YELLOW" ? "#F5C400" : "#666" }} />
+                      <span className="text-arena-text font-medium text-xs">{unoCurrentColor}</span>
+                    </div>
+                  </div>
+                  <div className="bg-arena-bg rounded-lg p-2 text-center">
+                    <div className="text-arena-muted text-xs">Cards</div>
+                    <div className="text-arena-text font-medium font-mono">{unoHandCounts?.a ?? "?"} vs {unoHandCounts?.b ?? "?"}</div>
+                  </div>
                 </>
               ) : (
                 <>

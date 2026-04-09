@@ -256,7 +256,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
   const rankLabel = agent.rank <= 3 ? ["", "1st", "2nd", "3rd"][agent.rank] : `#${agent.rank}`;
 
   const statsByGame = agent.statsByGameType || null;
-  const GAME_LABELS: Record<string, string> = { chess: "Chess", poker: "Poker", rps: "RPS" };
+  const GAME_LABELS: Record<string, string> = { chess: "Chess", poker: "Poker", rps: "RPS", uno: "UNO" };
 
   return (
     <div className="space-y-5">
@@ -296,7 +296,7 @@ function AgentModalContent({ agent }: { agent: LeaderboardAgent }) {
       {statsByGame && (
         <div className="bg-arena-bg-light rounded-xl px-4">
           <div className="text-[10px] uppercase tracking-wider text-arena-muted pt-2.5 pb-1">Games</div>
-          {["chess", "poker", "rps"].map((gameType) => {
+          {["chess", "poker", "rps", "uno"].map((gameType) => {
             const s = statsByGame[gameType] || { wins: 0, losses: 0, draws: 0, totalMatches: 0 };
             return (
               <div key={gameType} className="flex items-center justify-between py-2.5 border-b border-arena-border/30 last:border-0">

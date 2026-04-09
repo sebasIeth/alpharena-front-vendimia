@@ -376,6 +376,10 @@ class ApiClient {
     return this.post("/play/move", { matchId, move });
   }
 
+  async createTestMatch(gameType: string): Promise<{ matchId: string }> {
+    return this.post("/play/test-match", { gameType });
+  }
+
   // ========== Betting ==========
   async getBettingContracts(chain?: Chain): Promise<BettingContracts> {
     const query = chain ? `?chain=${chain}` : "";

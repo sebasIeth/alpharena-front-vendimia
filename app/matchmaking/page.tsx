@@ -254,8 +254,9 @@ function MatchmakingContent() {
 
   // Form state
   const [selectedAgentId, setSelectedAgentId] = useState(preselectedAgentId);
-  const [gameType] = useState("chess");
+  const [gameType, setGameType] = useState("chess");
   const [joining, setJoining] = useState(false);
+  const [testingGame, setTestingGame] = useState<string | null>(null);
 
   // Agent balance state (per-agent map for upfront fetching)
   const [agentBalances, setAgentBalances] = useState<Record<string, AgentBalance>>({});
@@ -555,6 +556,19 @@ function MatchmakingContent() {
     }
   };
 
+  const handleTestMatch = async (testGameType: string) => {
+    setError("");
+    setTestingGame(testGameType);
+    try {
+      const { matchId } = await api.createTestMatch(testGameType);
+      router.push(`/matches/${matchId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create test match");
+    } finally {
+      setTestingGame(null);
+    }
+  };
+
   const localQueuedIds = queuedAgents.map((qa) => qa.agentId);
   const backendQueuedIds = queueList.map((ql) => ql.agentId);
   const allQueuedIds = new Set(localQueuedIds.concat(backendQueuedIds));
@@ -784,6 +798,44 @@ function MatchmakingContent() {
             })}
           </div>
         )}
+
+        {/* ── Test vs AI (Free) ── */}
+        <div
+          className="bg-white border border-arena-border-light rounded-2xl shadow-arena-sm overflow-hidden mb-8 opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.15s", animationFillMode: "both" }}
+        >
+          <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30">
+            <h2 className="text-lg font-display font-semibold text-arena-text">
+              Test vs AI <span className="text-xs text-arena-success font-mono ml-2">FREE</span>
+            </h2>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-arena-muted mb-4">Play a free test match against a random-move bot. No stake required.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { type: "uno", label: "UNO", icon: "\uD83C\uDCCF", color: "bg-red-50 border-red-200 hover:border-red-400" },
+                { type: "chess", label: "Chess", icon: "\u265A", color: "bg-indigo-50 border-indigo-200 hover:border-indigo-400" },
+                { type: "poker", label: "Poker", icon: "\uD83C\uDCA1", color: "bg-emerald-50 border-emerald-200 hover:border-emerald-400" },
+                { type: "rps", label: "RPS", icon: "\u270A", color: "bg-amber-50 border-amber-200 hover:border-amber-400" },
+              ].map(({ type, label, icon, color }) => (
+                <button
+                  key={type}
+                  onClick={() => handleTestMatch(type)}
+                  disabled={testingGame !== null}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${color} ${
+                    testingGame === type ? "opacity-70" : "hover:shadow-md active:scale-95"
+                  } disabled:cursor-not-allowed`}
+                >
+                  <span className="text-2xl">{icon}</span>
+                  <span className="text-sm font-semibold text-arena-text">{label}</span>
+                  {testingGame === type && (
+                    <div className="w-4 h-4 border-2 border-arena-primary border-t-transparent rounded-full animate-spin" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* ── Join Form ── */}
         <div

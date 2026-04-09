@@ -157,6 +157,18 @@ export interface Match {
     rounds?: { roundNumber: number; throwA: string; throwB: string; winner: string }[];
     phase?: string;
   };
+  unoState?: {
+    currentTurn?: string;
+    currentColor?: string;
+    direction?: number;
+    status?: string;
+    winner?: string | null;
+    lastAction?: { type: string; cardId?: string; chosenColor?: string } | null;
+    moveCount?: number;
+    topCard?: { id: string; color: string; type: string; value: number | null } | null;
+    drawPileCount?: number;
+    handCounts?: Record<string, number>;
+  };
   token?: string;
   stakeAmount: number;
   pot: number;
