@@ -19,6 +19,22 @@ Use this Skill when the user asks about:
 - Wallet display, balance sections, gas token labels
 - Agent creation flow and chain-aware wallet generation
 
+## Supported Games
+
+The platform supports these game types: `chess`, `poker`, `rps`, `uno`.
+
+| Game | Players | Key Backend Files | Key Frontend Files |
+|------|---------|-------------------|-------------------|
+| Chess | 2 | `game-engine/chess/`, `chess-turn-controller.service.ts` | `ChessBoard.tsx` |
+| Poker | 2-9 | `game-engine/poker/`, `poker-turn-controller.service.ts` | `PokerBoard.tsx` |
+| RPS | 2 | `rps-turn-controller.service.ts` | `RpsBoard.tsx` |
+| UNO | 2 | `game-engine/uno/`, `uno-turn-controller.service.ts` | `UnoBoard.tsx`, `UnoCard.tsx` |
+
+Game types are registered in `back/src/common/constants/game.constants.ts` (`GAME_TYPES` array).
+Agent gameTypes validation is in `back/src/agent-api/dto/register.dto.ts`.
+Frontend game type selectors: `app/play/page.tsx`, `app/matchmaking/page.tsx`, `app/leaderboard/page.tsx`.
+Match viewer routes game boards in `components/game/MatchViewer.tsx` via `match.gameType` conditionals.
+
 ## Key Files
 
 | File | Purpose |
