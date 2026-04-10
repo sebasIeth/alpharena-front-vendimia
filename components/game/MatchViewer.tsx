@@ -325,7 +325,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [unoCurrentColor, setUnoCurrentColor] = useState<string>(initUno?.currentColor || "RED");
   const [unoCurrentTurn, setUnoCurrentTurn] = useState<string>(initUno?.currentTurn || "a");
   const [unoDrawPileCount, setUnoDrawPileCount] = useState<number>(initUno?.drawPileCount || 0);
-  const [unoHandCounts, setUnoHandCounts] = useState<Record<string, number>>(initUno?.handCounts || { a: 7, b: 7 });
+  const [unoHandCounts, setUnoHandCounts] = useState<Record<string, number>>(initUno?.handCounts || {});
   const [unoStatus, setUnoStatus] = useState<string>(initUno?.status || "playing");
   const [unoWinner, setUnoWinner] = useState<string | null>(initUno?.winner || null);
   const [unoLastAction, setUnoLastAction] = useState<any>(initUno?.lastAction || null);
@@ -1474,7 +1474,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 agentB={agents[1] ? { name: agents[1].agentName, side: "b", agentId: agents[1].agentId } : undefined}
                 agentC={agents[2] ? { name: agents[2].agentName, side: "c", agentId: agents[2].agentId } : undefined}
                 agentD={agents[3] ? { name: agents[3].agentName, side: "d", agentId: agents[3].agentId } : undefined}
-                playerCount={Object.keys(unoHandCounts).length || agents.length}
+                playerCount={Math.max(Object.keys(unoHandCounts).length, agents.length, 2)}
               />
             ) : (
               <div className="text-center text-arena-muted py-8">Unsupported game type</div>
@@ -1757,7 +1757,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   </div>
                   <div className="bg-arena-bg rounded-lg p-2 text-center">
                     <div className="text-arena-muted text-xs">Cards</div>
-                    <div className="text-arena-text font-medium font-mono">{unoHandCounts?.a ?? "?"} vs {unoHandCounts?.b ?? "?"}</div>
+                    <div className="text-arena-text font-medium font-mono">{Object.entries(unoHandCounts).map(([s, c]) => c).join(" / ")}</div>
                   </div>
                 </>
               ) : (
