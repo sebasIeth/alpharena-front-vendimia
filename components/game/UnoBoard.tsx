@@ -29,9 +29,12 @@ interface UnoBoardProps {
   lastAction: UnoAction | null;
   direction: number;
   moveCount: number;
-  // Agent info
+  // Agent info (supports 2-4 players)
   agentA?: AgentInfo;
   agentB?: AgentInfo;
+  agentC?: AgentInfo;
+  agentD?: AgentInfo;
+  playerCount?: number;
   // Human player mode (IA free)
   mySide?: "a" | "b" | null;
   myHand?: UnoCardData[];
@@ -338,6 +341,9 @@ export default function UnoBoard({
   moveCount,
   agentA,
   agentB,
+  agentC,
+  agentD,
+  playerCount: playerCountProp,
   mySide,
   myHand,
   legalActions,
@@ -348,11 +354,11 @@ export default function UnoBoard({
   const isFinished = status === "finished";
   const isHumanMode = mySide != null && myHand != null;
   const showDrawButton = isMyTurn && legalActions && canDraw(legalActions) && !hasPlayableCard(legalActions);
+  const pCount = playerCountProp || Object.keys(handCounts || {}).length || 2;
 
-  // Determine which side is opponent
-  const opponentSide = mySide === "a" ? "b" : "a";
-  const opponentAgent = mySide === "a" ? agentB : agentA;
-  const playerAgent = mySide === "a" ? agentA : agentB;
+  // Agent lookup by side
+  const agentMap: Record<string, AgentInfo | undefined> = { a: agentA, b: agentB, c: agentC, d: agentD };
+  const playerAgent = mySide ? agentMap[mySide] : agentA;
 
   return (
     <div
@@ -376,26 +382,38 @@ export default function UnoBoard({
       />
 
       <div className="relative z-10 flex flex-col items-center p-4 gap-3" style={{ minHeight: 520 }}>
-        {/* Opponent (top) */}
+        {/* Top player (b) */}
         <div className="w-full max-w-md">
-          <AgentPanel
-            agent={isHumanMode ? opponentAgent : agentB}
-            cardCount={handCounts?.[isHumanMode ? opponentSide : "b"] ?? 0}
-            isActive={currentTurn === (isHumanMode ? opponentSide : "b") && !isFinished}
-            side={isHumanMode ? opponentSide : "b"}
-          />
+          <AgentPanel agent={agentB} cardCount={handCounts?.b ?? 0} isActive={currentTurn === "b" && !isFinished} side="b" />
         </div>
+        <FannedHand count={handCounts?.b ?? 0} flipped />
 
-        {/* Opponent hand (always face-down) */}
-        <FannedHand count={handCounts?.[isHumanMode ? opponentSide : "b"] ?? 0} flipped />
+        {/* Middle row: side players + center */}
+        <div className="w-full flex items-center justify-center gap-4 my-2">
+          {/* Left player (c) */}
+          {pCount >= 3 && (
+            <div className="flex flex-col items-center gap-1 min-w-[80px]">
+              <AgentPanel agent={agentC} cardCount={handCounts?.c ?? 0} isActive={currentTurn === "c" && !isFinished} side="c" />
+              <div className="text-white/30 text-[10px] font-mono">{handCounts?.c ?? 0} cards</div>
+            </div>
+          )}
 
-        {/* Center: draw pile + discard pile */}
-        <div className="w-full flex items-center justify-center gap-8 my-2">
-          <DrawPile count={drawPileCount} showDrawButton={showDrawButton} onDraw={onDrawCard} />
-          <div className="flex flex-col items-center gap-2">
-            <DiscardPile topCard={topCard} currentColor={currentColor} />
-            <DirectionIndicator direction={direction} />
+          {/* Center: draw pile + discard pile */}
+          <div className="flex items-center justify-center gap-8">
+            <DrawPile count={drawPileCount} showDrawButton={showDrawButton} onDraw={onDrawCard} />
+            <div className="flex flex-col items-center gap-2">
+              <DiscardPile topCard={topCard} currentColor={currentColor} />
+              <DirectionIndicator direction={direction} />
+            </div>
           </div>
+
+          {/* Right player (d) */}
+          {pCount >= 4 && (
+            <div className="flex flex-col items-center gap-1 min-w-[80px]">
+              <AgentPanel agent={agentD} cardCount={handCounts?.d ?? 0} isActive={currentTurn === "d" && !isFinished} side="d" />
+              <div className="text-white/30 text-[10px] font-mono">{handCounts?.d ?? 0} cards</div>
+            </div>
+          )}
         </div>
 
         {/* Last action */}
@@ -410,7 +428,7 @@ export default function UnoBoard({
           Move #{moveCount}
         </div>
 
-        {/* Player hand */}
+        {/* Bottom player hand */}
         {isHumanMode && myHand ? (
           <PlayerHand
             cards={myHand}
@@ -422,7 +440,7 @@ export default function UnoBoard({
           <FannedHand count={handCounts?.a ?? 0} />
         )}
 
-        {/* Player (bottom) */}
+        {/* Bottom player (a) */}
         <div className="w-full max-w-md">
           <AgentPanel
             agent={isHumanMode ? playerAgent : agentA}
@@ -440,9 +458,7 @@ export default function UnoBoard({
             <div className="text-3xl font-bold text-white mb-2">
               {winner === mySide
                 ? "You"
-                : winner === "a"
-                  ? (agentA?.name || "Player A")
-                  : (agentB?.name || "Player B")}
+                : (agentMap[winner]?.name || `Player ${winner.toUpperCase()}`)}
             </div>
             <div className="text-amber-400 text-lg font-bold">
               {winner === mySide ? "YOU WIN!" : "WINS!"}
