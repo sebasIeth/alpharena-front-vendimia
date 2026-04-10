@@ -406,13 +406,25 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     if (isLiveMode || replayStep < 0 || replayStep >= moves.length) return null;
     const move = moves[replayStep];
     const md = move.moveData as any;
+
+    // Build handCounts by scanning from the most recent move that has each key
+    const counts: Record<string, number> = {};
+    for (let i = replayStep; i >= 0; i--) {
+      const hc = (moves[i].moveData as any)?.handCounts;
+      if (hc) {
+        for (const [k, v] of Object.entries(hc)) {
+          if (!(k in counts)) counts[k] = v as number;
+        }
+      }
+    }
+
     return {
       topCard: md?.topCard || null,
       currentColor: md?.currentColor || "RED",
-      handCounts: { ...unoHandCounts, ...(md?.handCounts || {}) },
+      handCounts: counts,
       lastAction: md?.unoAction || null,
       moveCount: move.moveNumber ?? replayStep + 1,
-      currentTurn: move.side === "a" ? "b" : "a", // after this move, turn goes to other side
+      currentTurn: move.side === "a" ? "b" : "a",
     };
   }, [match.gameType, isLiveMode, replayStep, moves]);
 
