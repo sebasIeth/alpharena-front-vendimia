@@ -437,12 +437,12 @@ export default function UnoBoard({
       {isFinished && winner && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-gray-900/90 rounded-2xl px-8 py-6 text-center border border-white/10 shadow-2xl">
-            <div className="text-4xl mb-2">
+            <div className="text-3xl font-bold text-white mb-2">
               {winner === mySide
-                ? (playerAgent?.name || "You")
+                ? "You"
                 : winner === "a"
-                  ? (agentA?.name || "Agent A")
-                  : (agentB?.name || "Agent B")}
+                  ? (agentA?.name || "Player A")
+                  : (agentB?.name || "Player B")}
             </div>
             <div className="text-amber-400 text-lg font-bold">
               {winner === mySide ? "YOU WIN!" : "WINS!"}
