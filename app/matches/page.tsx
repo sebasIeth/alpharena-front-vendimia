@@ -233,7 +233,13 @@ function IconUsers({ className = "w-3.5 h-3.5" }: { className?: string }) {
 const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>; label: string; color: string; bg: string }> = {
   poker: { icon: IconPoker, label: "Poker", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
   chess: { icon: IconChess, label: "Chess", color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
-  uno: { icon: ({ className }: { className?: string }) => <span className={className}>🃏</span>, label: "UNO", color: "text-red-600", bg: "bg-red-50 border-red-200" },
+  uno: { icon: ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <rect x="6" y="7" width="12" height="10" rx="1.5" strokeWidth={1} opacity={0.4} />
+      <text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="bold" fontStyle="italic" fill="currentColor" stroke="none">U</text>
+    </svg>
+  ), label: "UNO", color: "text-red-600", bg: "bg-red-50 border-red-200" },
 };
 
 /* ── Poker Player Row ── */
