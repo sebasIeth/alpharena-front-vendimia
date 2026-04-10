@@ -388,32 +388,33 @@ export default function UnoBoard({
         </div>
         <FannedHand count={handCounts?.b ?? 0} flipped />
 
-        {/* Middle row: side players + center */}
-        <div className="w-full flex items-center justify-center gap-4 my-2">
-          {/* Left player (c) */}
-          {pCount >= 3 && (
-            <div className="flex flex-col items-center gap-1 min-w-[80px]">
-              <AgentPanel agent={agentC} cardCount={handCounts?.c ?? 0} isActive={currentTurn === "c" && !isFinished} side="c" />
-              <div className="text-white/30 text-[10px] font-mono">{handCounts?.c ?? 0} cards</div>
+        {/* Side players row (C and D) */}
+        {pCount >= 3 && (
+          <div className="w-full flex items-center justify-center gap-6">
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className="w-full max-w-[220px]">
+                <AgentPanel agent={agentC} cardCount={handCounts?.c ?? 0} isActive={currentTurn === "c" && !isFinished} side="c" />
+              </div>
+              <FannedHand count={handCounts?.c ?? 0} flipped />
             </div>
-          )}
-
-          {/* Center: draw pile + discard pile */}
-          <div className="flex items-center justify-center gap-8">
-            <DrawPile count={drawPileCount} showDrawButton={showDrawButton} onDraw={onDrawCard} />
-            <div className="flex flex-col items-center gap-2">
-              <DiscardPile topCard={topCard} currentColor={currentColor} />
-              <DirectionIndicator direction={direction} />
-            </div>
+            {pCount >= 4 && (
+              <div className="flex flex-col items-center gap-2 flex-1">
+                <div className="w-full max-w-[220px]">
+                  <AgentPanel agent={agentD} cardCount={handCounts?.d ?? 0} isActive={currentTurn === "d" && !isFinished} side="d" />
+                </div>
+                <FannedHand count={handCounts?.d ?? 0} flipped />
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Right player (d) */}
-          {pCount >= 4 && (
-            <div className="flex flex-col items-center gap-1 min-w-[80px]">
-              <AgentPanel agent={agentD} cardCount={handCounts?.d ?? 0} isActive={currentTurn === "d" && !isFinished} side="d" />
-              <div className="text-white/30 text-[10px] font-mono">{handCounts?.d ?? 0} cards</div>
-            </div>
-          )}
+        {/* Center: draw pile + discard pile */}
+        <div className="w-full flex items-center justify-center gap-8 my-2">
+          <DrawPile count={drawPileCount} showDrawButton={showDrawButton} onDraw={onDrawCard} />
+          <div className="flex flex-col items-center gap-2">
+            <DiscardPile topCard={topCard} currentColor={currentColor} />
+            <DirectionIndicator direction={direction} />
+          </div>
         </div>
 
         {/* Last action */}
