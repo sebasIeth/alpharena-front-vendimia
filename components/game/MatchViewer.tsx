@@ -407,18 +407,30 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     const move = moves[replayStep];
     const md = move.moveData as any;
 
-    // Build handCounts: use this move's data, fall back to scanning backwards,
-    // then fall back to the live unoHandCounts keys with 7 (initial deal)
+    // Build handCounts from the move at replayStep.
+    // If this move has all player keys, use them directly.
+    // If it only has a/b (old moves), use a/b from this move
+    // and for missing keys (c/d) use the closest future move that has them,
+    // or fall back to the final unoHandCounts.
+    const moveCounts = md?.handCounts as Record<string, number> | undefined;
+    const allKeys = Object.keys(unoHandCounts);
     const counts: Record<string, number> = {};
-    // Start with all known players at 7 (initial hand size)
-    for (const k of Object.keys(unoHandCounts)) counts[k] = 7;
-    // Scan forward from start to current step to get accurate counts at this point
-    for (let i = 0; i <= replayStep; i++) {
-      const hc = (moves[i].moveData as any)?.handCounts;
-      if (hc) {
-        for (const [k, v] of Object.entries(hc)) {
-          counts[k] = v as number;
+
+    if (moveCounts && Object.keys(moveCounts).length >= allKeys.length) {
+      // This move has all keys — use directly
+      Object.assign(counts, moveCounts);
+    } else {
+      // Partial data — use what we have from this move
+      if (moveCounts) Object.assign(counts, moveCounts);
+      // For missing keys, scan forward to find the nearest value
+      for (const k of allKeys) {
+        if (k in counts) continue;
+        for (let i = replayStep + 1; i < moves.length; i++) {
+          const hc = (moves[i].moveData as any)?.handCounts;
+          if (hc && k in hc) { counts[k] = hc[k] as number; break; }
         }
+        // If still missing, use final state
+        if (!(k in counts)) counts[k] = unoHandCounts[k] ?? 7;
       }
     }
 
