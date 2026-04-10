@@ -449,8 +449,34 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
                 );
               })}
           </div>
+        ) : match.gameType === "uno" && agents.length > 2 ? (
+          /* UNO multiplayer layout */
+          <div className="space-y-1.5 mb-4">
+            {agents.map((agent, idx) => {
+              const isWin = winnerAgent?.agentId === agent.agentId;
+              return (
+                <div
+                  key={agent.agentId}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${
+                    isWin ? "bg-arena-accent/8 border border-arena-accent/20" : "bg-arena-bg/50"
+                  }`}
+                >
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PLAYER_COLORS[idx] }} />
+                  <AgentAvatar
+                    name={agent.agentName}
+                    size="w-7 h-7"
+                    textSize="text-[10px]"
+                    gradient={PLAYER_GRADIENTS[idx]}
+                  />
+                  <span className="text-sm font-semibold text-arena-text truncate flex-1">{agent.agentName}</span>
+                  <span className="text-[11px] text-arena-muted font-mono shrink-0">{agent.eloAtStart}</span>
+                  {isWin && <IconCrown className="w-3.5 h-3.5 text-arena-accent shrink-0" />}
+                </div>
+              );
+            })}
+          </div>
         ) : agents.length >= 2 ? (
-          /* Chess / Marrakech: VS layout */
+          /* Chess / Marrakech / 2-player: VS layout */
           <div className="flex items-start justify-between gap-2 mb-4">
             <AgentColumn
               agent={agents[0]}
