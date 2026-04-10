@@ -407,13 +407,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     const move = moves[replayStep];
     const md = move.moveData as any;
 
-    // Build handCounts by scanning from the most recent move that has each key
+    // Build handCounts: use this move's data, fall back to scanning backwards,
+    // then fall back to the live unoHandCounts keys with 7 (initial deal)
     const counts: Record<string, number> = {};
-    for (let i = replayStep; i >= 0; i--) {
+    // Start with all known players at 7 (initial hand size)
+    for (const k of Object.keys(unoHandCounts)) counts[k] = 7;
+    // Scan forward from start to current step to get accurate counts at this point
+    for (let i = 0; i <= replayStep; i++) {
       const hc = (moves[i].moveData as any)?.handCounts;
       if (hc) {
         for (const [k, v] of Object.entries(hc)) {
-          if (!(k in counts)) counts[k] = v as number;
+          counts[k] = v as number;
         }
       }
     }
