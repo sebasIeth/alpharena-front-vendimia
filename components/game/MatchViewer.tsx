@@ -440,7 +440,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       handCounts: counts,
       lastAction: md?.unoAction || null,
       moveCount: move.moveNumber ?? replayStep + 1,
-      currentTurn: move.side === "a" ? "b" : "a",
+      currentTurn: replayStep + 1 < moves.length ? (moves[replayStep + 1].side || "a") : (move.side || "a"),
     };
   }, [match.gameType, isLiveMode, replayStep, moves]);
 
