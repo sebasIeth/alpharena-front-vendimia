@@ -234,10 +234,15 @@ const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>;
   poker: { icon: IconPoker, label: "Poker", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
   chess: { icon: IconChess, label: "Chess", color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
   uno: { icon: ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <rect x="6" y="7" width="12" height="10" rx="1.5" strokeWidth={1} opacity={0.4} />
-      <text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="bold" fontStyle="italic" fill="currentColor" stroke="none">U</text>
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Back card (tilted) */}
+      <rect x="2" y="5" width="12" height="16" rx="2" fill="currentColor" opacity={0.2} transform="rotate(-8 8 13)" />
+      {/* Front card */}
+      <rect x="8" y="3" width="14" height="18" rx="2.5" fill="currentColor" opacity={0.85} />
+      {/* Inner border */}
+      <rect x="10" y="5" width="10" height="14" rx="1.5" fill="none" stroke="white" strokeWidth={0.8} opacity={0.5} />
+      {/* Center oval */}
+      <ellipse cx="15" cy="12" rx="3.5" ry="4.5" fill="white" opacity={0.25} transform="rotate(-15 15 12)" />
     </svg>
   ), label: "UNO", color: "text-red-600", bg: "bg-red-50 border-red-200" },
 };
