@@ -409,7 +409,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     return {
       topCard: md?.topCard || null,
       currentColor: md?.currentColor || "RED",
-      handCounts: md?.handCounts || { a: 0, b: 0 },
+      handCounts: { ...unoHandCounts, ...(md?.handCounts || {}) },
       lastAction: md?.unoAction || null,
       moveCount: move.moveNumber ?? replayStep + 1,
       currentTurn: move.side === "a" ? "b" : "a", // after this move, turn goes to other side
