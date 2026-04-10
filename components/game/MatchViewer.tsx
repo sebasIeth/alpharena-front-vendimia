@@ -1472,6 +1472,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 moveCount={unoReplayState ? unoReplayState.moveCount : unoMoveCount}
                 agentA={agents[0] ? { name: agents[0].agentName, side: "a", agentId: agents[0].agentId } : undefined}
                 agentB={agents[1] ? { name: agents[1].agentName, side: "b", agentId: agents[1].agentId } : undefined}
+                agentC={agents[2] ? { name: agents[2].agentName, side: "c", agentId: agents[2].agentId } : undefined}
+                agentD={agents[3] ? { name: agents[3].agentName, side: "d", agentId: agents[3].agentId } : undefined}
+                playerCount={Object.keys(unoHandCounts).length || agents.length}
               />
             ) : (
               <div className="text-center text-arena-muted py-8">Unsupported game type</div>
