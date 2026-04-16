@@ -1090,6 +1090,19 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 if (uno.moveCount != null) setUnoMoveCount(uno.moveCount);
               }
 
+              // Extract Werewolf state from polled match data
+              const ww = updated.werewolfState as any;
+              if (ww && typeof ww === "object") {
+                if (ww.players) setWwPlayers(ww.players);
+                if (ww.phase) setWwPhase(ww.phase);
+                if (ww.cycle != null) setWwCycle(ww.cycle);
+                if (ww.activeSide !== undefined) setWwActiveSide(ww.activeSide);
+                if (ww.discussionLog) setWwDiscussion(ww.discussionLog);
+                if (ww.deaths) setWwDeaths(ww.deaths);
+                if (ww.status) setWwStatus(ww.status);
+                if (ww.winner !== undefined) setWwWinner(ww.winner);
+              }
+
               onMatchUpdateRef.current?.({ ...updated, id: updated.id || (updated as any)._id });
             }
           }
