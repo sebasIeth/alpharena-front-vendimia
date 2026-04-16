@@ -186,6 +186,20 @@ function formatMoveDisplay(
     return { text: "action" };
   }
 
+  // Werewolf: show action
+  if (gameType === "werewolf") {
+    const wa = md.werewolfAction || md;
+    const t = wa?.type;
+    if (t === "NIGHT_KILL_VOTE" || t === "SEER_INVESTIGATE" || t === "NIGHT_ACTION")
+      return { text: "Night action" };
+    if (t === "DAY_ACCUSE") return { text: `Accuses ${wa.target || "?"}` };
+    if (t === "DAY_DEFEND") return { text: `Defends ${wa.target || "?"}` };
+    if (t === "DAY_CLAIM") return { text: `Claims ${String(wa.role || "?").toLowerCase()}` };
+    if (t === "DAY_PASS") return { text: "Passed" };
+    if (t === "DAY_VOTE") return { text: `Votes ${wa.target || "?"}` };
+    return { text: "action" };
+  }
+
   // Fallback: show cleaned JSON
   const cleaned = { ...md };
   delete cleaned.thinking;
@@ -462,6 +476,42 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     };
   }, [match.gameType, isLiveMode, replayStep, moves]);
 
+  // Replay: Werewolf state at current replay step
+  const werewolfReplayState = useMemo(() => {
+    if (match.gameType !== "werewolf") return null;
+    if (isLiveMode || replayStep < 0 || replayStep >= moves.length) return null;
+    const move = moves[replayStep];
+    const md = move.moveData as any;
+    const snap = md?.werewolfSnapshot;
+    if (!snap) {
+      // Fallback: reconstruct from cumulative data we have.
+      // Filter discussionLog/deaths by the cycle/phase of this move.
+      const cycle = md?.cycle ?? wwCycle;
+      const phase = md?.phase ?? wwPhase;
+      return {
+        players: wwPlayers,
+        phase: phase as WerewolfPhase,
+        cycle: cycle as number,
+        activeSide: (move.side as string) || null,
+        discussionLog: wwDiscussion.filter((e) => e.cycle <= cycle),
+        deaths: wwDeaths.filter((d) => d.cycle <= cycle),
+        status: "playing" as const,
+        winner: null as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null,
+      };
+    }
+    return {
+      players: snap.players as Record<string, WerewolfPlayerView>,
+      phase: snap.phase as WerewolfPhase,
+      cycle: snap.cycle as number,
+      activeSide: (snap.activeSide as string | null) ?? null,
+      discussionLog: (snap.discussionLog as WerewolfDiscussionEventView[]) || [],
+      deaths: (snap.deaths as WerewolfDeathView[]) || [],
+      status: (snap.status as "waiting" | "playing" | "finished") || "playing",
+      winner: (snap.winner as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null) ?? null,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match.gameType, isLiveMode, replayStep, moves, wwPlayers, wwPhase, wwCycle, wwDiscussion, wwDeaths]);
+
   // Replay: current move info for display
   const replayMoveInfo = useMemo(() => {
     if (replayStep < 0 || replayStep >= moves.length) return null;
@@ -694,7 +744,7 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
             setTimeout(() => setThinkingSide(nextSide), 50);
           }
           // Append move to history from WS data (skip street-advance events that have no action)
-          const hasAction = data.chessMove || data.move || data.pokerAction;
+          const hasAction = data.chessMove || data.move || data.pokerAction || data.werewolfAction;
           if (data.moveNumber != null && data.side && hasAction) {
             const wsMove: Move = {
               id: `ws-${data.moveNumber}-${data.side}`,
@@ -710,6 +760,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 pokerAction: data.pokerAction,
                 pokerHandNumber: data.pokerHandNumber,
                 pokerStreet: data.pokerStreet,
+                werewolfAction: data.werewolfAction,
+                werewolfSnapshot: match.gameType === "werewolf" ? {
+                  players: data.werewolfPlayers,
+                  phase: data.werewolfPhase,
+                  cycle: data.cycle,
+                  activeSide: data.activeSide,
+                  discussionLog: data.discussionLog,
+                  deaths: data.deaths,
+                  status: data.status,
+                  winner: data.winner,
+                } : undefined,
               } as any,
               boardStateAfter: grid || [],
               scoreAfter: data.score || {},
@@ -1542,14 +1603,20 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
               />
             ) : match.gameType === "werewolf" ? (
               <WerewolfBoard
-                players={wwPlayers}
-                phase={wwPhase}
-                cycle={wwCycle}
-                activeSide={wwActiveSide}
-                discussionLog={wwDiscussion}
-                deaths={wwDeaths}
-                status={match.status === "completed" ? "finished" : wwStatus}
-                winner={wwWinner}
+                players={werewolfReplayState ? werewolfReplayState.players : wwPlayers}
+                phase={werewolfReplayState ? werewolfReplayState.phase : wwPhase}
+                cycle={werewolfReplayState ? werewolfReplayState.cycle : wwCycle}
+                activeSide={werewolfReplayState ? werewolfReplayState.activeSide : wwActiveSide}
+                discussionLog={werewolfReplayState ? werewolfReplayState.discussionLog : wwDiscussion}
+                deaths={werewolfReplayState ? werewolfReplayState.deaths : wwDeaths}
+                status={
+                  werewolfReplayState
+                    ? werewolfReplayState.status
+                    : match.status === "completed"
+                    ? "finished"
+                    : wwStatus
+                }
+                winner={werewolfReplayState ? werewolfReplayState.winner : wwWinner}
               />
             ) : match.gameType === "uno" ? (
               <UnoBoard
