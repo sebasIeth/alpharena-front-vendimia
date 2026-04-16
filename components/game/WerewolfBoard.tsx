@@ -1,0 +1,898 @@
+"use client";
+
+import React, { useMemo, useState } from "react";
+
+// ── Types ───────────────────────────────────────────────────────────────────
+
+export type WerewolfRole = "WEREWOLF" | "SEER" | "VILLAGER";
+export type WerewolfPhase =
+  | "NIGHT_WOLVES"
+  | "NIGHT_SEER"
+  | "DAY_DISCUSSION"
+  | "DAY_VOTE"
+  | "FINISHED";
+
+export interface WerewolfPlayerView {
+  side: string;
+  displayName: string;
+  isAlive: boolean;
+  deathCycle?: number | null;
+  deathCause?: "night" | "day" | null;
+  role?: WerewolfRole;
+}
+
+export interface WerewolfDiscussionEventView {
+  cycle: number;
+  speaker: string;
+  speakerDisplayName: string;
+  action:
+    | { type: "DAY_ACCUSE"; target: string; targetDisplayName: string }
+    | { type: "DAY_DEFEND"; target: string; targetDisplayName: string }
+    | { type: "DAY_CLAIM"; role: WerewolfRole }
+    | { type: "DAY_PASS" };
+}
+
+export interface WerewolfDeathView {
+  cycle: number;
+  side: string;
+  displayName: string;
+  role: WerewolfRole;
+  cause: "night" | "day";
+}
+
+export type WerewolfAction =
+  | { type: "NIGHT_KILL_VOTE"; target: string }
+  | { type: "SEER_INVESTIGATE"; target: string }
+  | { type: "DAY_ACCUSE"; target: string }
+  | { type: "DAY_DEFEND"; target: string }
+  | { type: "DAY_CLAIM"; role: WerewolfRole }
+  | { type: "DAY_PASS" }
+  | { type: "DAY_VOTE"; target: string };
+
+export interface WerewolfSeerMemoryView {
+  cycle: number;
+  target: string;
+  targetDisplayName: string;
+  isWerewolf: boolean;
+}
+
+interface WerewolfBoardProps {
+  players: Record<string, WerewolfPlayerView>;
+  phase: WerewolfPhase;
+  cycle: number;
+  activeSide: string | null;
+  discussionLog: WerewolfDiscussionEventView[];
+  deaths: WerewolfDeathView[];
+  status: "waiting" | "playing" | "finished";
+  winner: "VILLAGERS" | "WEREWOLVES" | "DRAW" | null;
+  mySide?: string | null;
+  myRole?: WerewolfRole;
+  knownWerewolves?: string[];
+  seerMemory?: WerewolfSeerMemoryView[];
+  legalActions?: WerewolfAction[];
+  isMyTurn?: boolean;
+  onSubmitAction?: (action: WerewolfAction) => void;
+}
+
+// ── Visual constants ────────────────────────────────────────────────────────
+
+const ROLE_EMOJI: Record<WerewolfRole, string> = {
+  WEREWOLF: "🐺",
+  SEER: "👁️",
+  VILLAGER: "🧑‍🌾",
+};
+
+const ROLE_COLOR: Record<WerewolfRole, { ring: string; glow: string; text: string }> = {
+  WEREWOLF: {
+    ring: "rgba(220,38,38,0.7)",
+    glow: "0 0 24px rgba(220,38,38,0.5)",
+    text: "#fca5a5",
+  },
+  SEER: {
+    ring: "rgba(167,139,250,0.7)",
+    glow: "0 0 24px rgba(167,139,250,0.5)",
+    text: "#c4b5fd",
+  },
+  VILLAGER: {
+    ring: "rgba(217,119,6,0.6)",
+    glow: "0 0 20px rgba(217,119,6,0.4)",
+    text: "#fcd34d",
+  },
+};
+
+const PHASE_LABEL: Record<WerewolfPhase, string> = {
+  NIGHT_WOLVES: "The wolves hunt",
+  NIGHT_SEER: "The seer dreams",
+  DAY_DISCUSSION: "The village speaks",
+  DAY_VOTE: "The village decides",
+  FINISHED: "The tale is told",
+};
+
+function isNight(phase: WerewolfPhase): boolean {
+  return phase === "NIGHT_WOLVES" || phase === "NIGHT_SEER";
+}
+
+function seatPosition(index: number, count: number, radius: number) {
+  const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+  return {
+    left: `calc(50% + ${Math.cos(angle) * radius}px)`,
+    top: `calc(50% + ${Math.sin(angle) * radius}px)`,
+  };
+}
+
+// ── Background (night/day) ──────────────────────────────────────────────────
+
+function Starfield() {
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 60 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 70,
+        size: Math.random() * 1.8 + 0.4,
+        delay: Math.random() * 3,
+        duration: 2 + Math.random() * 3,
+      })),
+    [],
+  );
+  return (
+    <>
+      {stars.map((s, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full bg-white pointer-events-none"
+          style={{
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            width: s.size,
+            height: s.size,
+            opacity: 0.7,
+            boxShadow: `0 0 ${s.size * 2}px rgba(255,255,255,0.8)`,
+            animation: `ww-twinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+function SkyOrb({ night }: { night: boolean }) {
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        right: night ? "8%" : "10%",
+        top: night ? "6%" : "8%",
+        width: night ? 90 : 80,
+        height: night ? 90 : 80,
+        borderRadius: "50%",
+        background: night
+          ? "radial-gradient(circle at 35% 35%, #fef9c3 0%, #fde68a 40%, #facc15 70%, rgba(250,204,21,0) 100%)"
+          : "radial-gradient(circle at 35% 35%, #fffbeb 0%, #fbbf24 50%, #f97316 100%)",
+        boxShadow: night
+          ? "0 0 60px rgba(253,224,71,0.6), 0 0 120px rgba(253,224,71,0.3)"
+          : "0 0 80px rgba(249,115,22,0.55), 0 0 140px rgba(251,191,36,0.35)",
+        animation: night ? "ww-moon-float 14s ease-in-out infinite" : "ww-sun-float 18s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function Fog() {
+  return (
+    <>
+      <div
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{
+          height: "60%",
+          background:
+            "radial-gradient(ellipse at 50% 100%, rgba(30,27,54,0.65) 0%, rgba(30,27,54,0) 70%)",
+          filter: "blur(2px)",
+        }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{
+          height: "30%",
+          background:
+            "linear-gradient(180deg, rgba(12,12,24,0) 0%, rgba(12,12,24,0.55) 100%)",
+        }}
+      />
+    </>
+  );
+}
+
+function TreeSilhouette({ left, scale = 1, flip = false }: { left: string; scale?: number; flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className="absolute bottom-0 pointer-events-none"
+      style={{
+        left,
+        width: 120 * scale,
+        height: 120 * scale,
+        transform: flip ? "scaleX(-1)" : undefined,
+        filter: "blur(0.3px)",
+        opacity: 0.85,
+      }}
+    >
+      <path
+        d="M60 118 L60 70 M60 70 L35 40 M60 70 L85 40 M60 55 L45 35 M60 55 L75 35 M55 60 L40 48 M65 60 L80 48"
+        stroke="#000"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.8"
+      />
+      <path
+        d="M60 85 Q30 70 28 38 Q35 14 60 20 Q85 14 92 38 Q90 70 60 85 Z"
+        fill="#0a0714"
+      />
+    </svg>
+  );
+}
+
+// ── Centerpiece: campfire / moon ring ───────────────────────────────────────
+
+function Campfire({ night }: { night: boolean }) {
+  return (
+    <div
+      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
+      style={{
+        width: 120,
+        height: 120,
+      }}
+    >
+      {/* Glow */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: night
+            ? "radial-gradient(circle, rgba(251,146,60,0.55) 0%, rgba(251,146,60,0) 70%)"
+            : "radial-gradient(circle, rgba(253,224,71,0.5) 0%, rgba(253,224,71,0) 70%)",
+          animation: "ww-fire-pulse 2.6s ease-in-out infinite",
+        }}
+      />
+      {/* Flame */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[60px]"
+        style={{
+          filter: "drop-shadow(0 0 16px rgba(251,146,60,0.8))",
+          animation: "ww-flame-dance 1.4s ease-in-out infinite",
+        }}
+      >
+        🔥
+      </div>
+    </div>
+  );
+}
+
+// ── Player card ─────────────────────────────────────────────────────────────
+
+function PlayerCard({
+  player,
+  isActive,
+  isMe,
+  revealedAsWolf,
+  onClick,
+  clickable,
+  selected,
+}: {
+  player: WerewolfPlayerView;
+  isActive: boolean;
+  isMe: boolean;
+  revealedAsWolf: boolean;
+  onClick?: () => void;
+  clickable?: boolean;
+  selected?: boolean;
+}) {
+  const alive = player.isAlive;
+  const revealRole = !alive && player.role;
+  const ringColor = revealRole
+    ? ROLE_COLOR[player.role!].ring
+    : isActive
+    ? "rgba(251,191,36,0.9)"
+    : "rgba(255,255,255,0.25)";
+  const glow = isActive
+    ? "0 0 24px rgba(251,191,36,0.7)"
+    : revealRole
+    ? ROLE_COLOR[player.role!].glow
+    : "none";
+
+  return (
+    <button
+      onClick={clickable ? onClick : undefined}
+      disabled={!clickable}
+      className="relative flex flex-col items-center gap-1.5 group"
+      style={{
+        cursor: clickable ? "pointer" : "default",
+      }}
+    >
+      {/* Tarot-style card */}
+      <div
+        className="relative rounded-lg overflow-hidden transition-all"
+        style={{
+          width: 72,
+          height: 96,
+          border: `2px solid ${selected ? "#34d399" : ringColor}`,
+          boxShadow: selected ? "0 0 20px rgba(52,211,153,0.7)" : glow,
+          background: alive
+            ? "linear-gradient(160deg, #2a1f3d 0%, #0f0a1e 100%)"
+            : "linear-gradient(160deg, #2a0f0f 0%, #0a0606 100%)",
+          opacity: alive ? 1 : 0.55,
+          filter: alive ? "none" : "grayscale(0.4)",
+          transform: isActive ? "translateY(-4px)" : "none",
+        }}
+      >
+        {/* Card inner frame */}
+        <div
+          className="absolute inset-1 rounded flex flex-col items-center justify-between py-1"
+          style={{
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: alive
+              ? "radial-gradient(ellipse at 50% 40%, rgba(251,191,36,0.1) 0%, transparent 60%)"
+              : "none",
+          }}
+        >
+          {/* Top ornament */}
+          <div className="text-[8px] text-white/40 font-serif tracking-widest">
+            ✦
+          </div>
+          {/* Center symbol */}
+          <div className="text-3xl leading-none">
+            {alive ? (
+              revealedAsWolf ? (
+                <span style={{ filter: "drop-shadow(0 0 8px rgba(220,38,38,0.7))" }}>🐺</span>
+              ) : player.role ? (
+                <span>{ROLE_EMOJI[player.role]}</span>
+              ) : (
+                <span style={{ opacity: 0.65 }}>🎭</span>
+              )
+            ) : (
+              <span className="text-red-400/90">☠</span>
+            )}
+          </div>
+          {/* Bottom ornament */}
+          <div className="text-[8px] text-white/40 font-serif tracking-widest">
+            ✦
+          </div>
+        </div>
+        {/* "You" tag */}
+        {isMe && (
+          <div className="absolute top-0 left-0 right-0 text-center text-[9px] font-bold tracking-widest text-emerald-300 bg-black/60 py-0.5">
+            YOU
+          </div>
+        )}
+        {/* Active indicator */}
+        {isActive && alive && (
+          <div
+            className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-300"
+            style={{
+              boxShadow: "0 0 10px rgba(251,191,36,0.9)",
+              animation: "ww-pulse 1.4s ease-in-out infinite",
+            }}
+          />
+        )}
+      </div>
+      {/* Name plate */}
+      <div
+        className="text-[11px] font-serif text-center whitespace-nowrap px-2 py-0.5 rounded"
+        style={{
+          color: alive ? "#f5f5f4" : "#71717a",
+          background: "rgba(0,0,0,0.45)",
+          textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        {player.displayName}
+      </div>
+      {revealRole && (
+        <div
+          className="text-[9px] font-serif italic px-1.5 py-0.5 rounded uppercase tracking-wider"
+          style={{
+            color: ROLE_COLOR[player.role!].text,
+            background: "rgba(0,0,0,0.5)",
+          }}
+        >
+          {player.role!.toLowerCase()}
+        </div>
+      )}
+    </button>
+  );
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+
+export default function WerewolfBoard(props: WerewolfBoardProps) {
+  const {
+    players,
+    phase,
+    cycle,
+    activeSide,
+    discussionLog,
+    deaths,
+    status,
+    winner,
+    mySide,
+    myRole,
+    knownWerewolves,
+    seerMemory,
+    legalActions = [],
+    isMyTurn = false,
+    onSubmitAction,
+  } = props;
+
+  const playerList = useMemo(
+    () => Object.values(players).sort((a, b) => a.side.localeCompare(b.side)),
+    [players],
+  );
+  const alivePlayers = playerList.filter((p) => p.isAlive);
+
+  const [selectedAction, setSelectedAction] = useState<WerewolfAction["type"] | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<WerewolfRole | null>(null);
+
+  const legalByType = useMemo(() => {
+    const m: Record<string, WerewolfAction[]> = {};
+    for (const a of legalActions) {
+      if (!m[a.type]) m[a.type] = [];
+      m[a.type].push(a);
+    }
+    return m;
+  }, [legalActions]);
+
+  const availableActionTypes = useMemo(
+    () => Object.keys(legalByType) as WerewolfAction["type"][],
+    [legalByType],
+  );
+
+  const night = isNight(phase);
+  const bgGradient = (() => {
+    if (phase === "NIGHT_WOLVES")
+      return "linear-gradient(180deg, #0b0724 0%, #1a0d2e 45%, #2a0d24 100%)";
+    if (phase === "NIGHT_SEER")
+      return "linear-gradient(180deg, #150935 0%, #241042 45%, #3a134f 100%)";
+    if (phase === "DAY_DISCUSSION")
+      return "linear-gradient(180deg, #2c1a4d 0%, #5d3b2a 55%, #c27040 100%)";
+    if (phase === "DAY_VOTE")
+      return "linear-gradient(180deg, #2f1632 0%, #6b2733 55%, #b84a32 100%)";
+    return "linear-gradient(180deg, #0b0a14 0%, #1d1829 100%)";
+  })();
+
+  const submit = (a: WerewolfAction) => {
+    onSubmitAction?.(a);
+    setSelectedAction(null);
+    setSelectedTarget(null);
+    setSelectedRole(null);
+  };
+
+  const handleConfirm = () => {
+    if (!selectedAction) return;
+    if (selectedAction === "DAY_PASS") return submit({ type: "DAY_PASS" });
+    if (selectedAction === "DAY_CLAIM") {
+      if (!selectedRole) return;
+      return submit({ type: "DAY_CLAIM", role: selectedRole });
+    }
+    if (selectedTarget) {
+      if (selectedAction === "NIGHT_KILL_VOTE") return submit({ type: "NIGHT_KILL_VOTE", target: selectedTarget });
+      if (selectedAction === "SEER_INVESTIGATE") return submit({ type: "SEER_INVESTIGATE", target: selectedTarget });
+      if (selectedAction === "DAY_ACCUSE") return submit({ type: "DAY_ACCUSE", target: selectedTarget });
+      if (selectedAction === "DAY_DEFEND") return submit({ type: "DAY_DEFEND", target: selectedTarget });
+      if (selectedAction === "DAY_VOTE") return submit({ type: "DAY_VOTE", target: selectedTarget });
+    }
+  };
+
+  const count = playerList.length;
+  const myDead = !!(mySide && players[mySide] && !players[mySide].isAlive);
+
+  return (
+    <div
+      className="relative w-full rounded-2xl overflow-hidden font-sans"
+      style={{
+        minHeight: 640,
+        background: bgGradient,
+        boxShadow: "inset 0 0 120px rgba(0,0,0,0.6), 0 12px 48px rgba(0,0,0,0.5)",
+      }}
+    >
+      {/* Keyframes */}
+      <style jsx global>{`
+        @keyframes ww-twinkle {
+          0%, 100% { opacity: 0.25; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        @keyframes ww-fire-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.85; }
+          50% { transform: scale(1.08); opacity: 1; }
+        }
+        @keyframes ww-flame-dance {
+          0%, 100% { transform: translate(-50%, -50%) rotate(-3deg) scaleY(1); }
+          50% { transform: translate(-50%, -52%) rotate(3deg) scaleY(1.05); }
+        }
+        @keyframes ww-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.5); opacity: 0.7; }
+        }
+        @keyframes ww-moon-float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes ww-sun-float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+      `}</style>
+
+      {/* Sky background */}
+      {night && <Starfield />}
+      <SkyOrb night={night} />
+
+      {/* Tree silhouettes */}
+      <TreeSilhouette left="-2%" scale={1.6} />
+      <TreeSilhouette left="8%" scale={1.1} flip />
+      <TreeSilhouette left="84%" scale={1.4} />
+      <TreeSilhouette left="92%" scale={1.0} flip />
+
+      <Fog />
+
+      {/* Header: phase banner */}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 text-center">
+        <div
+          className="px-6 py-2 rounded-full backdrop-blur-sm"
+          style={{
+            background: "rgba(0,0,0,0.55)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.35em] text-white/50 font-serif">
+            Night {cycle} {night ? "· Moonrise" : "· Daybreak"}
+          </div>
+          <div
+            className="text-xl font-serif italic text-white"
+            style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}
+          >
+            {PHASE_LABEL[phase]}
+          </div>
+        </div>
+      </div>
+
+      {/* Winner banner */}
+      {status === "finished" && winner && (
+        <div className="absolute top-5 right-5 z-20">
+          <div
+            className="px-4 py-2 rounded-lg font-serif text-sm"
+            style={{
+              background:
+                winner === "WEREWOLVES"
+                  ? "linear-gradient(135deg, rgba(127,29,29,0.9), rgba(220,38,38,0.9))"
+                  : winner === "VILLAGERS"
+                  ? "linear-gradient(135deg, rgba(180,83,9,0.9), rgba(251,191,36,0.9))"
+                  : "linear-gradient(135deg, rgba(63,63,70,0.9), rgba(115,115,115,0.9))",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.2)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            }}
+          >
+            {winner === "DRAW"
+              ? "The village endures. Stalemate."
+              : winner === "WEREWOLVES"
+              ? "🐺 The wolves feast tonight"
+              : "🌅 Dawn brings victory to the village"}
+          </div>
+        </div>
+      )}
+
+      {/* Circle of seats */}
+      <div className="relative mx-auto" style={{ width: "100%", height: 480 }}>
+        <Campfire night={night} />
+        {playerList.map((p, i) => {
+          const pos = seatPosition(i, count, 190);
+          const isActive = activeSide === p.side;
+          const isMe = mySide === p.side;
+          const revealedAsWolf =
+            (knownWerewolves?.includes(p.side) ?? false) && p.isAlive;
+
+          const alive = p.isAlive;
+          const clickable =
+            !!selectedAction &&
+            selectedAction !== "DAY_PASS" &&
+            selectedAction !== "DAY_CLAIM" &&
+            alive &&
+            !!legalByType[selectedAction]?.some(
+              (a) => "target" in a && a.target === p.side,
+            );
+
+          return (
+            <div
+              key={p.side}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={pos}
+            >
+              <PlayerCard
+                player={p}
+                isActive={isActive}
+                isMe={isMe}
+                revealedAsWolf={revealedAsWolf}
+                clickable={clickable}
+                selected={selectedTarget === p.side}
+                onClick={() => setSelectedTarget(p.side)}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom panels */}
+      <div className="px-4 pb-4 grid grid-cols-1 lg:grid-cols-3 gap-3 relative z-10">
+        {/* Your role */}
+        <div
+          className="rounded-lg p-3 text-white/95 text-sm"
+          style={{
+            background: "rgba(10,6,20,0.72)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+            Your card
+          </div>
+          {myRole ? (
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="w-12 h-16 rounded flex items-center justify-center text-2xl"
+                style={{
+                  background: "linear-gradient(160deg, #2a1f3d 0%, #0f0a1e 100%)",
+                  border: `2px solid ${ROLE_COLOR[myRole].ring}`,
+                  boxShadow: ROLE_COLOR[myRole].glow,
+                }}
+              >
+                {ROLE_EMOJI[myRole]}
+              </div>
+              <div>
+                <div className="font-serif italic text-lg" style={{ color: ROLE_COLOR[myRole].text }}>
+                  {myRole === "WEREWOLF" ? "Werewolf" : myRole === "SEER" ? "Seer" : "Villager"}
+                </div>
+                <div className="text-[11px] text-white/60 italic">
+                  {myRole === "WEREWOLF"
+                    ? "Hunt by night, deceive by day."
+                    : myRole === "SEER"
+                    ? "See the truth beneath the skin."
+                    : "Trust, suspect, survive."}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="opacity-50 italic">Face down</div>
+          )}
+          {knownWerewolves && knownWerewolves.length > 0 && (
+            <div className="text-xs mt-2 pt-2 border-t border-white/10">
+              <span className="text-red-300/80 italic">Your pack: </span>
+              <span className="text-red-200">
+                {knownWerewolves.map((s) => players[s]?.displayName ?? s).join(", ")}
+              </span>
+            </div>
+          )}
+          {seerMemory && seerMemory.length > 0 && (
+            <div className="text-xs mt-2 pt-2 border-t border-white/10 space-y-0.5">
+              <div className="text-violet-300/80 italic mb-1">Visions:</div>
+              {seerMemory.map((m, i) => (
+                <div key={i} className="flex justify-between">
+                  <span className="text-white/70">
+                    Night {m.cycle} · {m.targetDisplayName}
+                  </span>
+                  <span className={m.isWerewolf ? "text-red-300" : "text-emerald-300"}>
+                    {m.isWerewolf ? "🐺 wolf" : "✦ innocent"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Chronicle (discussion + deaths) */}
+        <div
+          className="rounded-lg p-3 text-white/90 text-sm max-h-56 overflow-y-auto"
+          style={{
+            background: "rgba(10,6,20,0.72)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+            Chronicle
+          </div>
+          {discussionLog.length === 0 && deaths.length === 0 && (
+            <div className="opacity-50 text-xs italic font-serif">
+              Silence hangs over the village...
+            </div>
+          )}
+          {deaths.map((d, i) => (
+            <div
+              key={`d${i}`}
+              className="text-xs mb-1 py-0.5 px-1.5 rounded"
+              style={{
+                background:
+                  d.cause === "night"
+                    ? "rgba(127,29,29,0.25)"
+                    : "rgba(180,83,9,0.25)",
+              }}
+            >
+              <span className="opacity-60">Day {d.cycle}</span> ·{" "}
+              <span className="font-semibold text-red-200">{d.displayName}</span>{" "}
+              <span className="italic">
+                ({d.role.toLowerCase()}) —{" "}
+                {d.cause === "night" ? "found dead at dawn" : "lynched at dusk"}
+              </span>
+            </div>
+          ))}
+          {discussionLog.map((ev, i) => (
+            <div key={`l${i}`} className="text-xs mb-0.5 font-serif">
+              <span className="opacity-50">C{ev.cycle}</span>{" "}
+              <span className="font-semibold text-amber-200">
+                {ev.speakerDisplayName}
+              </span>{" "}
+              {ev.action.type === "DAY_ACCUSE" && (
+                <>
+                  points at{" "}
+                  <span className="text-red-300 italic">
+                    {ev.action.targetDisplayName}
+                  </span>
+                </>
+              )}
+              {ev.action.type === "DAY_DEFEND" && (
+                <>
+                  speaks for{" "}
+                  <span className="text-emerald-300 italic">
+                    {ev.action.targetDisplayName}
+                  </span>
+                </>
+              )}
+              {ev.action.type === "DAY_CLAIM" && (
+                <>
+                  claims to be{" "}
+                  <span className="text-violet-300 italic">
+                    {ev.action.role.toLowerCase()}
+                  </span>
+                </>
+              )}
+              {ev.action.type === "DAY_PASS" && (
+                <span className="opacity-60 italic">keeps silent.</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Action panel */}
+        <div
+          className="rounded-lg p-3 text-white/95 text-sm"
+          style={{
+            background: "rgba(10,6,20,0.72)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+            Your deed
+          </div>
+          {myDead ? (
+            <div className="text-red-300 text-xs font-serif italic">
+              ☠ You were{" "}
+              {players[mySide!].deathCause === "night"
+                ? "slain in the night"
+                : "hanged at dusk"}
+              . Rest now, and watch the tale unfold.
+            </div>
+          ) : !isMyTurn || availableActionTypes.length === 0 ? (
+            <div className="opacity-55 text-xs italic font-serif">
+              {status === "finished"
+                ? "The tale is told."
+                : night
+                ? "You sleep while others stir..."
+                : "The council has not yet called upon you..."}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {availableActionTypes.map((t) => {
+                  const label = (() => {
+                    if (t === "NIGHT_KILL_VOTE") return "🩸 Hunt";
+                    if (t === "SEER_INVESTIGATE") return "👁 Reveal";
+                    if (t === "DAY_ACCUSE") return "⚔ Accuse";
+                    if (t === "DAY_DEFEND") return "🛡 Defend";
+                    if (t === "DAY_CLAIM") return "📜 Claim";
+                    if (t === "DAY_PASS") return "🤫 Silent";
+                    if (t === "DAY_VOTE") return "🗳 Vote";
+                    return t;
+                  })();
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        setSelectedAction(t);
+                        setSelectedTarget(null);
+                        setSelectedRole(null);
+                      }}
+                      className="px-2.5 py-1 rounded text-xs font-serif transition"
+                      style={{
+                        background:
+                          selectedAction === t
+                            ? "linear-gradient(135deg, #fbbf24, #f59e0b)"
+                            : "rgba(255,255,255,0.08)",
+                        color: selectedAction === t ? "#1c1917" : "#fafaf9",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedAction &&
+                selectedAction !== "DAY_PASS" &&
+                selectedAction !== "DAY_CLAIM" && (
+                  <div className="text-[10px] text-white/50 font-serif italic mt-1">
+                    Choose a soul above...
+                  </div>
+                )}
+
+              {selectedAction === "DAY_CLAIM" && (
+                <div className="flex gap-1">
+                  {(["VILLAGER", "SEER", "WEREWOLF"] as WerewolfRole[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setSelectedRole(r)}
+                      className="px-2 py-1 rounded text-xs font-serif"
+                      style={{
+                        background:
+                          selectedRole === r
+                            ? "linear-gradient(135deg, #a78bfa, #7c3aed)"
+                            : "rgba(255,255,255,0.08)",
+                        color: selectedRole === r ? "#fff" : "#fafaf9",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      {ROLE_EMOJI[r]} {r.toLowerCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={handleConfirm}
+                disabled={
+                  !selectedAction ||
+                  (selectedAction === "DAY_CLAIM" && !selectedRole) ||
+                  (selectedAction !== "DAY_PASS" &&
+                    selectedAction !== "DAY_CLAIM" &&
+                    !selectedTarget)
+                }
+                className="w-full py-1.5 rounded text-xs font-serif italic transition"
+                style={{
+                  background:
+                    !selectedAction ||
+                    (selectedAction === "DAY_CLAIM" && !selectedRole) ||
+                    (selectedAction !== "DAY_PASS" &&
+                      selectedAction !== "DAY_CLAIM" &&
+                      !selectedTarget)
+                      ? "rgba(255,255,255,0.06)"
+                      : "linear-gradient(135deg, #10b981, #059669)",
+                  color:
+                    !selectedAction ||
+                    (selectedAction === "DAY_CLAIM" && !selectedRole) ||
+                    (selectedAction !== "DAY_PASS" &&
+                      selectedAction !== "DAY_CLAIM" &&
+                      !selectedTarget)
+                      ? "rgba(255,255,255,0.3)"
+                      : "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                Seal thy deed
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

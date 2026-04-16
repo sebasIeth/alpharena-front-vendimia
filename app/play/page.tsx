@@ -17,6 +17,16 @@ import RpsBoard, { RpsThrowIcon, THROW_LABELS } from "@/components/game/RpsBoard
 import type { RpsRound } from "@/components/game/RpsBoard";
 import UnoBoard from "@/components/game/UnoBoard";
 import type { UnoCardData } from "@/components/game/UnoCard";
+import WerewolfBoard from "@/components/game/WerewolfBoard";
+import type {
+  WerewolfPlayerView,
+  WerewolfPhase,
+  WerewolfDiscussionEventView,
+  WerewolfDeathView,
+  WerewolfAction,
+  WerewolfRole,
+  WerewolfSeerMemoryView,
+} from "@/components/game/WerewolfBoard";
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
@@ -153,6 +163,20 @@ function PlayContent() {
   const [rpsScoreA, setRpsScoreA] = useState(0);
   const [rpsScoreB, setRpsScoreB] = useState(0);
   const [rpsPhase, setRpsPhase] = useState<"waiting" | "thinking" | "revealing" | "round_complete" | "game_over">("waiting");
+
+  // Werewolf-specific state
+  const [wwPlayers, setWwPlayers] = useState<Record<string, WerewolfPlayerView>>({});
+  const [wwPhase, setWwPhase] = useState<WerewolfPhase>("NIGHT_WOLVES");
+  const [wwCycle, setWwCycle] = useState<number>(1);
+  const [wwActiveSide, setWwActiveSide] = useState<string | null>(null);
+  const [wwDiscussion, setWwDiscussion] = useState<WerewolfDiscussionEventView[]>([]);
+  const [wwDeaths, setWwDeaths] = useState<WerewolfDeathView[]>([]);
+  const [wwStatus, setWwStatus] = useState<"waiting" | "playing" | "finished">("playing");
+  const [wwWinner, setWwWinner] = useState<"VILLAGERS" | "WEREWOLVES" | "DRAW" | null>(null);
+  const [wwMyRole, setWwMyRole] = useState<WerewolfRole | undefined>(undefined);
+  const [wwKnownWerewolves, setWwKnownWerewolves] = useState<string[] | undefined>(undefined);
+  const [wwSeerMemory, setWwSeerMemory] = useState<WerewolfSeerMemoryView[] | undefined>(undefined);
+  const [wwLegalActions, setWwLegalActions] = useState<WerewolfAction[]>([]);
 
   // UNO-specific state
   const [unoTopCard, setUnoTopCard] = useState<UnoCardData | null>(null);
@@ -434,6 +458,18 @@ function PlayContent() {
             setRpsScoreB(s.b);
           }
         }
+        // Werewolf: init state on match start
+        if (gt === "werewolf" && data.werewolfState) {
+          const ws = data.werewolfState as any;
+          if (ws.players) setWwPlayers(ws.players);
+          if (ws.phase) setWwPhase(ws.phase);
+          if (ws.cycle != null) setWwCycle(ws.cycle);
+          if (ws.activeSide !== undefined) setWwActiveSide(ws.activeSide);
+          if (ws.discussionLog) setWwDiscussion(ws.discussionLog);
+          if (ws.deaths) setWwDeaths(ws.deaths);
+          if (ws.status) setWwStatus(ws.status);
+          if (ws.winner !== undefined) setWwWinner(ws.winner);
+        }
         // UNO: init state on match start
         if (gt === "uno" && data.unoState) {
           setPhase("playing");
@@ -555,6 +591,19 @@ function PlayContent() {
           // UNO: capture hand and legal actions
           if (data.hand) setUnoMyHand(data.hand as UnoCardData[]);
           if (data.legalActions) setUnoLegalActions(data.legalActions as any[]);
+          // Werewolf: capture role + legal actions
+          if (data.yourRole) setWwMyRole(data.yourRole as WerewolfRole);
+          if (data.knownWerewolves) setWwKnownWerewolves(data.knownWerewolves as string[]);
+          if (data.seerMemory) setWwSeerMemory(data.seerMemory as WerewolfSeerMemoryView[]);
+          if (data.legalActions && Array.isArray(data.legalActions)) {
+            setWwLegalActions(data.legalActions as WerewolfAction[]);
+          }
+          if (data.players) setWwPlayers(data.players as Record<string, WerewolfPlayerView>);
+          if (data.phase) setWwPhase(data.phase as WerewolfPhase);
+          if (data.cycle != null) setWwCycle(data.cycle as number);
+          if (data.activeSide !== undefined) setWwActiveSide(data.activeSide as string | null);
+          if (data.discussionLog) setWwDiscussion(data.discussionLog as WerewolfDiscussionEventView[]);
+          if (data.deaths) setWwDeaths(data.deaths as WerewolfDeathView[]);
           // Also update spectator fields from your_turn data
           if (data.topCard) setUnoTopCard(data.topCard as UnoCardData);
           if (data.currentColor) setUnoCurrentColor(data.currentColor as string);
@@ -623,6 +672,25 @@ function PlayContent() {
               winner: r.winner as any,
             }];
           });
+        }
+
+        // Werewolf: update state from match:move
+        if (data.werewolfPhase) setWwPhase(data.werewolfPhase as WerewolfPhase);
+        if (data.cycle != null) setWwCycle(data.cycle as number);
+        if (data.activeSide !== undefined) setWwActiveSide(data.activeSide as string | null);
+        if (data.werewolfPlayers) setWwPlayers(data.werewolfPlayers as Record<string, WerewolfPlayerView>);
+        if (data.discussionLog) setWwDiscussion(data.discussionLog as WerewolfDiscussionEventView[]);
+        if (data.deaths) setWwDeaths(data.deaths as WerewolfDeathView[]);
+        if (data.status && gameType === "werewolf") setWwStatus(data.status as "waiting" | "playing" | "finished");
+        if (data.winner !== undefined && gameType === "werewolf") setWwWinner(data.winner as any);
+        // Refresh private state (seerMemory grows during night) when we're seer/wolf
+        if (gameType === "werewolf" && (wwMyRole === "SEER")) {
+          const mid = matchIdRef.current;
+          if (mid) {
+            api.getWerewolfPrivateState(mid).then((priv) => {
+              if (priv.seerMemory) setWwSeerMemory(priv.seerMemory as any);
+            }).catch(() => {});
+          }
         }
 
         // UNO: update state from match:move
@@ -1050,6 +1118,11 @@ function PlayContent() {
     handleGameMove({ type: "DRAW_CARD" });
   };
 
+  const handleWerewolfAction = (action: WerewolfAction) => {
+    setWwLegalActions([]);
+    handleGameMove(action);
+  };
+
   const resetState = () => {
     setPhase("lobby");
     setMatchId(null);
@@ -1090,6 +1163,18 @@ function PlayContent() {
     setUnoMoveCount(0);
     setUnoMyHand([]);
     setUnoLegalActions([]);
+    setWwPlayers({});
+    setWwPhase("NIGHT_WOLVES");
+    setWwCycle(1);
+    setWwActiveSide(null);
+    setWwDiscussion([]);
+    setWwDeaths([]);
+    setWwStatus("playing");
+    setWwWinner(null);
+    setWwMyRole(undefined);
+    setWwKnownWerewolves(undefined);
+    setWwSeerMemory(undefined);
+    setWwLegalActions([]);
     fetchBalance();
   };
 
@@ -1186,6 +1271,27 @@ function PlayContent() {
           mySide={mySide}
           onMove={canInteract ? (choice: "rock" | "paper" | "scissors") => handleGameMove(choice) : undefined}
           winnerName={isGameOver ? (rpsScoreA > rpsScoreB ? (playerA || "Player A") : (playerB || "Player B")) : null}
+        />
+      );
+    }
+    if (gameType === "werewolf") {
+      return (
+        <WerewolfBoard
+          players={wwPlayers}
+          phase={wwPhase}
+          cycle={wwCycle}
+          activeSide={wwActiveSide}
+          discussionLog={wwDiscussion}
+          deaths={wwDeaths}
+          status={phase === "result" ? "finished" : wwStatus}
+          winner={wwWinner}
+          mySide={mySide ?? undefined}
+          myRole={wwMyRole}
+          knownWerewolves={wwKnownWerewolves}
+          seerMemory={wwSeerMemory}
+          legalActions={wwLegalActions}
+          isMyTurn={canInteract && isMyTurn}
+          onSubmitAction={canInteract ? handleWerewolfAction : undefined}
         />
       );
     }
@@ -1321,12 +1427,13 @@ function PlayContent() {
                 {/* Game type selector */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.play.gameType}</label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     {([
                       { value: "chess", label: "Chess", icon: "\u265A" },
                       { value: "rps", label: "RPS", icon: "\u270A" },
                       { value: "poker", label: "Poker", icon: "\uD83C\uDCA1" },
                       { value: "uno", label: "UNO", icon: "\uD83C\uDCCF" },
+                      { value: "werewolf", label: "Werewolf", icon: "\uD83D\uDC3A" },
                     ]).map((g) => (
                       <button
                         key={g.value}
@@ -1430,8 +1537,8 @@ function PlayContent() {
                   </span>
                 </button>
 
-                {/* Practice vs AI (Free) — available for poker and uno */}
-                {(gameType === "poker" || gameType === "uno") && (
+                {/* Practice vs AI (Free) — available for poker, uno, werewolf */}
+                {(gameType === "poker" || gameType === "uno" || gameType === "werewolf") && (
                   <button
                     onClick={async () => {
                       if (gameType === "poker") {
@@ -1453,6 +1560,18 @@ function PlayContent() {
                           if (sock) {
                             socketRef.current = sock;
                             attachMatchListeners(sock);
+                          }
+                          // For werewolf, fetch private role info (delivered via HTTP, not sockets)
+                          if (gameType === "werewolf") {
+                            try {
+                              const priv = await api.getWerewolfPrivateState(mid);
+                              setMySide(priv.mySide as any);
+                              setWwMyRole(priv.yourRole);
+                              if (priv.knownWerewolves) setWwKnownWerewolves(priv.knownWerewolves);
+                              if (priv.seerMemory) setWwSeerMemory(priv.seerMemory as any);
+                            } catch (e) {
+                              console.warn("Failed to fetch werewolf private state", e);
+                            }
                           }
                           setPhase("playing");
                         } catch (err) {

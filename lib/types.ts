@@ -169,6 +169,40 @@ export interface Match {
     drawPileCount?: number;
     handCounts?: Record<string, number>;
   };
+  werewolfState?: {
+    phase?: "NIGHT_WOLVES" | "NIGHT_SEER" | "DAY_DISCUSSION" | "DAY_VOTE" | "FINISHED";
+    cycle?: number;
+    activeSide?: string | null;
+    players?: Record<string, {
+      side: string;
+      displayName: string;
+      isAlive: boolean;
+      deathCycle?: number | null;
+      deathCause?: "night" | "day" | null;
+      role?: "WEREWOLF" | "SEER" | "VILLAGER";
+    }>;
+    discussionLog?: {
+      cycle: number;
+      speaker: string;
+      speakerDisplayName: string;
+      action: {
+        type: "DAY_ACCUSE" | "DAY_DEFEND" | "DAY_CLAIM" | "DAY_PASS";
+        target?: string;
+        targetDisplayName?: string;
+        role?: "WEREWOLF" | "SEER" | "VILLAGER";
+      };
+    }[];
+    deaths?: {
+      cycle: number;
+      side: string;
+      displayName: string;
+      role: "WEREWOLF" | "SEER" | "VILLAGER";
+      cause: "night" | "day";
+    }[];
+    status?: "waiting" | "playing" | "finished";
+    winner?: "VILLAGERS" | "WEREWOLVES" | "DRAW" | null;
+    moveCount?: number;
+  };
   token?: string;
   stakeAmount: number;
   pot: number;

@@ -10,6 +10,13 @@ import RpsBoard, { RpsThrowIcon } from "./RpsBoard";
 import type { RpsRound } from "./RpsBoard";
 import UnoBoard from "./UnoBoard";
 import type { UnoCardData } from "./UnoCard";
+import WerewolfBoard from "./WerewolfBoard";
+import type {
+  WerewolfPlayerView,
+  WerewolfPhase,
+  WerewolfDiscussionEventView,
+  WerewolfDeathView,
+} from "./WerewolfBoard";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatRelativeTime, normalizeMatchAgents, formatEarnings } from "@/lib/utils";
 
@@ -332,6 +339,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   const [unoDirection, setUnoDirection] = useState<number>(initUno?.direction || 1);
   const [unoMoveCount, setUnoMoveCount] = useState<number>(initUno?.moveCount || 0);
 
+  // Werewolf state
+  const initWerewolf = match.werewolfState && typeof match.werewolfState === "object" ? match.werewolfState as any : null;
+  const [wwPlayers, setWwPlayers] = useState<Record<string, WerewolfPlayerView>>(initWerewolf?.players || {});
+  const [wwPhase, setWwPhase] = useState<WerewolfPhase>(initWerewolf?.phase || "NIGHT_WOLVES");
+  const [wwCycle, setWwCycle] = useState<number>(initWerewolf?.cycle || 1);
+  const [wwActiveSide, setWwActiveSide] = useState<string | null>(initWerewolf?.activeSide ?? null);
+  const [wwDiscussion, setWwDiscussion] = useState<WerewolfDiscussionEventView[]>(initWerewolf?.discussionLog || []);
+  const [wwDeaths, setWwDeaths] = useState<WerewolfDeathView[]>(initWerewolf?.deaths || []);
+  const [wwStatus, setWwStatus] = useState<"waiting" | "playing" | "finished">(initWerewolf?.status || "playing");
+  const [wwWinner, setWwWinner] = useState<"VILLAGERS" | "WEREWOLVES" | "DRAW" | null>(initWerewolf?.winner ?? null);
+
   // Replay state
   const [replayStep, setReplayStep] = useState(-1); // -1 = show final state
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
@@ -646,6 +664,18 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           if (us.handCounts) setUnoHandCounts(us.handCounts);
           if (us.status) setUnoStatus(us.status);
         }
+        // Werewolf: load initial state
+        if (data.werewolfState && typeof data.werewolfState === "object") {
+          const ws = data.werewolfState as any;
+          if (ws.players) setWwPlayers(ws.players);
+          if (ws.phase) setWwPhase(ws.phase);
+          if (ws.cycle != null) setWwCycle(ws.cycle);
+          if (ws.activeSide !== undefined) setWwActiveSide(ws.activeSide);
+          if (ws.discussionLog) setWwDiscussion(ws.discussionLog);
+          if (ws.deaths) setWwDeaths(ws.deaths);
+          if (ws.status) setWwStatus(ws.status);
+          if (ws.winner !== undefined) setWwWinner(ws.winner);
+        }
       }
 
       if (type === "match:move" || type === "match:state") {
@@ -731,6 +761,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
           }
         }
 
+        // Werewolf-specific
+        if (match.gameType === "werewolf") {
+          if (data.werewolfPhase) setWwPhase(data.werewolfPhase as WerewolfPhase);
+          if (data.cycle != null) setWwCycle(data.cycle as number);
+          if (data.activeSide !== undefined) setWwActiveSide(data.activeSide as string | null);
+          if (data.werewolfPlayers) setWwPlayers(data.werewolfPlayers as Record<string, WerewolfPlayerView>);
+          if (data.discussionLog) setWwDiscussion(data.discussionLog as WerewolfDiscussionEventView[]);
+          if (data.deaths) setWwDeaths(data.deaths as WerewolfDeathView[]);
+          if (data.status) setWwStatus(data.status as "waiting" | "playing" | "finished");
+          if (data.winner !== undefined) setWwWinner(data.winner as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null);
+        }
         // UNO-specific
         if (match.gameType === "uno") {
           if (data.topCard) setUnoTopCard(data.topCard as UnoCardData);
@@ -1485,6 +1526,17 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                 replayRound={!isLiveMode && replayStep >= 0 && replayStep < rpsRounds.length
                   ? rpsRounds[replayStep]?.roundNumber
                   : null}
+              />
+            ) : match.gameType === "werewolf" ? (
+              <WerewolfBoard
+                players={wwPlayers}
+                phase={wwPhase}
+                cycle={wwCycle}
+                activeSide={wwActiveSide}
+                discussionLog={wwDiscussion}
+                deaths={wwDeaths}
+                status={match.status === "completed" ? "finished" : wwStatus}
+                winner={wwWinner}
               />
             ) : match.gameType === "uno" ? (
               <UnoBoard

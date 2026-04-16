@@ -380,6 +380,19 @@ class ApiClient {
     return this.post("/play/test-match", { gameType });
   }
 
+  async getWerewolfPrivateState(matchId: string): Promise<{
+    mySide: string;
+    yourRole: "WEREWOLF" | "SEER" | "VILLAGER";
+    yourDisplayName: string;
+    phase: string;
+    cycle: number;
+    activeSide: string | null;
+    knownWerewolves?: string[];
+    seerMemory?: { cycle: number; target: string; targetDisplayName: string; isWerewolf: boolean }[];
+  }> {
+    return this.get(`/play/werewolf/${matchId}`);
+  }
+
   // ========== Betting ==========
   async getBettingContracts(chain?: Chain): Promise<BettingContracts> {
     const query = chain ? `?chain=${chain}` : "";
