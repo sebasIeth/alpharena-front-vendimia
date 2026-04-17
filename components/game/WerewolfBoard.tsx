@@ -76,111 +76,218 @@ interface WerewolfBoardProps {
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
-function IconWolfSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+function IconWolfSvg({ size = 32, color = "#b91c1c" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="wolf-fur" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#1f0909" stopOpacity="1" />
+        </linearGradient>
+      </defs>
+      {/* Neck fur */}
+      <path d="M20 52 L14 60 L22 58 L26 60 L32 58 L38 60 L42 58 L50 60 L44 52 Z" fill="#1f0909" />
+      {/* Ears — pointed */}
+      <path d="M10 24 L6 6 L20 20 Z" fill="url(#wolf-fur)" />
+      <path d="M54 24 L58 6 L44 20 Z" fill="url(#wolf-fur)" />
+      <path d="M12 20 L11 12 L17 18 Z" fill="#fecaca" opacity="0.55" />
+      <path d="M52 20 L53 12 L47 18 Z" fill="#fecaca" opacity="0.55" />
       {/* Head */}
       <path
-        d="M24 42 C14 42 8 35 8 25 L6 18 L10 20 L13 14 L16 19 L20 14 L22 19 L26 14 L28 19 L32 14 L35 19 L38 14 L42 20 L40 25 C40 35 34 42 24 42 Z"
-        fill={color}
+        d="M32 56 C18 56 10 46 10 32 C10 20 18 12 32 12 C46 12 54 20 54 32 C54 46 46 56 32 56 Z"
+        fill="url(#wolf-fur)"
       />
-      {/* Ears */}
-      <path d="M10 20 L8 10 L14 16 Z" fill={color} />
-      <path d="M38 20 L40 10 L34 16 Z" fill={color} />
-      {/* Eyes */}
-      <circle cx="18" cy="26" r="2" fill="#fbbf24" />
-      <circle cx="30" cy="26" r="2" fill="#fbbf24" />
-      {/* Snout */}
-      <path d="M22 33 L26 33 L25 36 Q24 37 23 36 Z" fill="#000" opacity={0.55} />
+      {/* Face cheeks highlight */}
+      <path d="M14 36 Q20 44 28 42 Q22 38 18 34 Z" fill="#450a0a" opacity="0.55" />
+      <path d="M50 36 Q44 44 36 42 Q42 38 46 34 Z" fill="#450a0a" opacity="0.55" />
+      {/* Eyes — glowing yellow */}
+      <ellipse cx="22" cy="30" rx="4" ry="3" fill="#fbbf24" />
+      <ellipse cx="42" cy="30" rx="4" ry="3" fill="#fbbf24" />
+      <ellipse cx="22" cy="30" rx="1.4" ry="2.5" fill="#1a1204" />
+      <ellipse cx="42" cy="30" rx="1.4" ry="2.5" fill="#1a1204" />
+      <circle cx="23.2" cy="28.8" r="0.8" fill="#fff" opacity="0.9" />
+      <circle cx="43.2" cy="28.8" r="0.8" fill="#fff" opacity="0.9" />
+      {/* Snout (lighter) */}
+      <path d="M24 40 Q32 34 40 40 L40 46 Q32 52 24 46 Z" fill="#78350f" opacity="0.4" />
+      {/* Nose */}
+      <path d="M28 40 Q32 38 36 40 Q34 43 32 43 Q30 43 28 40 Z" fill="#0a0204" />
+      {/* Mouth line */}
+      <path d="M32 44 L32 48" stroke="#0a0204" strokeWidth="1.3" />
       {/* Fangs */}
-      <path d="M22 36 L22.8 39 L23.4 36 Z" fill="#fff" opacity={0.85} />
-      <path d="M26 36 L25.2 39 L24.6 36 Z" fill="#fff" opacity={0.85} />
+      <path d="M27.5 47 L28 51 L29 47 Z" fill="#fff" />
+      <path d="M36.5 47 L36 51 L35 47 Z" fill="#fff" />
+      {/* Forehead stripe */}
+      <path d="M30 18 L32 24 L34 18 Z" fill="#0a0204" opacity="0.45" />
     </svg>
   );
 }
 
-function IconSeerSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+function IconSeerSvg({ size = 32, color = "#8b5cf6" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      {/* Eye outer */}
-      <path
-        d="M4 24 Q24 6 44 24 Q24 42 4 24 Z"
-        stroke={color}
-        strokeWidth="2.5"
-        fill={color}
-        fillOpacity="0.2"
-      />
-      {/* Iris */}
-      <circle cx="24" cy="24" r="8" fill={color} />
-      {/* Pupil */}
-      <circle cx="24" cy="24" r="3.5" fill="#1e1b4b" />
-      {/* Highlight */}
-      <circle cx="26" cy="22" r="1.5" fill="#fff" />
-      {/* Sparkles */}
-      <path d="M8 10 L9 13 L12 14 L9 15 L8 18 L7 15 L4 14 L7 13 Z" fill={color} opacity={0.8} />
-      <path d="M40 32 L40.7 34 L43 34.7 L40.7 35.4 L40 37.6 L39.3 35.4 L37 34.7 L39.3 34 Z" fill={color} opacity={0.7} />
-    </svg>
-  );
-}
-
-function IconVillagerSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <radialGradient id="seer-ball" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#f5f3ff" />
+          <stop offset="35%" stopColor="#c4b5fd" />
+          <stop offset="100%" stopColor={color} />
+        </radialGradient>
+        <radialGradient id="seer-glow" cx="50%" cy="50%">
+          <stop offset="0%" stopColor="#c4b5fd" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#c4b5fd" stopOpacity="0" />
+        </radialGradient>
+      </defs>
       {/* Hood */}
       <path
-        d="M12 18 Q12 8 24 8 Q36 8 36 18 L34 24 L14 24 Z"
-        fill={color}
-        opacity={0.9}
+        d="M10 30 Q10 10 32 10 Q54 10 54 30 L50 44 L14 44 Z"
+        fill="#3b0764"
       />
-      {/* Head */}
-      <circle cx="24" cy="22" r="8" fill="#f5deb3" />
-      {/* Hood shadow over face */}
-      <path d="M14 22 Q24 18 34 22 L34 20 Q24 14 14 20 Z" fill={color} opacity={0.35} />
+      {/* Inner hood shadow */}
+      <path d="M18 30 Q18 18 32 18 Q46 18 46 30 L44 38 L20 38 Z" fill="#1e0840" />
+      {/* Face in shadow */}
+      <ellipse cx="32" cy="30" rx="10" ry="8" fill="#0a0714" opacity="0.9" />
+      {/* Glowing eyes inside the hood */}
+      <circle cx="28" cy="30" r="1.6" fill="#fde047" />
+      <circle cx="36" cy="30" r="1.6" fill="#fde047" />
+      {/* Third eye glow on forehead */}
+      <circle cx="32" cy="22" r="5" fill="url(#seer-glow)" />
+      <ellipse cx="32" cy="22" rx="3" ry="2" fill="#fde047" />
+      <circle cx="32" cy="22" r="1" fill="#1e0840" />
+      {/* Hands holding orb */}
+      <path d="M18 52 Q24 46 30 50" stroke="#fbbf24" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M46 52 Q40 46 34 50" stroke="#fbbf24" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Crystal ball */}
+      <circle cx="32" cy="55" r="7" fill="url(#seer-ball)" />
+      <ellipse cx="30" cy="52" rx="2" ry="1.2" fill="#fff" opacity="0.85" />
+      {/* Sparkles */}
+      <path d="M52 14 L53 17 L56 18 L53 19 L52 22 L51 19 L48 18 L51 17 Z" fill="#fde047" />
+      <path d="M8 26 L8.7 28 L11 28.7 L8.7 29.4 L8 31.6 L7.3 29.4 L5 28.7 L7.3 28 Z" fill="#c4b5fd" opacity="0.8" />
+    </svg>
+  );
+}
+
+function IconVillagerSvg({ size = 32, color = "#d97706" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="straw-hat" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fef3c7" />
+          <stop offset="100%" stopColor={color} />
+        </linearGradient>
+      </defs>
+      {/* Straw hat brim */}
+      <ellipse cx="32" cy="18" rx="24" ry="5" fill="url(#straw-hat)" />
+      <ellipse cx="32" cy="17" rx="24" ry="4" fill="#78350f" opacity="0.35" />
+      {/* Hat crown */}
+      <path d="M18 16 Q20 4 32 4 Q44 4 46 16 Z" fill="url(#straw-hat)" />
+      {/* Hat band */}
+      <path d="M20 14 L44 14" stroke="#78350f" strokeWidth="2" />
+      {/* Hat straw texture */}
+      <path d="M22 12 L24 8 M26 13 L27 6 M32 12 L32 5 M37 13 L38 6 M42 12 L40 8" stroke="#78350f" strokeWidth="0.6" opacity="0.5" />
+      {/* Face */}
+      <ellipse cx="32" cy="32" rx="12" ry="13" fill="#fcd9b6" />
+      {/* Eyes (closed friendly) */}
+      <path d="M25 30 Q27 28 29 30" stroke="#3b1d09" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M35 30 Q37 28 39 30" stroke="#3b1d09" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      {/* Cheeks */}
+      <circle cx="24" cy="34" r="2" fill="#f87171" opacity="0.5" />
+      <circle cx="40" cy="34" r="2" fill="#f87171" opacity="0.5" />
+      {/* Mustache */}
+      <path d="M26 37 Q32 40 38 37 Q36 39 32 39 Q28 39 26 37 Z" fill="#78350f" />
+      {/* Mouth */}
+      <path d="M29 41 Q32 43 35 41" stroke="#78350f" strokeWidth="1.2" fill="none" strokeLinecap="round" />
       {/* Beard */}
-      <path d="M18 27 Q24 34 30 27 Q27 32 24 32 Q21 32 18 27 Z" fill="#8b6f47" opacity={0.8} />
-      {/* Tunic shoulders */}
-      <path d="M6 46 L10 32 L16 30 L24 34 L32 30 L38 32 L42 46 Z" fill={color} opacity={0.85} />
-      {/* Rope belt */}
-      <path d="M10 40 L38 40" stroke="#78350f" strokeWidth="1.5" opacity={0.7} />
+      <path d="M22 38 Q24 50 32 52 Q40 50 42 38 Q40 46 32 48 Q24 46 22 38 Z" fill="#78350f" />
+      {/* Shirt collar */}
+      <path d="M18 54 L22 48 L32 52 L42 48 L46 54 L44 62 L20 62 Z" fill="#4b5563" />
+      <path d="M28 52 L32 58 L36 52 Z" fill="#1f2937" />
     </svg>
   );
 }
 
-function IconMaskSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+function IconMaskSvg({ size = 32, color = "#7c3aed" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      {/* Mask */}
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="mask-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a78bfa" />
+          <stop offset="100%" stopColor={color} />
+        </linearGradient>
+      </defs>
+      {/* Playing card back */}
+      <rect x="12" y="6" width="40" height="52" rx="4" fill="url(#mask-grad)" stroke="#fde047" strokeWidth="1.5" />
+      {/* Decorative border */}
+      <rect x="16" y="10" width="32" height="44" rx="2" fill="none" stroke="#fde047" strokeWidth="0.8" opacity="0.7" />
+      {/* Diamond pattern */}
+      <g opacity="0.35" stroke="#fde047" strokeWidth="0.6" fill="none">
+        <path d="M24 18 L32 14 L40 18 L32 22 Z" />
+        <path d="M24 32 L32 28 L40 32 L32 36 Z" />
+        <path d="M24 46 L32 42 L40 46 L32 50 Z" />
+      </g>
+      {/* Center crest — question mark inside circle */}
+      <circle cx="32" cy="32" r="9" fill="#1e0840" opacity="0.85" />
       <path
-        d="M10 18 Q10 10 24 10 Q38 10 38 18 L38 28 Q38 36 24 38 Q10 36 10 28 Z"
-        fill={color}
-        opacity={0.85}
+        d="M28 28 Q28 24 32 24 Q36 24 36 28 Q36 30.5 33.5 32 Q32 33 32 35"
+        stroke="#fde047"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
       />
-      {/* Eye holes */}
-      <ellipse cx="18" cy="22" rx="3" ry="2" fill="#0a0714" />
-      <ellipse cx="30" cy="22" rx="3" ry="2" fill="#0a0714" />
-      {/* Mouth slit */}
-      <path d="M18 30 Q24 32 30 30" stroke="#0a0714" strokeWidth="1.5" fill="none" />
-      {/* Decorative dot */}
-      <circle cx="24" cy="15" r="1" fill="#fbbf24" />
+      <circle cx="32" cy="38" r="1.1" fill="#fde047" />
+      {/* Corner marks */}
+      <circle cx="18" cy="12" r="1" fill="#fde047" />
+      <circle cx="46" cy="12" r="1" fill="#fde047" />
+      <circle cx="18" cy="52" r="1" fill="#fde047" />
+      <circle cx="46" cy="52" r="1" fill="#fde047" />
     </svg>
   );
 }
 
-function IconSkullSvg({ size = 32, color = "#fca5a5" }: { size?: number; color?: string }) {
+function IconSkullSvg({ size = 32, color = "#e5e7eb" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="skull-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f9fafb" />
+          <stop offset="100%" stopColor={color} />
+        </linearGradient>
+      </defs>
+      {/* Crossbones */}
+      <g transform="translate(32 40) rotate(45) translate(-32 -40)">
+        <rect x="10" y="38" width="44" height="5" rx="2" fill="url(#skull-grad)" />
+        <circle cx="10" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="14" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="54" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="50" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+      </g>
+      <g transform="translate(32 40) rotate(-45) translate(-32 -40)">
+        <rect x="10" y="38" width="44" height="5" rx="2" fill="url(#skull-grad)" />
+        <circle cx="10" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="14" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="54" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+        <circle cx="50" cy="40.5" r="3.5" fill="url(#skull-grad)" />
+      </g>
       {/* Skull */}
       <path
-        d="M10 22 Q10 10 24 10 Q38 10 38 22 L38 30 L32 30 L32 36 L28 36 L28 32 L20 32 L20 36 L16 36 L16 30 L10 30 Z"
-        fill={color}
+        d="M14 28 Q14 10 32 10 Q50 10 50 28 L50 38 Q50 42 47 44 L44 46 L44 54 L38 54 L38 48 L32 50 L26 48 L26 54 L20 54 L20 46 L17 44 Q14 42 14 38 Z"
+        fill="url(#skull-grad)"
       />
       {/* Eye sockets */}
-      <ellipse cx="18" cy="22" rx="3.5" ry="4" fill="#0a0714" />
-      <ellipse cx="30" cy="22" rx="3.5" ry="4" fill="#0a0714" />
+      <ellipse cx="23" cy="28" rx="5" ry="6" fill="#0a0714" />
+      <ellipse cx="41" cy="28" rx="5" ry="6" fill="#0a0714" />
+      {/* Eye shine */}
+      <circle cx="24.5" cy="26" r="1" fill="#fca5a5" opacity="0.8" />
+      <circle cx="42.5" cy="26" r="1" fill="#fca5a5" opacity="0.8" />
       {/* Nose */}
-      <path d="M22 26 L24 30 L26 26 Z" fill="#0a0714" />
+      <path d="M29 36 L32 43 L35 36 Z" fill="#0a0714" />
       {/* Teeth */}
-      <path d="M18 30 L18 34 L20 32 L22 34 L24 32 L26 34 L28 32 L30 34 L30 30 Z" fill="#0a0714" opacity={0.75} />
+      <g fill="#0a0714">
+        <rect x="22" y="42" width="4" height="7" rx="1" />
+        <rect x="27" y="44" width="4" height="8" rx="1" />
+        <rect x="33" y="44" width="4" height="8" rx="1" />
+        <rect x="38" y="42" width="4" height="7" rx="1" />
+      </g>
+      {/* Crack on forehead */}
+      <path d="M22 20 L24 22 L23 25 L26 27" stroke="#9ca3af" strokeWidth="0.8" fill="none" opacity="0.7" />
     </svg>
   );
 }
