@@ -29,8 +29,6 @@ import type {
 import type { PlayBalance, PokerCard, PokerLegalActions, Chain } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 import { useLocalPoker } from "@/lib/poker/useLocalPoker";
-import { useAlphaPrice } from "@/lib/useAlphaPrice";
-import { formatUsdEquivalent } from "@/lib/utils";
 
 type Phase = "lobby" | "queue" | "entering" | "playing" | "result" | "local-poker";
 
@@ -88,7 +86,6 @@ function PulseRing() {
 function PlayContent() {
   const { t } = useLanguage();
   const router = useRouter();
-  const { priceUsd } = useAlphaPrice();
   const { user } = useAuthStore();
   const { address, isConnected: walletConnected } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
@@ -103,20 +100,11 @@ function PlayContent() {
   // Lobby
   const [balance, setBalance] = useState<PlayBalance | null>(null);
   const [gameType, setGameType] = useState("chess");
-  const [stakeToken, setStakeToken] = useState<"ALPHA" | "USDC">("ALPHA");
-  const [stakeAmount, setStakeAmount] = useState("");
-  const selectedChain: Chain = "solana";
+  const [stakeToken, setStakeToken] = useState<"USDC">("USDC");
+  const [stakeAmount, setStakeAmount] = useState("1");
+  const selectedChain: Chain = "base";
   const [joining, setJoining] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  // Set default stake: $1 USD equivalent
-  useEffect(() => {
-    if (stakeToken === "USDC") {
-      setStakeAmount("1");
-    } else if (stakeToken === "ALPHA" && priceUsd && priceUsd > 0) {
-      setStakeAmount(Math.ceil(1 / priceUsd).toString());
-    }
-  }, [stakeToken, priceUsd]);
 
   // Match state
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -1357,25 +1345,14 @@ function PlayContent() {
             <Card>
               <div className="px-6 py-4 border-b border-arena-border-light/60 bg-arena-bg/30 flex items-center justify-between">
                 <h2 className="text-lg font-display font-semibold text-arena-text">{t.play.balance}</h2>
-                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                  Solana
+                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  Base
                 </span>
               </div>
               <div className="p-6">
                 {balance ? (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      {/* ALPHA */}
-                      <div className="flex items-center gap-2.5 bg-arena-primary/5 border border-arena-primary/10 rounded-lg px-3 py-2">
-                        <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-7 h-7 rounded-full shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-lg font-extrabold font-mono tabular-nums text-arena-primary">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                            <span className="text-[10px] text-arena-muted font-mono">ALPH</span>
-                            {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">({usd})</span> : null; })()}
-                          </div>
-                        </div>
-                      </div>
                       {/* USDC */}
                       <div className="flex items-center gap-2.5 bg-emerald-50/50 border border-emerald-100 rounded-lg px-3 py-2">
                         <img src="/tokens/usdc.jpg" alt="USDC" className="w-7 h-7 rounded-full shrink-0" />
@@ -1384,19 +1361,19 @@ function PlayContent() {
                           <span className="text-[10px] text-arena-muted font-mono">USDC</span>
                         </div>
                       </div>
-                      {/* SOL */}
-                      <div className="flex items-center gap-2.5 bg-purple-50/30 border border-purple-100/50 rounded-lg px-3 py-1.5">
-                        <img src="/tokens/solana.jpg" alt="SOL" className="w-6 h-6 rounded-full shrink-0" />
+                      {/* ETH */}
+                      <div className="flex items-center gap-2.5 bg-blue-50/30 border border-blue-100/50 rounded-lg px-3 py-1.5">
+                        <img src="/tokens/eth.svg" alt="ETH" className="w-6 h-6 rounded-full shrink-0" />
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-sm font-bold font-mono tabular-nums text-purple-600">{Number(balance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                          <span className="text-[10px] text-arena-muted font-mono">SOL</span>
+                          <span className="text-sm font-bold font-mono tabular-nums text-blue-600">{Number((balance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}</span>
+                          <span className="text-[10px] text-arena-muted font-mono">ETH</span>
                         </div>
                       </div>
                     </div>
                     {balance.walletAddress && (
                       <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2">
                         <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">
-                          {t.play.depositAddress} (Solana)
+                          {t.play.depositAddress} (Base)
                         </div>
                         <div className="text-xs font-mono text-arena-text break-all">{balance.walletAddress}</div>
                       </div>
@@ -1456,34 +1433,10 @@ function PlayContent() {
                 {/* Chain badge */}
                 <div>
                   <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">{t.common.chain}</label>
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-50/80 border border-purple-200/60">
-                    <img src="/tokens/solana.jpg" alt="SOL" className="w-5 h-5 rounded-full" />
-                    <span className="text-sm font-semibold text-purple-700">Solana</span>
-                    <span className="ml-auto w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                  </div>
-                </div>
-
-                {/* Stake token selector */}
-                <div>
-                  <label className="block text-[10px] text-arena-muted uppercase tracking-widest font-mono font-semibold mb-2">Stake Token</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {([
-                      { value: "ALPHA" as const, icon: "/tokens/alpha.jpg", color: "text-arena-accent", bg: "bg-arena-accent/10", border: "border-arena-accent/30", ring: "ring-arena-accent/20" },
-                      { value: "USDC" as const, icon: "/tokens/usdc.jpg", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-300", ring: "ring-emerald-200" },
-                    ]).map((token) => (
-                      <button
-                        key={token.value}
-                        onClick={() => setStakeToken(token.value)}
-                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                          stakeToken === token.value
-                            ? `${token.bg} ${token.color} ${token.border} ring-1 ${token.ring} shadow-sm`
-                            : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20 hover:text-arena-text"
-                        }`}
-                      >
-                        <img src={token.icon} alt={token.value} className="w-5 h-5 rounded-full" />
-                        {token.value}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50/80 border border-blue-200/60">
+                    <img src="/tokens/eth.svg" alt="ETH" className="w-5 h-5 rounded-full" />
+                    <span className="text-sm font-semibold text-blue-700">Base</span>
+                    <span className="ml-auto w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   </div>
                 </div>
 
@@ -1494,7 +1447,7 @@ function PlayContent() {
                     <span className="text-[9px] text-arena-muted/60 font-mono">min: 1 · max: 1</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <img src={stakeToken === "USDC" ? "/tokens/usdc.jpg" : "/tokens/alpha.jpg"} alt={stakeToken} className="w-6 h-6 rounded-full" />
+                    <img src="/tokens/usdc.jpg" alt={stakeToken} className="w-6 h-6 rounded-full" />
                     <input
                       type="number"
                       min="1"
@@ -1504,12 +1457,9 @@ function PlayContent() {
                       disabled
                       className="flex-1 text-xl font-extrabold font-mono tabular-nums text-arena-text-bright bg-transparent outline-none cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
-                    <span className={`text-xs font-mono font-semibold ${stakeToken === "USDC" ? "text-emerald-600" : "text-arena-accent"}`}>{stakeToken}</span>
+                    <span className="text-xs font-mono font-semibold text-emerald-600">{stakeToken}</span>
                   </div>
-                  {stakeToken === "USDC" && (
-                    <p className="text-[10px] text-arena-muted/60 mt-1.5">~${parseFloat(stakeAmount || "0").toFixed(2)} USD</p>
-                  )}
-                  {stakeToken === "ALPHA" && (() => { const usd = formatUsdEquivalent(parseFloat(stakeAmount || "0"), priceUsd); return usd ? <p className="text-[10px] text-arena-muted/60 mt-1.5">{usd}</p> : null; })()}
+                  <p className="text-[10px] text-arena-muted/60 mt-1.5">~${parseFloat(stakeAmount || "0").toFixed(2)} USD</p>
                   <p className="text-[10px] text-arena-muted/60 mt-1">{t.play.entryFeeDesc}</p>
                 </div>
 

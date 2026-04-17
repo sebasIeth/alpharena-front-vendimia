@@ -15,9 +15,10 @@ import type { Agent, Chain } from "@/lib/types";
 /* ── Chain Badge ── */
 function ChainBadge({ chain }: { chain?: Chain }) {
   if (!chain) return null;
+  const label = chain === "solana" ? "Solana" : "Base";
   return (
-    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded bg-purple-50 text-purple-600 border border-purple-200">
-      Solana
+    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono rounded bg-blue-50 text-blue-600 border border-blue-200">
+      {label}
     </span>
   );
 }
@@ -284,19 +285,12 @@ function FeaturedAgent({ agent, t }: { agent: Agent; t: any }) {
 
             {/* Earnings */}
             <div className="text-center hidden sm:block">
-              {(agent.stats?.earningsAlpha || 0) > 0 && (
+              {(agent.stats?.earningsUsdc || 0) > 0 ? (
                 <div className="flex items-center gap-1 justify-center">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-4 h-4 rounded-full" />
-                  <span className="text-lg font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
-                </div>
-              )}
-              {(agent.stats?.earningsUsdc || 0) > 0 && (
-                <div className="flex items-center gap-1 justify-center">
-                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-4 h-4 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token" className="w-4 h-4 rounded-full" />
                   <span className="text-lg font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
                 </div>
-              )}
-              {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+              ) : (
                 <div className="text-lg font-extrabold font-mono text-arena-muted tabular-nums">0</div>
               )}
               <div className="text-[9px] text-arena-muted uppercase tracking-widest mt-0.5 font-mono">Earnings</div>
@@ -403,21 +397,13 @@ function AgentCard({ agent, index, isBest }: { agent: Agent; index: number; isBe
           {total} {t.common.matches.toLowerCase()} &middot; {formatRelativeTime(agent.createdAt)}
         </span>
         <div className="flex flex-col items-end gap-0.5">
-          {(agent.stats?.earningsAlpha || 0) > 0 && (
+          {(agent.stats?.earningsUsdc || 0) > 0 ? (
             <div className="flex items-center gap-1">
-              <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3.5 h-3.5 rounded-full" />
-              <span className="font-mono font-bold text-arena-accent tabular-nums">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
-              <span className="text-[9px] text-arena-muted font-mono">ALPH</span>
-            </div>
-          )}
-          {(agent.stats?.earningsUsdc || 0) > 0 && (
-            <div className="flex items-center gap-1">
-              <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3.5 h-3.5 rounded-full" />
+              <img src="/tokens/usdc.jpg" alt="USDC token" className="w-3.5 h-3.5 rounded-full" />
               <span className="font-mono font-bold text-emerald-600 tabular-nums">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
               <span className="text-[9px] text-arena-muted font-mono">USDC</span>
             </div>
-          )}
-          {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+          ) : (
             <span className="font-mono font-bold text-arena-muted tabular-nums">0 Earnings</span>
           )}
         </div>
@@ -646,19 +632,12 @@ function AgentsContent() {
                 delay={0.18}
               >
                 <div className="space-y-0.5 mt-1">
-                  {summary.earningsAlpha > 0 && (
+                  {summary.earningsUsdc > 0 ? (
                     <div className="flex items-center gap-1">
-                      <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3 h-3 rounded-full" />
-                      <span className="text-xs font-bold font-mono text-arena-accent tabular-nums">{formatEarnings(summary.earningsAlpha)}</span>
-                    </div>
-                  )}
-                  {summary.earningsUsdc > 0 && (
-                    <div className="flex items-center gap-1">
-                      <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3 h-3 rounded-full" />
+                      <img src="/tokens/usdc.jpg" alt="USDC token" className="w-3 h-3 rounded-full" />
                       <span className="text-xs font-bold font-mono text-emerald-600 tabular-nums">{formatEarnings(summary.earningsUsdc)}</span>
                     </div>
-                  )}
-                  {summary.earningsAlpha === 0 && summary.earningsUsdc === 0 && (
+                  ) : (
                     <span className="text-sm font-bold font-mono text-arena-muted tabular-nums">0</span>
                   )}
                 </div>

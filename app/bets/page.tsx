@@ -115,8 +115,8 @@ export default function BetsPage() {
                       <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
                         {claim.matchId.slice(0, 8)}...
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                        Solana
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        Base
                       </span>
                     </div>
                     <div className="flex items-center gap-3 mt-1">

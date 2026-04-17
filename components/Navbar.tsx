@@ -145,7 +145,6 @@ export default function Navbar() {
     { href: "/bets", label: t.nav.bets, icon: <IconBets /> },
     { href: "/leaderboard", label: t.nav.leaderboard, icon: <IconTrophy /> },
     { href: "/docs", label: "API Docs", icon: <IconRobot /> },
-    { href: "/tokenomics", label: "Tokenomics", icon: <IconCoin /> },
   ];
 
   const authLinks = [

@@ -96,7 +96,7 @@ export default function ReferralsPage() {
     }
   }
 
-  const chain: Chain = "solana";
+  const chain: Chain = "base";
 
   return (
     <AuthGuard>

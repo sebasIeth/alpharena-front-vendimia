@@ -190,7 +190,7 @@ function BettingPanel({ match }: { match: Match }) {
   const { sendTransactionAsync } = useSendTransaction();
   const { switchChainAsync } = useSwitchChain();
   const matchAgents = normalizeMatchAgents(match.agents);
-  const chain = match.chain || "solana";
+  const chain = match.chain || "base";
 
   const [info, setInfo] = useState<BettingInfo | null>(null);
   const [poolResp, setPoolResp] = useState<BettingPoolResponse | null>(null);
@@ -715,8 +715,8 @@ export default function MatchDetailPage() {
               <span className="text-xs text-arena-primary capitalize font-medium font-mono bg-arena-primary/5 px-2.5 py-1 rounded">
                 {match.gameType}
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                Solana
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                {match.chain === "solana" ? "Solana" : "Base"}
               </span>
               {!isActive && <Badge status={match.status} />}
               {isActive && (
@@ -786,7 +786,7 @@ export default function MatchDetailPage() {
                   </div>
                   {(Array.isArray((match as any).txHashes?.escrow) ? (match as any).txHashes.escrow[0] : (match as any).txHashes?.escrow) && (
                     <a
-                      href={getExplorerTxUrl((match as any).txHashes.escrow[0], match.chain || "solana")}
+                      href={getExplorerTxUrl((match as any).txHashes.escrow[0], match.chain || "base")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-end gap-1 mt-1 text-[9px] font-mono text-purple-500 hover:text-purple-700 transition-colors"
@@ -847,7 +847,7 @@ export default function MatchDetailPage() {
                   </div>
                   {(Array.isArray((match as any).txHashes?.escrow) && (match as any).txHashes.escrow[1]) && (
                     <a
-                      href={getExplorerTxUrl((match as any).txHashes.escrow[1], match.chain || "solana")}
+                      href={getExplorerTxUrl((match as any).txHashes.escrow[1], match.chain || "base")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 mt-1 text-[9px] font-mono text-purple-500 hover:text-purple-700 transition-colors"
@@ -936,13 +936,13 @@ export default function MatchDetailPage() {
               <svg className="w-3 h-3 text-arena-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              {t.common.stake}: {match.stakeAmount} {match.token || "ALPHA"}
+              {t.common.stake}: {match.stakeAmount} {match.token || "USDC"}
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
               <svg className="w-3 h-3 text-arena-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
               </svg>
-              {t.common.pot}: {pot} {match.token || "ALPHA"}
+              {t.common.pot}: {pot} {match.token || "USDC"}
             </span>
             {match.moveCount > 0 && (
               <span className="flex items-center gap-1.5 text-[11px] text-arena-muted font-mono bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
@@ -1120,7 +1120,7 @@ export default function MatchDetailPage() {
               <div className="mt-3 space-y-1.5">
                 {(match as any).txHashes.payout && (
                   <a
-                    href={getExplorerTxUrl((match as any).txHashes.payout, match.chain || "solana")}
+                    href={getExplorerTxUrl((match as any).txHashes.payout, match.chain || "base")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-mono text-emerald-600 hover:text-emerald-800 transition-colors"
@@ -1133,7 +1133,7 @@ export default function MatchDetailPage() {
                 )}
                 {(match as any).txHashes.fee && (
                   <a
-                    href={getExplorerTxUrl((match as any).txHashes.fee, match.chain || "solana")}
+                    href={getExplorerTxUrl((match as any).txHashes.fee, match.chain || "base")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-mono text-arena-muted hover:text-arena-text transition-colors"
@@ -1146,7 +1146,7 @@ export default function MatchDetailPage() {
                 )}
                 {match.token && (
                   <div className="mt-1 text-[10px] text-arena-muted font-mono">
-                    Settled in {match.token} on Solana
+                    Settled in {match.token} on {match.chain === "solana" ? "Solana" : "Base"}
                   </div>
                 )}
               </div>

@@ -17,11 +17,9 @@ import {
   formatWinRate,
   formatRelativeTime,
   normalizeMatchAgents,
-  formatUsdEquivalent,
   formatEarnings,
   copyToClipboard,
 } from "@/lib/utils";
-import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import type { Agent, AgentBalance, Match, Chain } from "@/lib/types";
 import { getExplorerTxUrl } from "@/lib/api";
 
@@ -29,10 +27,11 @@ import { getExplorerTxUrl } from "@/lib/api";
 function ChainBadge({ chain, size = "sm" }: { chain?: Chain; size?: "sm" | "md" }) {
   if (!chain) return null;
   const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]";
+  const label = chain === "solana" ? "Solana" : "Base";
   return (
-    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} bg-purple-50 text-purple-700 border border-purple-200`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-      Solana
+    <span className={`inline-flex items-center gap-1 font-mono font-medium rounded-full ${sizeClasses} bg-blue-50 text-blue-700 border border-blue-200`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+      {label}
     </span>
   );
 }
@@ -189,7 +188,6 @@ function AgentDetailContent() {
   const params = useParams();
   const router = useRouter();
   const { t } = useLanguage();
-  const { priceUsd } = useAlphaPrice();
   const agentId = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -226,7 +224,7 @@ function AgentDetailContent() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
-  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
+  const [withdrawToken, setWithdrawToken] = useState<"USDC" | "ETH">("USDC");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -351,8 +349,8 @@ function AgentDetailContent() {
     setWithdrawError("");
     setWithdrawSuccess("");
     const addr = withdrawAddress.trim();
-    if (!addr || addr.length < 32) {
-      setWithdrawError("Enter a valid Solana address.");
+    if (!addr || !/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      setWithdrawError("Enter a valid Base address (0x…).");
       return;
     }
     const value = Number(withdrawAmount);
@@ -365,9 +363,8 @@ function AgentDetailContent() {
       return;
     }
     const balanceMap: Record<string, string> = {
-      ALPHA: balance?.alpha || "0",
       USDC: balance?.usdc || "0",
-      SOL: (balance as any)?.sol || (balance as any)?.eth || "0",
+      ETH: (balance as any)?.eth || "0",
     };
     const available = parseFloat(balanceMap[withdrawToken]);
     if (value > available) {
@@ -377,7 +374,7 @@ function AgentDetailContent() {
     setWithdrawLoading(true);
     try {
       const data = await api.withdrawAgent(agentId, value, addr, withdrawToken);
-      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "solana");
+      const explorerUrl = getExplorerTxUrl(data.txHash, data.chain || agent?.chain || "base");
       setWithdrawSuccess(`Withdrawn ${value} ${withdrawToken}! Tx: ${data.txHash.slice(0, 10)}...${data.txHash.slice(-6)}|${explorerUrl}`);
       setWithdrawAmount("");
       fetchBalance();
@@ -730,21 +727,13 @@ function AgentDetailContent() {
               </div>
             </div>
             <div className="space-y-1 min-w-0">
-              {(agent.stats?.earningsAlpha || 0) > 0 && (
+              {(agent.stats?.earningsUsdc || 0) > 0 ? (
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-5 h-5 rounded-full" />
-                  <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-arena-accent leading-none">{formatEarnings(agent.stats.earningsAlpha || 0)}</span>
-                  <span className="text-[10px] text-arena-muted font-mono">ALPHA</span>
-                </div>
-              )}
-              {(agent.stats?.earningsUsdc || 0) > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-5 h-5 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token" className="w-5 h-5 rounded-full" />
                   <span className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-emerald-600 leading-none">{formatEarnings(agent.stats.earningsUsdc || 0)}</span>
                   <span className="text-[10px] text-arena-muted font-mono">USDC</span>
                 </div>
-              )}
-              {!(agent.stats?.earningsAlpha || agent.stats?.earningsUsdc) && (
+              ) : (
                 <div className="flex items-center gap-1.5">
                   <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-arena-muted leading-none">0</span>
                   <span className="text-[10px] text-arena-muted font-mono">Earnings</span>
@@ -835,19 +824,6 @@ function AgentDetailContent() {
           <div className="space-y-4">
             {/* Balances */}
             <div className="space-y-2.5">
-              {/* ALPHA */}
-              <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3.5 py-2.5">
-                <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPHA</div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">
-                      {balanceLoading ? "..." : Number(balance?.alpha || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                    </span>
-                    {!balanceLoading && balance?.alpha && (() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
-                  </div>
-                </div>
-              </div>
               {/* USDC */}
               <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3.5 py-2.5">
                 <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
@@ -861,14 +837,14 @@ function AgentDetailContent() {
                   </div>
                 </div>
               </div>
-              {/* SOL */}
-              <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
-                <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+              {/* ETH (gas) */}
+              <div className="flex items-center gap-3 bg-blue-50/50 border border-blue-100 rounded-xl px-3.5 py-2.5">
+                <img src="/tokens/eth.svg" alt="ETH" className="w-8 h-8 rounded-full shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                  <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ETH</div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-bold font-mono tabular-nums text-purple-600">
-                      {balanceLoading ? "..." : Number(balance?.sol || 0).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                    <span className="text-lg font-bold font-mono tabular-nums text-blue-600">
+                      {balanceLoading ? "..." : Number((balance as any)?.eth || 0).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
                     </span>
                   </div>
                 </div>
@@ -908,9 +884,8 @@ function AgentDetailContent() {
 
             {/* Token selector */}
             <div className="flex gap-1.5">
-              {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+              {(["USDC", "ETH"] as const).map((token) => {
                 const isActive = withdrawToken === token;
-                const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
                 return (
                   <button
                     key={token}
@@ -921,7 +896,11 @@ function AgentDetailContent() {
                         : "bg-white text-arena-muted border-arena-border-light hover:border-arena-primary/20"
                     }`}
                   >
-                    <img src={icons[token]} alt={token} className="w-4 h-4 rounded-full" />
+                    {token === "USDC" ? (
+                      <img src="/tokens/usdc.jpg" alt="USDC" className="w-4 h-4 rounded-full" />
+                    ) : (
+                      <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">Ξ</span>
+                    )}
                     {token}
                   </button>
                 );
@@ -932,7 +911,7 @@ function AgentDetailContent() {
               type="text"
               value={withdrawAddress}
               onChange={(e) => { setWithdrawAddress(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-              placeholder="Destination Solana address"
+              placeholder="Destination Base address (0x…)"
               className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
             />
             <div className="flex items-center gap-2">
@@ -1165,7 +1144,7 @@ function AgentDetailContent() {
                               {agentEntry.eloChange > 0 ? "+" : ""}{agentEntry.eloChange} ELO
                             </span>
                           )}
-                          <span className="font-mono">{match.stakeAmount} ALPHA</span>
+                          <span className="font-mono">{match.stakeAmount} {match.token || "USDC"}</span>
                           <span>{formatRelativeTime(match.createdAt)}</span>
                         </div>
                       </div>

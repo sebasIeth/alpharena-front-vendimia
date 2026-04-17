@@ -49,24 +49,14 @@ function normalizeAgent(raw: any, index: number): LeaderboardAgent {
 }
 
 /** Render earnings with token icons */
-function TokenEarnings({ alpha, usdc, size = "sm" }: { alpha: number; usdc: number; size?: "sm" | "md" }) {
+function TokenEarnings({ usdc, size = "sm" }: { alpha?: number; usdc: number; size?: "sm" | "md" }) {
   const textCls = size === "md" ? "text-sm font-extrabold" : "text-xs font-bold";
   const imgCls = size === "md" ? "w-4 h-4" : "w-3 h-3";
-  if (alpha <= 0 && usdc <= 0) return <span className={`${textCls} font-mono text-arena-muted tabular-nums`}>0</span>;
+  if (usdc <= 0) return <span className={`${textCls} font-mono text-arena-muted tabular-nums`}>0</span>;
   return (
-    <span className="inline-flex flex-col gap-0.5">
-      {alpha > 0 && (
-        <span className="inline-flex items-center gap-0.5">
-          <img src="/tokens/alpha.jpg" alt="ALPHA token"className={`${imgCls} rounded-full`} />
-          <span className={`${textCls} font-mono text-arena-accent tabular-nums`}>{formatEarnings(alpha)}</span>
-        </span>
-      )}
-      {usdc > 0 && (
-        <span className="inline-flex items-center gap-0.5">
-          <img src="/tokens/usdc.jpg" alt="USDC token"className={`${imgCls} rounded-full`} />
-          <span className={`${textCls} font-mono text-emerald-600 tabular-nums`}>{formatEarnings(usdc)}</span>
-        </span>
-      )}
+    <span className="inline-flex items-center gap-0.5">
+      <img src="/tokens/usdc.jpg" alt="USDC token" className={`${imgCls} rounded-full`} />
+      <span className={`${textCls} font-mono text-emerald-600 tabular-nums`}>{formatEarnings(usdc)}</span>
     </span>
   );
 }

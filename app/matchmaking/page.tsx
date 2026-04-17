@@ -9,8 +9,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import AgentAvatar from "@/components/ui/AgentAvatar";
 import { PageSpinner } from "@/components/ui/Spinner";
-import { formatElo, formatUsdEquivalent } from "@/lib/utils";
-import { useAlphaPrice } from "@/lib/useAlphaPrice";
+import { formatElo } from "@/lib/utils";
 import type { Agent, AgentBalance, QueueStatus, QueueListEntry } from "@/lib/types";
 import type { Socket } from "socket.io-client";
 
@@ -111,7 +110,6 @@ function AgentCard({
   onSelect,
   balance,
   balanceLoading,
-  priceUsd,
   disabled,
   lowBalance,
 }: {
@@ -120,7 +118,6 @@ function AgentCard({
   onSelect: () => void;
   balance: AgentBalance | null;
   balanceLoading: boolean;
-  priceUsd: number | null;
   disabled?: boolean;
   lowBalance?: boolean;
 }) {
@@ -221,13 +218,12 @@ function AgentCard({
           ) : balance ? (
             <div className="flex flex-col gap-0.5">
               <div className="flex flex-wrap items-baseline gap-1">
-                <span className="text-sm font-bold font-mono tabular-nums text-arena-primary truncate min-w-0">{Number(balance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                <span className="text-[10px] text-arena-muted">ALPHA</span>
+                <span className="text-sm font-bold font-mono tabular-nums text-emerald-600 truncate min-w-0">{Number(balance.usdc || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-[10px] text-arena-muted">USDC</span>
               </div>
-              {(() => { const usd = formatUsdEquivalent(parseFloat(balance.alpha) || 0, priceUsd); return usd ? <span className="text-[10px] text-arena-muted">{usd}</span> : null; })()}
               <div className="flex items-baseline gap-1 pt-0.5">
-                <span className="text-xs font-mono tabular-nums text-arena-muted">{Number(balance.sol).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                <span className="text-[10px] text-arena-muted">SOL</span>
+                <span className="text-xs font-mono tabular-nums text-arena-muted">{Number((balance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}</span>
+                <span className="text-[10px] text-arena-muted">ETH</span>
               </div>
             </div>
           ) : (
@@ -241,9 +237,8 @@ function AgentCard({
 
 function MatchmakingContent() {
   const { t } = useLanguage();
-  const { priceUsd } = useAlphaPrice();
-  // $1 USD equivalent in ALPHA, fallback to 1 if price unknown
-  const FIXED_STAKE = priceUsd && priceUsd > 0 ? Math.ceil(1 / priceUsd) : 1;
+  // Base stakes are 1 USDC (1:1 USD).
+  const FIXED_STAKE = 1;
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedAgentId = searchParams.get("agentId") || "";
@@ -883,7 +878,7 @@ function MatchmakingContent() {
                     {idleAgents.map((agent) => {
                       const preloadedBalance = agentBalances[agent.id];
                       const isLowBalance = preloadedBalance
-                        ? parseFloat(preloadedBalance.alpha) < FIXED_STAKE
+                        ? parseFloat(preloadedBalance.usdc || "0") < FIXED_STAKE
                         : false;
                       return (
                         <AgentCard
@@ -893,7 +888,6 @@ function MatchmakingContent() {
                           onSelect={() => setSelectedAgentId(agent.id)}
                           balance={selectedAgentId === agent.id ? agentBalance : null}
                           balanceLoading={selectedAgentId === agent.id ? balanceLoading : false}
-                          priceUsd={priceUsd}
                           disabled={allQueuedIds.has(agent.id)}
                           lowBalance={isLowBalance}
                         />
@@ -903,7 +897,7 @@ function MatchmakingContent() {
                 </div>
 
                 {/* Insufficient balance warning */}
-                {agentBalance && parseFloat(agentBalance.alpha) < FIXED_STAKE && (
+                {agentBalance && parseFloat(agentBalance.usdc || "0") < FIXED_STAKE && (
                   <div className="bg-arena-accent/10 border border-arena-accent/30 rounded-xl px-4 py-3">
                     <div className="flex items-start gap-2">
                       <svg className="w-4 h-4 text-arena-accent shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -911,7 +905,7 @@ function MatchmakingContent() {
                       </svg>
                       <div>
                         <p className="text-sm text-arena-accent font-medium">
-                          {t.matchmaking.insufficientBalance}: {agentBalance.alpha} ALPHA {t.matchmaking.available}, {t.matchmaking.need} {FIXED_STAKE.toLocaleString()} ALPHA
+                          {t.matchmaking.insufficientBalance}: {agentBalance.usdc || "0"} USDC {t.matchmaking.available}, {t.matchmaking.need} {FIXED_STAKE.toLocaleString()} USDC
                         </p>
                         {agentBalance.walletAddress && (
                           <p className="text-xs text-arena-muted mt-1">

@@ -20,12 +20,10 @@ import {
   formatWinRate,
   formatElo,
   normalizeMatchAgents,
-  formatUsdEquivalent,
   formatEarnings,
   truncateAddress,
   copyToClipboard,
 } from "@/lib/utils";
-import { useAlphaPrice } from "@/lib/useAlphaPrice";
 import { getExplorerTxUrl } from "@/lib/api";
 import type { Agent, Match, PlayBalance, PendingClaim, Chain } from "@/lib/types";
 
@@ -259,8 +257,7 @@ function DashboardContent() {
   const { user } = useAuthStore();
   const router = useRouter();
   const { t } = useLanguage();
-  const { priceUsd } = useAlphaPrice();
-  const { solPriceUsd, usdcPriceUsd } = (require("@/lib/useSolanaPrice") as any).useSolanaPrice();
+  // Base deploy: USDC is 1:1 USD. ETH gas price not surfaced in UI.
   const { address, isConnected: walletConnected } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
   const { switchChainAsync } = useSwitchChain();
@@ -287,7 +284,7 @@ function DashboardContent() {
   };
   const [withdrawAddr, setWithdrawAddr] = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
-  const [withdrawToken, setWithdrawToken] = useState<"ALPHA" | "USDC" | "SOL">("ALPHA");
+  const [withdrawToken, setWithdrawToken] = useState<"USDC" | "ETH">("USDC");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState("");
@@ -343,13 +340,12 @@ function DashboardContent() {
   const handlePlayWithdraw = async () => {
     const value = parseFloat(withdrawAmt);
     if (!value || value <= 0) { setWithdrawError(t.matchmaking.insufficientBalance); return; }
-    if (withdrawToken === "SOL") { setWithdrawError("SOL withdrawals coming soon. Use ALPHA or USDC."); return; }
+    if (withdrawToken === "ETH") { setWithdrawError("ETH withdrawals coming soon. Use USDC."); return; }
     if (withdrawToken === "USDC" && value < 10) { setWithdrawError("Minimum USDC withdrawal is 10 USDC."); return; }
-    if (!withdrawAddr || withdrawAddr.length < 32) { setWithdrawError("Enter a valid Solana address"); return; }
+    if (!withdrawAddr || !/^0x[0-9a-fA-F]{40}$/.test(withdrawAddr)) { setWithdrawError("Enter a valid Base address (0x…)"); return; }
     const balanceMap: Record<string, number> = {
-      ALPHA: parseFloat(playBalance?.alpha || "0"),
       USDC: parseFloat((playBalance as any)?.usdc || "0"),
-      SOL: parseFloat((playBalance as any)?.sol || "0"),
+      ETH: parseFloat((playBalance as any)?.eth || "0"),
     };
     if (value > balanceMap[withdrawToken]) { setWithdrawError(`Exceeds ${withdrawToken} balance (${balanceMap[withdrawToken]})`); return; }
     setWithdrawLoading(true);
@@ -555,13 +551,6 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-3 px-4 py-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-xl shadow-sm">
                 <div className="flex items-center gap-1.5">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA token" className="w-5 h-5 rounded-full" />
-                  <span className="text-lg font-extrabold font-mono tabular-nums text-arena-accent leading-none">
-                    {formatEarnings(stats.earningsAlpha || stats.earnings)}
-                  </span>
-                </div>
-                <div className="w-px h-5 bg-arena-border-light/60" />
-                <div className="flex items-center gap-1.5">
                   <img src="/tokens/usdc.jpg" alt="USDC" className="w-5 h-5 rounded-full" />
                   <span className="text-lg font-extrabold font-mono tabular-nums text-emerald-600 leading-none">{formatEarnings(stats.earningsUsdc)}</span>
                 </div>
@@ -639,21 +628,13 @@ function DashboardContent() {
             delay={0.2}
           >
             <div className="space-y-1 mt-1">
-              {stats.earningsAlpha > 0 && (
+              {stats.earningsUsdc > 0 ? (
                 <div className="flex items-center gap-1">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA token"className="w-3.5 h-3.5 rounded-full" />
-                  <span className="text-sm font-extrabold font-mono text-arena-accent tabular-nums">{formatEarnings(stats.earningsAlpha)}</span>
-                  {(() => { const usd = formatUsdEquivalent(stats.earningsAlpha, priceUsd); return usd ? <span className="text-[9px] text-arena-muted">({usd})</span> : null; })()}
-                </div>
-              )}
-              {stats.earningsUsdc > 0 && (
-                <div className="flex items-center gap-1">
-                  <img src="/tokens/usdc.jpg" alt="USDC token"className="w-3.5 h-3.5 rounded-full" />
+                  <img src="/tokens/usdc.jpg" alt="USDC token" className="w-3.5 h-3.5 rounded-full" />
                   <span className="text-sm font-extrabold font-mono text-emerald-600 tabular-nums">{formatEarnings(stats.earningsUsdc)}</span>
                   <span className="text-[9px] text-arena-muted">(~${stats.earningsUsdc.toFixed(2)})</span>
                 </div>
-              )}
-              {stats.earningsAlpha === 0 && stats.earningsUsdc === 0 && (
+              ) : (
                 <span className="text-lg font-extrabold font-mono text-arena-muted tabular-nums">0</span>
               )}
             </div>
@@ -828,17 +809,6 @@ function DashboardContent() {
             <div className="space-y-4">
               {/* Balances */}
               <div className="space-y-2.5">
-                {/* ALPHA */}
-                <div className="flex items-center gap-3 bg-arena-primary/5 border border-arena-primary/10 rounded-xl px-3.5 py-2.5">
-                  <img src="/tokens/alpha.jpg" alt="ALPHA" className="w-8 h-8 rounded-full shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ALPH</div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-extrabold font-mono tabular-nums text-arena-primary">{Number(playBalance.alpha).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                      {(() => { const usd = formatUsdEquivalent(parseFloat(playBalance.alpha) || 0, priceUsd); return usd ? <span className="text-xs text-arena-muted">({usd})</span> : null; })()}
-                    </div>
-                  </div>
-                </div>
                 {/* USDC */}
                 <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 rounded-xl px-3.5 py-2.5">
                   <img src="/tokens/usdc.jpg" alt="USDC" className="w-8 h-8 rounded-full shrink-0" />
@@ -850,16 +820,13 @@ function DashboardContent() {
                     </div>
                   </div>
                 </div>
-                {/* SOL */}
-                <div className="flex items-center gap-3 bg-purple-50/50 border border-purple-100 rounded-xl px-3.5 py-2.5">
-                  <img src="/tokens/solana.jpg" alt="SOL" className="w-8 h-8 rounded-full shrink-0" />
+                {/* ETH (gas) */}
+                <div className="flex items-center gap-3 bg-blue-50/50 border border-blue-100 rounded-xl px-3.5 py-2.5">
+                  <img src="/tokens/eth.svg" alt="ETH" className="w-8 h-8 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">SOL</div>
+                    <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono">ETH</div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-bold font-mono tabular-nums text-purple-600">{Number(playBalance.sol || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
-                      {solPriceUsd && Number(playBalance.sol || 0) > 0 && (
-                        <span className="text-xs text-arena-muted">(~${(Number(playBalance.sol || 0) * solPriceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)</span>
-                      )}
+                      <span className="text-lg font-bold font-mono tabular-nums text-blue-600">{Number((playBalance as any).eth || 0).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}</span>
                     </div>
                   </div>
                 </div>
@@ -929,9 +896,9 @@ function DashboardContent() {
 
               {/* Token selector */}
               <div className="flex gap-1.5">
-                {(["ALPHA", "USDC", "SOL"] as const).map((token) => {
+                {(["USDC", "ETH"] as const).map((token) => {
                   const isActive = withdrawToken === token;
-                  const icons: Record<string, string> = { ALPHA: "/tokens/alpha.jpg", USDC: "/tokens/usdc.jpg", SOL: "/tokens/solana.jpg" };
+                  const icons: Record<string, string> = { USDC: "/tokens/usdc.jpg", ETH: "/tokens/eth.svg" };
                   return (
                     <button
                       key={token}
@@ -1022,7 +989,7 @@ function DashboardContent() {
                 type="text"
                 value={withdrawAddr}
                 onChange={(e) => { setWithdrawAddr(e.target.value); setWithdrawError(""); setWithdrawSuccess(""); }}
-                placeholder="Destination Solana address"
+                placeholder="Destination Base address (0x…)"
                 className="w-full px-3 py-2 bg-white border border-arena-border-light rounded-lg text-arena-text text-sm font-mono placeholder-arena-muted/60 focus:outline-none focus:ring-2 focus:ring-arena-primary/30 focus:border-arena-primary transition-all"
               />
               <div className="flex items-center gap-2">
@@ -1069,43 +1036,6 @@ function DashboardContent() {
       )}
 
       {/* ═══════════════════════════════════════════════════
-          GET ALPHA
-          ═══════════════════════════════════════════════════ */}
-      <div
-        className="dash-glass-card rounded-2xl p-6 mb-8 opacity-0 animate-fade-up"
-        style={{ animationDelay: "0.23s", animationFillMode: "both" }}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-arena-accent/10 flex items-center justify-center ring-1 ring-inset ring-arena-accent/5">
-            <IconCoin className="w-5 h-5 text-arena-accent" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-arena-text-bright uppercase tracking-wider font-mono">
-              {t.dashboard.getAlpha}
-            </h3>
-            <p className="text-xs text-arena-muted">{t.dashboard.getAlphaDesc}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          <a
-            href="https://jup.ag/?buy=4GQ1eYpTat1Tf1CjHG5nzWXLP5GV8GopQTqMEdbuMLux"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3.5 bg-white/50 border border-purple-200/60 rounded-xl hover:border-purple-400/60 hover:bg-purple-50/30 transition-all group"
-          >
-            <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0">
-              <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-arena-text-bright">Buy on Jupiter</div>
-              <div className="text-[10px] text-arena-muted font-mono">Solana DEX</div>
-            </div>
-            <IconArrowRight className="w-4 h-4 text-arena-muted group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
-          </a>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
           PENDING CLAIMS
           ═══════════════════════════════════════════════════ */}
       {pendingClaims.length > 0 && (
@@ -1139,8 +1069,8 @@ function DashboardContent() {
                     <span className="text-[10px] font-mono text-arena-muted px-1.5 py-0.5 bg-arena-bg/50 rounded">
                       {claim.matchId.slice(0, 8)}...
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                      Solana
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                      {claim.chain === "solana" ? "Solana" : "Base"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
