@@ -100,14 +100,6 @@ const ROLE_COLOR: Record<WerewolfRole, { ring: string; glow: string; text: strin
   },
 };
 
-const PHASE_LABEL: Record<WerewolfPhase, string> = {
-  NIGHT_WOLVES: "The wolves hunt",
-  NIGHT_SEER: "The seer dreams",
-  DAY_DISCUSSION: "The village speaks",
-  DAY_VOTE: "The village decides",
-  FINISHED: "The tale is told",
-};
-
 function isNight(phase: WerewolfPhase): boolean {
   return phase === "NIGHT_WOLVES" || phase === "NIGHT_SEER";
 }
@@ -531,28 +523,6 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
       <TreeSilhouette left="92%" scale={1.0} flip />
 
       <Fog />
-
-      {/* Header: phase banner */}
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 text-center">
-        <div
-          className="px-6 py-2 rounded-full backdrop-blur-sm"
-          style={{
-            background: "rgba(0,0,0,0.55)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-          }}
-        >
-          <div className="text-[10px] uppercase tracking-[0.35em] text-white/50 font-serif">
-            Night {cycle} {night ? "· Moonrise" : "· Daybreak"}
-          </div>
-          <div
-            className="text-xl font-serif italic text-white"
-            style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}
-          >
-            {PHASE_LABEL[phase]}
-          </div>
-        </div>
-      </div>
 
       {/* Winner banner */}
       {status === "finished" && winner && (
