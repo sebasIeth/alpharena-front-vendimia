@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-const IS_PROD = process.env.NODE_ENV === "production";
+
+function isHttps(req: NextRequest): boolean {
+  return (
+    req.headers.get("x-forwarded-proto") === "https" ||
+    req.nextUrl.protocol === "https:"
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +26,8 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ user: data.user });
     response.cookies.set("arena_token", data.token, {
       httpOnly: true,
-      secure: IS_PROD,
-      sameSite: "strict",
+      secure: isHttps(req),
+      sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
