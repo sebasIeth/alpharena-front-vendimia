@@ -230,6 +230,23 @@ function IconUsers({ className = "w-3.5 h-3.5" }: { className?: string }) {
   );
 }
 
+function IconWerewolf({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Moon behind */}
+      <circle cx="18" cy="6" r="3" opacity={0.35} />
+      <circle cx="19.5" cy="5.5" r="2.5" fill="white" opacity={0.9} />
+      {/* Wolf head silhouette */}
+      <path d="M5 10 L3 6 L6.5 8 L8 6 L9.5 9 L12 8 L14.5 9 L16 6 L17.5 8 L21 6 L19 10 L20 13 Q20 18 16 20 L13.5 21.5 Q12 22 10.5 21.5 L8 20 Q4 18 4 13 L5 10 Z" />
+      {/* Eyes */}
+      <circle cx="10" cy="13" r="0.9" fill="#fde047" />
+      <circle cx="14" cy="13" r="0.9" fill="#fde047" />
+      {/* Snout shadow */}
+      <path d="M11 16 L13 16 L12.5 17.5 L11.5 17.5 Z" fill="#000" opacity={0.4} />
+    </svg>
+  );
+}
+
 const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>; label: string; color: string; bg: string }> = {
   poker: { icon: IconPoker, label: "Poker", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
   chess: { icon: IconChess, label: "Chess", color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
@@ -245,6 +262,7 @@ const GAME_TYPE_CONFIG: Record<string, { icon: React.FC<{ className?: string }>;
       <ellipse cx="15" cy="12" rx="3.5" ry="4.5" fill="white" opacity={0.25} transform="rotate(-15 15 12)" />
     </svg>
   ), label: "UNO", color: "text-red-600", bg: "bg-red-50 border-red-200" },
+  werewolf: { icon: IconWerewolf, label: "Werewolf", color: "text-purple-700", bg: "bg-purple-50 border-purple-200" },
 };
 
 /* ── Poker Player Row ── */
@@ -449,8 +467,8 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
                 );
               })}
           </div>
-        ) : match.gameType === "uno" && agents.length > 2 ? (
-          /* UNO multiplayer layout */
+        ) : (match.gameType === "werewolf" || (match.gameType === "uno" && agents.length > 2)) ? (
+          /* UNO / Werewolf multiplayer layout */
           <div className="space-y-1.5 mb-4">
             {agents.map((agent, idx) => {
               const isWin = winnerAgent?.agentId === agent.agentId;
