@@ -411,9 +411,12 @@ function isNight(phase: WerewolfPhase): boolean {
 
 function seatPosition(index: number, count: number, radius: number) {
   const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+  // Shift the whole ring 28px downward so the top card doesn't clip
+  // against the header / "How to play" button.
+  const Y_OFFSET = 28;
   return {
     left: `calc(50% + ${Math.cos(angle) * radius}px)`,
-    top: `calc(50% + ${Math.sin(angle) * radius}px)`,
+    top: `calc(50% + ${Math.sin(angle) * radius + Y_OFFSET}px)`,
   };
 }
 
@@ -536,6 +539,7 @@ function Campfire({ night }: { night: boolean }) {
       style={{
         width: 120,
         height: 120,
+        marginTop: 28, // match Y_OFFSET in seatPosition so fire stays at the ring's center
       }}
     >
       {/* Glow */}
@@ -1141,7 +1145,7 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
       )}
 
       {/* Circle of seats */}
-      <div className="relative mx-auto" style={{ width: "100%", height: 480 }}>
+      <div className="relative mx-auto" style={{ width: "100%", height: 520 }}>
         <Campfire night={night} />
         {playerList.map((p, i) => {
           const pos = seatPosition(i, count, 190);
