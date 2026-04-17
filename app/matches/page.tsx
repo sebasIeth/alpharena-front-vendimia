@@ -469,7 +469,7 @@ function MatchCard({ match, index, priceUsd, viewers }: { match: Match; index: n
           </div>
         ) : (match.gameType === "werewolf" || (match.gameType === "uno" && agents.length > 2)) ? (
           /* UNO / Werewolf multiplayer layout */
-          <div className="space-y-1.5 mb-4">
+          <div className="space-y-1.5 mb-4 max-h-44 overflow-y-auto scrollbar-thin pr-1">
             {agents.map((agent, idx) => {
               const isWin = winnerAgent?.agentId === agent.agentId;
               return (
