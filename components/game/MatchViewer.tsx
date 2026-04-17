@@ -477,6 +477,18 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   }, [match.gameType, isLiveMode, replayStep, moves]);
 
   // Replay: Werewolf state at current replay step
+  // Map side (a..g) → real agent name so the board shows actual names
+  // instead of the anonymized "Player1..Player7" (works for old matches too).
+  const werewolfNameBySide = useMemo(() => {
+    const out: Record<string, string> = {};
+    const raw = (match.agents || {}) as Record<string, { name?: string } | undefined>;
+    for (const side of Object.keys(raw)) {
+      const n = raw[side]?.name;
+      if (n) out[side] = n;
+    }
+    return out;
+  }, [match.agents]);
+
   const werewolfReplayState = useMemo(() => {
     if (match.gameType !== "werewolf") return null;
     if (isLiveMode || replayStep < 0 || replayStep >= moves.length) return null;
@@ -1657,22 +1669,50 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
                   : null}
               />
             ) : match.gameType === "werewolf" ? (
-              <WerewolfBoard
-                players={werewolfReplayState ? werewolfReplayState.players : wwPlayers}
-                phase={werewolfReplayState ? werewolfReplayState.phase : wwPhase}
-                cycle={werewolfReplayState ? werewolfReplayState.cycle : wwCycle}
-                activeSide={werewolfReplayState ? werewolfReplayState.activeSide : wwActiveSide}
-                discussionLog={werewolfReplayState ? werewolfReplayState.discussionLog : wwDiscussion}
-                deaths={werewolfReplayState ? werewolfReplayState.deaths : wwDeaths}
-                status={
-                  werewolfReplayState
-                    ? werewolfReplayState.status
-                    : match.status === "completed"
-                    ? "finished"
-                    : wwStatus
-                }
-                winner={werewolfReplayState ? werewolfReplayState.winner : wwWinner}
-              />
+              (() => {
+                // Apply real agent names to whichever state we're showing.
+                const src = werewolfReplayState ?? {
+                  players: wwPlayers,
+                  phase: wwPhase,
+                  cycle: wwCycle,
+                  activeSide: wwActiveSide,
+                  discussionLog: wwDiscussion,
+                  deaths: wwDeaths,
+                  status: match.status === "completed" ? "finished" as const : wwStatus,
+                  winner: wwWinner,
+                };
+                const nameFor = (side: string, fallback?: string) =>
+                  werewolfNameBySide[side] ?? fallback ?? side;
+                const playersWithNames = Object.fromEntries(
+                  Object.entries(src.players).map(([side, p]: [string, any]) => [
+                    side,
+                    { ...p, displayName: nameFor(side, p.displayName) },
+                  ]),
+                );
+                const discussionWithNames = src.discussionLog.map((e: any) => ({
+                  ...e,
+                  speakerDisplayName: nameFor(e.speaker, e.speakerDisplayName),
+                  action: e.action?.target
+                    ? { ...e.action, targetDisplayName: nameFor(e.action.target, e.action.targetDisplayName) }
+                    : e.action,
+                }));
+                const deathsWithNames = src.deaths.map((d: any) => ({
+                  ...d,
+                  displayName: nameFor(d.side, d.displayName),
+                }));
+                return (
+                  <WerewolfBoard
+                    players={playersWithNames as typeof wwPlayers}
+                    phase={src.phase}
+                    cycle={src.cycle}
+                    activeSide={src.activeSide}
+                    discussionLog={discussionWithNames}
+                    deaths={deathsWithNames}
+                    status={src.status as "waiting" | "playing" | "finished"}
+                    winner={src.winner}
+                  />
+                );
+              })()
             ) : match.gameType === "uno" ? (
               <UnoBoard
                 topCard={unoReplayState ? unoReplayState.topCard : unoTopCard}
