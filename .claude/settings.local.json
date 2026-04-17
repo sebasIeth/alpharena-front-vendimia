@@ -35,7 +35,16 @@
       "WebFetch(domain:base-sepolia.blockscout.com)",
       "WebFetch(domain:www.4byte.directory)",
       "WebFetch(domain:api.openchain.xyz)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(PORT=4000 npm run start:dev)",
+      "Bash(npm run:*)",
+      "Bash(PORT=4000 npx nest start --watch)",
+      "Bash(npx next:*)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"nest start\")",
+      "Bash(./node_modules/.bin/next build:*)",
+      "Bash(./node_modules/.bin/next dev:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

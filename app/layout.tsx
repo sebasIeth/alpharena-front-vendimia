@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import SolanaWalletProvider from "@/components/SolanaWalletProvider";
+import BaseWalletProvider from "@/components/BaseWalletProvider";
 import ReferralCapture from "@/components/ReferralCapture";
 
 import { LanguageProvider } from "@/lib/i18n";
@@ -49,13 +49,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col">
-        <SolanaWalletProvider>
+        <BaseWalletProvider>
           <LanguageProvider>
             <Navbar />
             <Suspense fallback={null}><ReferralCapture /></Suspense>
             <main className="flex-1">{children}</main>
           </LanguageProvider>
-        </SolanaWalletProvider>
+        </BaseWalletProvider>
       </body>
     </html>
   );
