@@ -624,6 +624,7 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
   const [selectedAction, setSelectedAction] = useState<WerewolfAction["type"] | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<WerewolfRole | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const legalByType = useMemo(() => {
     const m: Record<string, WerewolfAction[]> = {};
@@ -726,6 +727,282 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
       <TreeSilhouette left="92%" scale={1.0} flip />
 
       <Fog />
+
+      {/* How-to-play toggle */}
+      <button
+        onClick={() => setShowGuide(true)}
+        className="absolute top-4 left-4 z-20 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-serif transition"
+        style={{
+          background: "rgba(0,0,0,0.55)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          color: "#f5f5f4",
+          backdropFilter: "blur(6px)",
+        }}
+        aria-label="How to play"
+      >
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.5 9 Q10 6 12 6 Q15 6 15 9 Q15 11 12 12 L12 14" strokeLinecap="round" />
+          <circle cx="12" cy="17.5" r="0.8" fill="currentColor" />
+        </svg>
+        How to play
+      </button>
+
+      {/* How-to-play modal */}
+      {showGuide && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-3xl w-full max-h-[90%] overflow-y-auto rounded-xl text-white/95"
+            style={{
+              background: "linear-gradient(180deg, #1a0f2e 0%, #0b0714 100%)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.8)",
+            }}
+          >
+            {/* Header */}
+            <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-inherit">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif">
+                  Spectator guide
+                </div>
+                <div className="text-xl font-serif italic">How Werewolf is played</div>
+              </div>
+              <button
+                onClick={() => setShowGuide(false)}
+                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/70"
+                aria-label="Close"
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M6 6 L18 18 M18 6 L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-6 text-sm leading-relaxed">
+              {/* Objective */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+                  Objective
+                </h3>
+                <p className="text-white/85">
+                  A hidden-role deduction game for <strong>7 players</strong>. Two secret
+                  Werewolves hunt the village each night; the rest try to unmask them
+                  before they're all eliminated.
+                </p>
+              </section>
+
+              {/* Roles */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-3">
+                  The three roles
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div
+                    className="rounded-lg p-3"
+                    style={{
+                      background: "rgba(127,29,29,0.25)",
+                      border: "1px solid rgba(220,38,38,0.4)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconWolfSvg size={24} color="#f87171" />
+                      <div className="font-serif italic text-red-200">
+                        Werewolves × 2
+                      </div>
+                    </div>
+                    <div className="text-xs text-white/75">
+                      Know each other. Each night they agree on a victim to kill.
+                      By day they pretend to be villagers.
+                    </div>
+                  </div>
+                  <div
+                    className="rounded-lg p-3"
+                    style={{
+                      background: "rgba(88,28,135,0.3)",
+                      border: "1px solid rgba(167,139,250,0.4)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconSeerSvg size={24} color="#c4b5fd" />
+                      <div className="font-serif italic text-violet-200">Seer × 1</div>
+                    </div>
+                    <div className="text-xs text-white/75">
+                      Each night picks one player and learns whether they are a
+                      werewolf. Must share info without making themselves a target.
+                    </div>
+                  </div>
+                  <div
+                    className="rounded-lg p-3"
+                    style={{
+                      background: "rgba(146,64,14,0.25)",
+                      border: "1px solid rgba(251,191,36,0.35)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconVillagerSvg size={24} color="#fbbf24" />
+                      <div className="font-serif italic text-amber-200">
+                        Villagers × 4
+                      </div>
+                    </div>
+                    <div className="text-xs text-white/75">
+                      No night ability. Must vote wisely by day to lynch werewolves
+                      based only on accusations, claims and behaviour.
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Phases */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-3">
+                  A cycle: night → day
+                </h3>
+                <ol className="space-y-2 text-white/85">
+                  <li className="flex gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-indigo-900/70 text-indigo-200 text-xs font-serif flex items-center justify-center">
+                      1
+                    </span>
+                    <div>
+                      <span className="font-serif italic text-indigo-200">
+                        Night · Werewolves
+                      </span>{" "}
+                      — the wolves secretly vote on a victim. Majority decides.
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-violet-900/70 text-violet-200 text-xs font-serif flex items-center justify-center">
+                      2
+                    </span>
+                    <div>
+                      <span className="font-serif italic text-violet-200">
+                        Night · Seer
+                      </span>{" "}
+                      — the seer investigates one player and learns their alignment
+                      (privately).
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-amber-900/70 text-amber-200 text-xs font-serif flex items-center justify-center">
+                      3
+                    </span>
+                    <div>
+                      <span className="font-serif italic text-amber-200">
+                        Day · Discussion
+                      </span>{" "}
+                      — night's victim is revealed with their role. Alive players
+                      accuse, defend, or claim roles (up to 2 turns each).
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-orange-900/70 text-orange-200 text-xs font-serif flex items-center justify-center">
+                      4
+                    </span>
+                    <div>
+                      <span className="font-serif italic text-orange-200">
+                        Day · Vote
+                      </span>{" "}
+                      — alive players vote to lynch. Majority kills; tie = no lynch.
+                      A self-vote counts as abstention.
+                    </div>
+                  </li>
+                </ol>
+                <p className="text-xs text-white/55 italic mt-2">
+                  Up to 6 cycles. If no team has won by then, the match ends in a draw.
+                </p>
+              </section>
+
+              {/* Win conditions */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+                  Win conditions
+                </h3>
+                <ul className="space-y-1 text-white/85">
+                  <li>
+                    <span className="text-amber-200 font-serif italic">Villagers</span>{" "}
+                    win when both werewolves are eliminated.
+                  </li>
+                  <li>
+                    <span className="text-red-200 font-serif italic">Werewolves</span>{" "}
+                    win when they equal or outnumber the living non-wolves.
+                  </li>
+                </ul>
+              </section>
+
+              {/* UI legend */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-3">
+                  Reading the board
+                </h3>
+                <div className="space-y-2 text-xs text-white/80">
+                  <div className="flex items-start gap-3">
+                    <IconMaskSvg size={22} color="#c4b5fd" />
+                    <div>
+                      <strong>Face-down card</strong> — role hidden. All living players
+                      show this to spectators until they die.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconSkullSvg size={22} color="#fca5a5" />
+                    <div>
+                      <strong>Skull</strong> — dead. The player's true role is revealed
+                      next to their name, along with how they died (night kill vs. lynch).
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-[22px] h-[22px] rounded-full bg-amber-300 shrink-0 mt-0.5 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
+                    <div>
+                      <strong>Glowing dot</strong> — the active player right now
+                      (whose turn it is to act).
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5 w-[22px] text-center font-serif text-[10px] text-emerald-300 bg-black/60 px-1 py-0.5 rounded">
+                      YOU
+                    </div>
+                    <div>
+                      Your own seat, if you're playing. Your role appears in the left
+                      panel (only you can see it).
+                    </div>
+                  </div>
+                  <div>
+                    <strong className="text-amber-200">Chronicle</strong> logs every
+                    public action: accusations, claims, night deaths, lynches. Night
+                    actions themselves (who wolves vote to kill, who the seer investigates)
+                    are never shown publicly — only their aftermath.
+                  </div>
+                </div>
+              </section>
+
+              {/* Watch tips */}
+              <section>
+                <h3 className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-serif mb-2">
+                  Tips for spectating
+                </h3>
+                <ul className="list-disc pl-5 space-y-1 text-xs text-white/75">
+                  <li>
+                    Watch who defends whom — werewolves often protect each other.
+                  </li>
+                  <li>
+                    Someone claiming <em>Seer</em> is either the real seer… or a wolf
+                    fishing for targets.
+                  </li>
+                  <li>
+                    Votes cast by already-revealed wolves tell you who they fear.
+                  </li>
+                  <li>
+                    Use the scrub bar below to replay the match step by step.
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Winner banner */}
       {status === "finished" && winner && (
