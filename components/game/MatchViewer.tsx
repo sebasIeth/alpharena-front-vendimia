@@ -521,7 +521,9 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       if (d.cycle > cycle) return false;
       // Same cycle
       if (d.cause === "night") return currentRank >= phaseRank.DAY_DISCUSSION;
-      return false; // day lynch only visible after cycle advances
+      // Day lynch resolves at the very end of DAY_VOTE; visible once phase
+      // has transitioned (to FINISHED on match-ending lynches at same cycle).
+      return currentRank >= phaseRank.FINISHED;
     };
 
     const visibleDeaths = wwDeaths.filter(deathVisible);
@@ -541,13 +543,16 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
       };
     }
 
-    // Discussion: every DAY_DISCUSSION statement becomes public immediately,
-    // so we can filter by cycle and chronological position in the log.
-    const visibleDiscussion = wwDiscussion.filter((e) => {
-      if (e.cycle < cycle) return true;
-      if (e.cycle > cycle) return false;
-      return currentRank >= phaseRank.DAY_DISCUSSION;
-    });
+    // Discussion: wwDiscussion is chronological; slice by how many DAY_*
+    // statement-actions we've stepped through. This makes the Chronicle
+    // grow entry-by-entry during replay, matching the live experience.
+    const DISCUSSION_TYPES = new Set(["DAY_ACCUSE", "DAY_DEFEND", "DAY_CLAIM", "DAY_PASS"]);
+    let discCount = 0;
+    for (let i = 0; i <= replayStep; i++) {
+      const a = (moves[i].moveData as any)?.werewolfAction;
+      if (a && DISCUSSION_TYPES.has(a.type)) discCount++;
+    }
+    const visibleDiscussion = wwDiscussion.slice(0, discCount);
 
     return {
       players: playersOut,
