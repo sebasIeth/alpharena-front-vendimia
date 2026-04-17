@@ -57,7 +57,7 @@ eval $SCP_CMD \
 # ── 4. Copy .env.prod.vendimia as .env (docker-compose reads .env for build args)
 echo ""
 echo "📋 Setting up .env from .env.prod.vendimia..."
-eval $SSH_CMD $VPS_HOST "test -f $REMOTE_DIR/.env.prod.vendimia && cp $REMOTE_DIR/.env.prod.vendimia $REMOTE_DIR/.env || cp $REMOTE_DIR/.env.prod $REMOTE_DIR/.env"
+eval $SSH_CMD $VPS_HOST "cp $REMOTE_DIR/.env.prod.vendimia $REMOTE_DIR/.env"
 
 # ── 5. Build & deploy with Docker Compose ─────────────────
 echo ""
