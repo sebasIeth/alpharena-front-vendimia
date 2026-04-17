@@ -76,11 +76,209 @@ interface WerewolfBoardProps {
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
-const ROLE_EMOJI: Record<WerewolfRole, string> = {
-  WEREWOLF: "🐺",
-  SEER: "👁️",
-  VILLAGER: "🧑‍🌾",
-};
+function IconWolfSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Head */}
+      <path
+        d="M24 42 C14 42 8 35 8 25 L6 18 L10 20 L13 14 L16 19 L20 14 L22 19 L26 14 L28 19 L32 14 L35 19 L38 14 L42 20 L40 25 C40 35 34 42 24 42 Z"
+        fill={color}
+      />
+      {/* Ears */}
+      <path d="M10 20 L8 10 L14 16 Z" fill={color} />
+      <path d="M38 20 L40 10 L34 16 Z" fill={color} />
+      {/* Eyes */}
+      <circle cx="18" cy="26" r="2" fill="#fbbf24" />
+      <circle cx="30" cy="26" r="2" fill="#fbbf24" />
+      {/* Snout */}
+      <path d="M22 33 L26 33 L25 36 Q24 37 23 36 Z" fill="#000" opacity={0.55} />
+      {/* Fangs */}
+      <path d="M22 36 L22.8 39 L23.4 36 Z" fill="#fff" opacity={0.85} />
+      <path d="M26 36 L25.2 39 L24.6 36 Z" fill="#fff" opacity={0.85} />
+    </svg>
+  );
+}
+
+function IconSeerSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Eye outer */}
+      <path
+        d="M4 24 Q24 6 44 24 Q24 42 4 24 Z"
+        stroke={color}
+        strokeWidth="2.5"
+        fill={color}
+        fillOpacity="0.2"
+      />
+      {/* Iris */}
+      <circle cx="24" cy="24" r="8" fill={color} />
+      {/* Pupil */}
+      <circle cx="24" cy="24" r="3.5" fill="#1e1b4b" />
+      {/* Highlight */}
+      <circle cx="26" cy="22" r="1.5" fill="#fff" />
+      {/* Sparkles */}
+      <path d="M8 10 L9 13 L12 14 L9 15 L8 18 L7 15 L4 14 L7 13 Z" fill={color} opacity={0.8} />
+      <path d="M40 32 L40.7 34 L43 34.7 L40.7 35.4 L40 37.6 L39.3 35.4 L37 34.7 L39.3 34 Z" fill={color} opacity={0.7} />
+    </svg>
+  );
+}
+
+function IconVillagerSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Hood */}
+      <path
+        d="M12 18 Q12 8 24 8 Q36 8 36 18 L34 24 L14 24 Z"
+        fill={color}
+        opacity={0.9}
+      />
+      {/* Head */}
+      <circle cx="24" cy="22" r="8" fill="#f5deb3" />
+      {/* Hood shadow over face */}
+      <path d="M14 22 Q24 18 34 22 L34 20 Q24 14 14 20 Z" fill={color} opacity={0.35} />
+      {/* Beard */}
+      <path d="M18 27 Q24 34 30 27 Q27 32 24 32 Q21 32 18 27 Z" fill="#8b6f47" opacity={0.8} />
+      {/* Tunic shoulders */}
+      <path d="M6 46 L10 32 L16 30 L24 34 L32 30 L38 32 L42 46 Z" fill={color} opacity={0.85} />
+      {/* Rope belt */}
+      <path d="M10 40 L38 40" stroke="#78350f" strokeWidth="1.5" opacity={0.7} />
+    </svg>
+  );
+}
+
+function IconMaskSvg({ size = 32, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Mask */}
+      <path
+        d="M10 18 Q10 10 24 10 Q38 10 38 18 L38 28 Q38 36 24 38 Q10 36 10 28 Z"
+        fill={color}
+        opacity={0.85}
+      />
+      {/* Eye holes */}
+      <ellipse cx="18" cy="22" rx="3" ry="2" fill="#0a0714" />
+      <ellipse cx="30" cy="22" rx="3" ry="2" fill="#0a0714" />
+      {/* Mouth slit */}
+      <path d="M18 30 Q24 32 30 30" stroke="#0a0714" strokeWidth="1.5" fill="none" />
+      {/* Decorative dot */}
+      <circle cx="24" cy="15" r="1" fill="#fbbf24" />
+    </svg>
+  );
+}
+
+function IconSkullSvg({ size = 32, color = "#fca5a5" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Skull */}
+      <path
+        d="M10 22 Q10 10 24 10 Q38 10 38 22 L38 30 L32 30 L32 36 L28 36 L28 32 L20 32 L20 36 L16 36 L16 30 L10 30 Z"
+        fill={color}
+      />
+      {/* Eye sockets */}
+      <ellipse cx="18" cy="22" rx="3.5" ry="4" fill="#0a0714" />
+      <ellipse cx="30" cy="22" rx="3.5" ry="4" fill="#0a0714" />
+      {/* Nose */}
+      <path d="M22 26 L24 30 L26 26 Z" fill="#0a0714" />
+      {/* Teeth */}
+      <path d="M18 30 L18 34 L20 32 L22 34 L24 32 L26 34 L28 32 L30 34 L30 30 Z" fill="#0a0714" opacity={0.75} />
+    </svg>
+  );
+}
+
+function IconFlameSvg({ size = 60 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 60" fill="none">
+      {/* Outer flame */}
+      <path
+        d="M24 4 Q30 16 36 22 Q42 30 38 42 Q34 54 24 56 Q14 54 10 42 Q6 30 12 22 Q18 16 24 4 Z"
+        fill="url(#flame-outer)"
+      />
+      {/* Inner flame */}
+      <path
+        d="M24 14 Q28 22 32 28 Q36 36 32 46 Q28 52 24 52 Q20 52 16 46 Q12 36 16 28 Q20 22 24 14 Z"
+        fill="url(#flame-inner)"
+      />
+      {/* Core */}
+      <ellipse cx="24" cy="44" rx="4" ry="6" fill="#fefce8" opacity={0.9} />
+      <defs>
+        <radialGradient id="flame-outer" cx="50%" cy="80%">
+          <stop offset="0%" stopColor="#fde047" />
+          <stop offset="40%" stopColor="#f97316" />
+          <stop offset="100%" stopColor="#7c2d12" />
+        </radialGradient>
+        <radialGradient id="flame-inner" cx="50%" cy="80%">
+          <stop offset="0%" stopColor="#fef3c7" />
+          <stop offset="60%" stopColor="#fb923c" />
+          <stop offset="100%" stopColor="#c2410c" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function RoleIcon({ role, size = 32, color }: { role: WerewolfRole; size?: number; color?: string }) {
+  if (role === "WEREWOLF") return <IconWolfSvg size={size} color={color ?? "#f87171"} />;
+  if (role === "SEER") return <IconSeerSvg size={size} color={color ?? "#c4b5fd"} />;
+  return <IconVillagerSvg size={size} color={color ?? "#fbbf24"} />;
+}
+
+// Tiny inline icons for action buttons
+function IconActionDagger({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" />
+    </svg>
+  );
+}
+function IconActionEye({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M2 12 Q12 4 22 12 Q12 20 2 12 Z" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    </svg>
+  );
+}
+function IconActionSwords({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 4 L14 14 M4 6 L6 4 M16 20 L20 20 L20 16 L18 14" />
+      <path d="M20 4 L10 14 M18 6 L20 4 M4 16 L4 20 L8 20 L10 18" />
+    </svg>
+  );
+}
+function IconActionShield({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2 L4 6 L4 12 Q4 18 12 22 Q20 18 20 12 L20 6 Z" opacity={0.85} />
+      <path d="M10 12 L12 14 L16 10" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconActionScroll({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor" opacity={0.15} />
+      <path d="M7 8 L17 8 M7 12 L17 12 M7 16 L13 16" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconActionMute({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 10 L8 10 L13 6 L13 18 L8 14 L4 14 Z" fill="currentColor" opacity={0.3} />
+      <path d="M17 9 L21 13 M21 9 L17 13" />
+    </svg>
+  );
+}
+function IconActionBallot({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="8" width="18" height="13" rx="1" fill="currentColor" opacity={0.15} />
+      <path d="M8 12 L11 15 L16 9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 8 L7 4 L17 4 L21 8" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 const ROLE_COLOR: Record<WerewolfRole, { ring: string; glow: string; text: string }> = {
   WEREWOLF: {
@@ -245,13 +443,14 @@ function Campfire({ night }: { night: boolean }) {
       />
       {/* Flame */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[60px]"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
           filter: "drop-shadow(0 0 16px rgba(251,146,60,0.8))",
           animation: "ww-flame-dance 1.4s ease-in-out infinite",
+          transformOrigin: "center",
         }}
       >
-        🔥
+        <IconFlameSvg size={60} />
       </div>
     </div>
   );
@@ -329,17 +528,21 @@ function PlayerCard({
             ✦
           </div>
           {/* Center symbol */}
-          <div className="text-3xl leading-none">
+          <div className="leading-none flex items-center justify-center">
             {alive ? (
               revealedAsWolf ? (
-                <span style={{ filter: "drop-shadow(0 0 8px rgba(220,38,38,0.7))" }}>🐺</span>
+                <div style={{ filter: "drop-shadow(0 0 8px rgba(220,38,38,0.7))" }}>
+                  <IconWolfSvg size={36} color="#f87171" />
+                </div>
               ) : player.role ? (
-                <span>{ROLE_EMOJI[player.role]}</span>
+                <RoleIcon role={player.role} size={36} />
               ) : (
-                <span style={{ opacity: 0.65 }}>🎭</span>
+                <div style={{ opacity: 0.65 }}>
+                  <IconMaskSvg size={36} color="#c4b5fd" />
+                </div>
               )
             ) : (
-              <span className="text-red-400/90">☠</span>
+              <IconSkullSvg size={36} color="#fca5a5" />
             )}
           </div>
           {/* Bottom ornament */}
@@ -541,11 +744,14 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
               boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
             }}
           >
-            {winner === "DRAW"
-              ? "The village endures. Stalemate."
-              : winner === "WEREWOLVES"
-              ? "🐺 The wolves feast tonight"
-              : "🌅 Dawn brings victory to the village"}
+            <span className="inline-flex items-center gap-2">
+              {winner === "WEREWOLVES" && <IconWolfSvg size={16} color="#fff" />}
+              {winner === "DRAW"
+                ? "The village endures. Stalemate."
+                : winner === "WEREWOLVES"
+                ? "The wolves feast tonight"
+                : "Dawn brings victory to the village"}
+            </span>
           </div>
         </div>
       )}
@@ -607,14 +813,14 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
           {myRole ? (
             <div className="flex items-center gap-3 mb-2">
               <div
-                className="w-12 h-16 rounded flex items-center justify-center text-2xl"
+                className="w-12 h-16 rounded flex items-center justify-center"
                 style={{
                   background: "linear-gradient(160deg, #2a1f3d 0%, #0f0a1e 100%)",
                   border: `2px solid ${ROLE_COLOR[myRole].ring}`,
                   boxShadow: ROLE_COLOR[myRole].glow,
                 }}
               >
-                {ROLE_EMOJI[myRole]}
+                <RoleIcon role={myRole} size={30} />
               </div>
               <div>
                 <div className="font-serif italic text-lg" style={{ color: ROLE_COLOR[myRole].text }}>
@@ -648,8 +854,24 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
                   <span className="text-white/70">
                     Night {m.cycle} · {m.targetDisplayName}
                   </span>
-                  <span className={m.isWerewolf ? "text-red-300" : "text-emerald-300"}>
-                    {m.isWerewolf ? "🐺 wolf" : "✦ innocent"}
+                  <span
+                    className={`inline-flex items-center gap-1 ${
+                      m.isWerewolf ? "text-red-300" : "text-emerald-300"
+                    }`}
+                  >
+                    {m.isWerewolf ? (
+                      <>
+                        <IconWolfSvg size={11} color="#fca5a5" /> wolf
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className="inline-block w-2 h-2 rounded-full bg-emerald-300"
+                          style={{ boxShadow: "0 0 6px rgba(110,231,183,0.7)" }}
+                        />
+                        innocent
+                      </>
+                    )}
                   </span>
                 </div>
               ))}
@@ -743,12 +965,15 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
             Your deed
           </div>
           {myDead ? (
-            <div className="text-red-300 text-xs font-serif italic">
-              ☠ You were{" "}
-              {players[mySide!].deathCause === "night"
-                ? "slain in the night"
-                : "hanged at dusk"}
-              . Rest now, and watch the tale unfold.
+            <div className="text-red-300 text-xs font-serif italic flex items-start gap-2">
+              <IconSkullSvg size={14} color="#fca5a5" />
+              <span>
+                You were{" "}
+                {players[mySide!].deathCause === "night"
+                  ? "slain in the night"
+                  : "hanged at dusk"}
+                . Rest now, and watch the tale unfold.
+              </span>
             </div>
           ) : !isMyTurn || availableActionTypes.length === 0 ? (
             <div className="opacity-55 text-xs italic font-serif">
@@ -762,15 +987,15 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
             <div className="space-y-2">
               <div className="flex flex-wrap gap-1">
                 {availableActionTypes.map((t) => {
-                  const label = (() => {
-                    if (t === "NIGHT_KILL_VOTE") return "🩸 Hunt";
-                    if (t === "SEER_INVESTIGATE") return "👁 Reveal";
-                    if (t === "DAY_ACCUSE") return "⚔ Accuse";
-                    if (t === "DAY_DEFEND") return "🛡 Defend";
-                    if (t === "DAY_CLAIM") return "📜 Claim";
-                    if (t === "DAY_PASS") return "🤫 Silent";
-                    if (t === "DAY_VOTE") return "🗳 Vote";
-                    return t;
+                  const { icon, label } = (() => {
+                    if (t === "NIGHT_KILL_VOTE") return { icon: <IconActionDagger />, label: "Hunt" };
+                    if (t === "SEER_INVESTIGATE") return { icon: <IconActionEye />, label: "Reveal" };
+                    if (t === "DAY_ACCUSE") return { icon: <IconActionSwords />, label: "Accuse" };
+                    if (t === "DAY_DEFEND") return { icon: <IconActionShield />, label: "Defend" };
+                    if (t === "DAY_CLAIM") return { icon: <IconActionScroll />, label: "Claim" };
+                    if (t === "DAY_PASS") return { icon: <IconActionMute />, label: "Silent" };
+                    if (t === "DAY_VOTE") return { icon: <IconActionBallot />, label: "Vote" };
+                    return { icon: null, label: t };
                   })();
                   return (
                     <button
@@ -780,7 +1005,7 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
                         setSelectedTarget(null);
                         setSelectedRole(null);
                       }}
-                      className="px-2.5 py-1 rounded text-xs font-serif transition"
+                      className="px-2.5 py-1 rounded text-xs font-serif transition inline-flex items-center gap-1.5"
                       style={{
                         background:
                           selectedAction === t
@@ -790,6 +1015,7 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
                         border: "1px solid rgba(255,255,255,0.15)",
                       }}
                     >
+                      {icon}
                       {label}
                     </button>
                   );
@@ -810,7 +1036,7 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
                     <button
                       key={r}
                       onClick={() => setSelectedRole(r)}
-                      className="px-2 py-1 rounded text-xs font-serif"
+                      className="px-2 py-1 rounded text-xs font-serif inline-flex items-center gap-1.5"
                       style={{
                         background:
                           selectedRole === r
@@ -820,7 +1046,8 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
                         border: "1px solid rgba(255,255,255,0.15)",
                       }}
                     >
-                      {ROLE_EMOJI[r]} {r.toLowerCase()}
+                      <RoleIcon role={r} size={14} color={selectedRole === r ? "#fff" : "#e5e7eb"} />
+                      {r.toLowerCase()}
                     </button>
                   ))}
                 </div>
