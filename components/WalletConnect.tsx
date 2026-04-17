@@ -1,27 +1,30 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton as _WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-const WalletMultiButton = _WalletMultiButton as any;
+import { useAccount, useConnect, useDisconnect, useSignMessage } from "wagmi";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
 import { truncateAddress } from "@/lib/utils";
-import * as bs58 from "bs58";
 
 export default function WalletConnect() {
   const { user, setUser } = useAuthStore();
   const { t } = useLanguage();
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending: isConnectPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isLinked = !!user?.externalWalletAddress;
   const isExternal = user?.walletType === "external";
+  const primaryConnector = connectors[0];
 
   const handleLinkWallet = useCallback(async () => {
-    if (!publicKey || !signMessage) {
+    if (!address) {
       setError(t.login.walletNotConnected);
       return;
     }
@@ -33,20 +36,18 @@ export default function WalletConnect() {
       // 1. Get nonce from backend
       const { message } = await api.getWalletNonce();
 
-      // 2. Sign the message with wallet
-      const encodedMessage = new TextEncoder().encode(message);
-      const signatureBytes = await signMessage(encodedMessage);
-      const signature = bs58.default.encode(signatureBytes);
+      // 2. Ask the wallet to sign it (ECDSA, returns 0x-prefixed hex)
+      const signature = await signMessageAsync({ message });
 
-      // 3. Send to backend for verification
-      const result = await api.connectWallet(publicKey.toBase58(), signature);
+      // 3. Send address + signature to backend
+      const result = await api.connectWallet(address, signature);
       setUser(result.user);
     } catch (err: any) {
       setError(err?.message || t.dashboard.walletConnectFailed);
     } finally {
       setLoading(false);
     }
-  }, [publicKey, signMessage, setUser]);
+  }, [address, signMessageAsync, setUser, t]);
 
   const handleDisconnect = useCallback(async () => {
     setLoading(true);
@@ -60,7 +61,7 @@ export default function WalletConnect() {
     } finally {
       setLoading(false);
     }
-  }, [setUser, disconnect]);
+  }, [setUser, disconnect, t]);
 
   const handleSwitch = useCallback(async (walletType: "custodial" | "external") => {
     setLoading(true);
@@ -73,7 +74,7 @@ export default function WalletConnect() {
     } finally {
       setLoading(false);
     }
-  }, [setUser]);
+  }, [setUser, t]);
 
   return (
     <div className="dash-glass-card rounded-2xl p-6 mb-8">
@@ -95,13 +96,21 @@ export default function WalletConnect() {
             {t.dashboard.walletConnectDesc}
           </p>
 
-          {!connected ? (
-            <div className="flex justify-center"><WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-10" /></div>
+          {!isConnected ? (
+            <div className="flex justify-center">
+              <button
+                onClick={() => primaryConnector && connect({ connector: primaryConnector })}
+                disabled={isConnectPending || !primaryConnector}
+                className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-sm font-mono font-semibold text-white disabled:opacity-50 transition"
+              >
+                {isConnectPending ? "Opening wallet..." : "Connect Browser Wallet"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="bg-arena-bg/50 border border-arena-border-light rounded-lg px-3 py-2.5">
                 <div className="text-[10px] text-arena-muted uppercase tracking-widest font-mono mb-1">{t.login.walletConnected}</div>
-                <span className="text-xs font-mono text-arena-text">{publicKey?.toBase58()}</span>
+                <span className="text-xs font-mono text-arena-text break-all">{address}</span>
               </div>
               <button
                 onClick={handleLinkWallet}

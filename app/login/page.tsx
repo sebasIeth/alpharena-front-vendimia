@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton as _WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-const WalletMultiButton = _WalletMultiButton as any;
-import * as bs58 from "bs58";
+import { useAccount, useConnect, useSignMessage } from "wagmi";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/ui/Button";
@@ -20,7 +17,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, initialize } = useAuthStore();
   const { t } = useLanguage();
-  const { publicKey, signMessage, connected: walletConnected } = useWallet();
+  const { address, isConnected: walletConnected } = useAccount();
+  const { connect, connectors, isPending: isConnectPending } = useConnect();
+  const { signMessageAsync } = useSignMessage();
 
   const [mode, setMode] = useState<LoginMode>("email");
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -64,7 +63,7 @@ export default function LoginPage() {
 
   const handleWalletLogin = async () => {
     setError("");
-    if (!publicKey || !signMessage) {
+    if (!address) {
       setError(t.login.walletNotConnected);
       return;
     }
@@ -72,15 +71,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       // 1. Get nonce from backend
-      const { nonce, message } = await api.getWalletLoginNonce(publicKey.toBase58());
+      const { nonce, message } = await api.getWalletLoginNonce(address);
 
-      // 2. Sign the nonce message
-      const encodedMessage = new TextEncoder().encode(message);
-      const signatureBytes = await signMessage(encodedMessage);
-      const signature = bs58.default.encode(signatureBytes);
+      // 2. Sign the nonce message (ECDSA)
+      const signature = await signMessageAsync({ message });
 
       // 3. Login with nonce + signature
-      const data = await api.loginWithWallet(publicKey.toBase58(), signature, nonce);
+      const data = await api.loginWithWallet(address, signature, nonce);
       login(data.user);
       router.push("/dashboard");
     } catch (err) {
@@ -141,14 +138,22 @@ export default function LoginPage() {
           </div>
 
           {!walletConnected ? (
-            <div className="flex justify-center"><WalletMultiButton className="!bg-violet-600 hover:!bg-violet-700 !rounded-xl !text-sm !font-mono !h-12" /></div>
+            <div className="flex justify-center">
+              <button
+                onClick={() => connectors[0] && connect({ connector: connectors[0] })}
+                disabled={isConnectPending || !connectors[0]}
+                className="px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-sm font-mono font-semibold text-white disabled:opacity-50 transition"
+              >
+                {isConnectPending ? "Opening wallet..." : "Connect Browser Wallet"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 border border-violet-200">
                 <div className="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-violet-400 uppercase tracking-widest font-mono">{t.login.walletConnected}</div>
-                  <span className="text-xs font-mono text-violet-700 break-all">{publicKey?.toBase58()}</span>
+                  <span className="text-xs font-mono text-violet-700 break-all">{address}</span>
                 </div>
               </div>
 

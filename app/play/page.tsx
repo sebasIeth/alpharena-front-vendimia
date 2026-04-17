@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/store";
@@ -91,8 +90,9 @@ function PlayContent() {
   const router = useRouter();
   const { priceUsd } = useAlphaPrice();
   const { user } = useAuthStore();
-  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
-  const { connection } = useConnection();
+  const { address, isConnected: walletConnected } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
+  const { switchChainAsync } = useSwitchChain();
 
   const isExternalWallet = user?.walletType === "external" && !!user?.externalWalletAddress;
 
@@ -1019,31 +1019,33 @@ function PlayContent() {
       // Non-custodial: pre-pay via x402 flow before joining queue
       // Platform pays gas fees — backend builds tx, user only signs the token transfer
       if (isExternalWallet) {
-        if (!publicKey || !signTransaction || !walletConnected) {
-          throw new Error("Please connect your Solana wallet to play with an external wallet.");
+        if (!address || !walletConnected) {
+          throw new Error("Please connect your browser wallet to play with an external wallet.");
         }
-
-        const { Transaction } = await import("@solana/web3.js");
 
         setWalletStep("Preparing transaction...");
         const { agentId: prepAgentId } = await api.playGetAgent();
-        const buildRes = await api.x402BuildStake(prepAgentId, stakeToken);
+        const buildRes: any = await api.x402BuildStake(prepAgentId, stakeToken);
+        const evm = buildRes.evmTransfer;
+        if (!evm?.contract || !evm?.data) {
+          throw new Error("Backend did not return EVM transfer params for this stake.");
+        }
+
+        try {
+          await switchChainAsync({ chainId: evm.chainId });
+        } catch {
+          /* surface later via sendTransaction */
+        }
 
         setWalletStep("Waiting for wallet signature...");
-        const tx = Transaction.from(Buffer.from(buildRes.transaction, "base64"));
-        const signedTx = await signTransaction(tx);
-
-        setWalletStep("Sending transaction...");
-        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: "confirmed",
+        const txHash = await sendTransactionAsync({
+          to: evm.contract as `0x${string}`,
+          data: evm.data as `0x${string}`,
+          value: BigInt(0),
         });
 
-        setWalletStep("Confirming on-chain...");
-        await connection.confirmTransaction(txSignature, "confirmed");
-
         setWalletStep("Verifying payment...");
-        const verifyRes = await api.x402Stake(prepAgentId, stakeToken, txSignature);
+        const verifyRes = await api.x402Stake(prepAgentId, stakeToken, txHash);
         if (!verifyRes.paid) {
           throw new Error(verifyRes.error || "Payment verification failed");
         }

@@ -29,7 +29,7 @@ export interface RegisterPayload {
 }
 
 // ========== Chain ==========
-export const SUPPORTED_CHAINS = ['solana'] as const;
+export const SUPPORTED_CHAINS = ['base', 'base-sepolia', 'solana'] as const;
 export type Chain = (typeof SUPPORTED_CHAINS)[number];
 
 // ========== Agent ==========

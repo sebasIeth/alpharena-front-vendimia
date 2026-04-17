@@ -4,8 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useAccount, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
@@ -262,8 +261,9 @@ function DashboardContent() {
   const { t } = useLanguage();
   const { priceUsd } = useAlphaPrice();
   const { solPriceUsd, usdcPriceUsd } = (require("@/lib/useSolanaPrice") as any).useSolanaPrice();
-  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
-  const { connection } = useConnection();
+  const { address, isConnected: walletConnected } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
+  const { switchChainAsync } = useSwitchChain();
 
   const isExternalWallet = user?.walletType === "external" && !!user?.externalWalletAddress;
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -356,31 +356,33 @@ function DashboardContent() {
     setWithdrawError("");
     setWithdrawSuccess("");
     try {
-      if (isExternalWallet && walletConnected && publicKey && signTransaction) {
-        // External wallet: backend builds tx with platform as fee payer, user signs
-        const { Transaction } = await import("@solana/web3.js");
-        const buildRes = await api.playBuildWithdraw(value, withdrawAddr, withdrawToken);
+      if (isExternalWallet && walletConnected && address) {
+        // External EVM wallet: backend returns ERC-20 transfer calldata,
+        // user's wallet signs + submits the tx.
+        const buildRes: any = await api.playBuildWithdraw(value, withdrawAddr, withdrawToken);
+        const tx = buildRes.evmTransfer;
+        if (!tx) throw new Error("Backend did not return EVM transfer params");
 
-        // Deserialize the partially-signed transaction
-        const txBuffer = Buffer.from(buildRes.transaction, "base64");
-        const tx = Transaction.from(txBuffer);
+        // Ensure the wallet is on the right chain before asking to sign
+        try {
+          await switchChainAsync({ chainId: tx.chainId });
+        } catch {
+          // User may refuse; sendTransaction below will surface a clearer error
+        }
 
-        // User signs with their wallet (Phantom popup)
-        const signedTx = await signTransaction(tx);
-
-        // Send the fully-signed transaction
-        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: "confirmed",
+        const txHash = await sendTransactionAsync({
+          to: tx.contract as `0x${string}`,
+          data: tx.data as `0x${string}`,
+          value: BigInt(0),
         });
-        await connection.confirmTransaction(txSignature, "confirmed");
 
-        const explorerUrl = getExplorerTxUrl(txSignature, "solana");
-        setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${txSignature.slice(0, 10)}...${txSignature.slice(-6)}|${explorerUrl}`);
+        const explorerUrl = getExplorerTxUrl(txHash, "base");
+        setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}|${explorerUrl}`);
       } else {
         // Custodial wallet: backend signs
         const res = await api.playWithdraw(value, withdrawAddr, withdrawToken);
-        const explorerUrl = getExplorerTxUrl(res.txHash, "solana");
+        const chain = (res as any).chain || "base";
+        const explorerUrl = getExplorerTxUrl(res.txHash, chain);
         setWithdrawSuccess(`${value} ${withdrawToken} sent! Tx: ${res.txHash.slice(0, 10)}...${res.txHash.slice(-6)}|${explorerUrl}`);
       }
       setWithdrawAmt("");

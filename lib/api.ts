@@ -519,7 +519,13 @@ export const api = new ApiClient(API_URL);
 /** Build a block-explorer transaction URL for the given chain. */
 export function getExplorerTxUrl(txHash: string, chain: Chain): string {
   const isTestnet = (process.env.NEXT_PUBLIC_CHAIN_ENV || "testnet") === "testnet";
+  if (chain === "solana") {
+    return isTestnet
+      ? `https://explorer.solana.com/tx/${txHash}?cluster=devnet`
+      : `https://explorer.solana.com/tx/${txHash}`;
+  }
+  // Base (mainnet or sepolia)
   return isTestnet
-    ? `https://explorer.solana.com/tx/${txHash}?cluster=devnet`
-    : `https://explorer.solana.com/tx/${txHash}`;
+    ? `https://sepolia.basescan.org/tx/${txHash}`
+    : `https://basescan.org/tx/${txHash}`;
 }

@@ -3,8 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { api, getExplorerTxUrl } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { useLanguage } from "@/lib/i18n";
@@ -187,8 +186,9 @@ function EloComparisonBar({
 function BettingPanel({ match }: { match: Match }) {
   const { t } = useLanguage();
   const { user } = useAuthStore();
-  const { publicKey, signTransaction, connected: walletConnected } = useWallet();
-  const { connection } = useConnection();
+  const { address, isConnected: walletConnected } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
+  const { switchChainAsync } = useSwitchChain();
   const matchAgents = normalizeMatchAgents(match.agents);
   const chain = match.chain || "solana";
 
@@ -248,20 +248,27 @@ function BettingPanel({ match }: { match: Match }) {
       let x402TxSig: string | undefined;
 
       if (isExternal) {
-        // External wallet: build partially-signed tx, user signs, send, then verify
-        if (!publicKey || !signTransaction || !walletConnected) {
-          throw new Error("Please connect your Solana wallet to place a bet.");
+        // External EVM wallet: backend returns ERC-20 transfer calldata,
+        // user signs + submits via their wallet.
+        if (!address || !walletConnected) {
+          throw new Error("Please connect your browser wallet to place a bet.");
         }
-        const { Transaction } = await import("@solana/web3.js");
-        const buildRes = await api.buildBet(amount);
-        const tx = Transaction.from(Buffer.from(buildRes.transaction, "base64"));
-        const signedTx = await signTransaction(tx);
-        const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: "confirmed",
+        const buildRes: any = await api.buildBet(amount);
+        const evm = buildRes.evmTransfer ?? buildRes; // tolerate legacy shape
+        if (!evm?.contract || !evm?.data) {
+          throw new Error("Backend did not return EVM transfer params for this bet.");
+        }
+        try {
+          await switchChainAsync({ chainId: evm.chainId });
+        } catch {
+          /* ignore; sendTransaction surfaces a clearer error if wrong chain */
+        }
+        const txHash = await sendTransactionAsync({
+          to: evm.contract as `0x${string}`,
+          data: evm.data as `0x${string}`,
+          value: BigInt(0),
         });
-        await connection.confirmTransaction(txSignature, "confirmed");
-        x402TxSig = txSignature;
+        x402TxSig = txHash;
       }
 
       const res = await api.placeBet(match.id, selectedAgentId, amount, x402TxSig);
