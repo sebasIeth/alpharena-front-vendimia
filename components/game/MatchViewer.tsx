@@ -479,11 +479,15 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
   // Replay: Werewolf state at current replay step
   // Map side (a..g) → real agent name so the board shows actual names
   // instead of the anonymized "Player1..Player7" (works for old matches too).
+  // NOTE: match.agents is typed as MatchAgent[] but the backend serializes
+  // it as an object keyed by side for werewolf/uno/poker matches.
   const werewolfNameBySide = useMemo(() => {
     const out: Record<string, string> = {};
-    const raw = (match.agents || {}) as Record<string, { name?: string } | undefined>;
+    const raw = (match.agents || {}) as unknown as Record<string, { name?: string; agentName?: string } | undefined>;
+    if (Array.isArray(raw)) return out; // sanity: array form has no side keys
     for (const side of Object.keys(raw)) {
-      const n = raw[side]?.name;
+      const entry = raw[side];
+      const n = entry?.name ?? entry?.agentName;
       if (n) out[side] = n;
     }
     return out;
