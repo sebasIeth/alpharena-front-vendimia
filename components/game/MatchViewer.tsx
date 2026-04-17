@@ -483,31 +483,81 @@ export default function MatchViewer({ match, onMatchUpdate }: MatchViewerProps) 
     const move = moves[replayStep];
     const md = move.moveData as any;
     const snap = md?.werewolfSnapshot;
-    if (!snap) {
-      // Fallback: reconstruct from cumulative data we have.
-      // Filter discussionLog/deaths by the cycle/phase of this move.
-      const cycle = md?.cycle ?? wwCycle;
-      const phase = md?.phase ?? wwPhase;
+
+    // Preferred path: per-move snapshot stored by the backend (post the
+    // Apr-16 snapshot deploy). Gives exact state at the end of this move.
+    if (snap && snap.players) {
       return {
-        players: wwPlayers,
-        phase: phase as WerewolfPhase,
-        cycle: cycle as number,
-        activeSide: (move.side as string) || null,
-        discussionLog: wwDiscussion.filter((e) => e.cycle <= cycle),
-        deaths: wwDeaths.filter((d) => d.cycle <= cycle),
-        status: "playing" as const,
-        winner: null as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null,
+        players: snap.players as Record<string, WerewolfPlayerView>,
+        phase: snap.phase as WerewolfPhase,
+        cycle: snap.cycle as number,
+        activeSide: (snap.activeSide as string | null) ?? null,
+        discussionLog: (snap.discussionLog as WerewolfDiscussionEventView[]) || [],
+        deaths: (snap.deaths as WerewolfDeathView[]) || [],
+        status: (snap.status as "waiting" | "playing" | "finished") || "playing",
+        winner: (snap.winner as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null) ?? null,
       };
     }
+
+    // Fallback for pre-snapshot matches: reconstruct from the final state
+    // + the per-move (phase, cycle) we do have.
+    const cycle = (md?.cycle ?? wwCycle) as number;
+    const phase = (md?.phase ?? wwPhase) as WerewolfPhase;
+
+    // A death occurs at a specific (cycle, cause). It becomes publicly
+    // visible at the start of the next sub-phase:
+    //   night kill (cause='night', cycle C) → visible once phase >= DAY_DISCUSSION of C
+    //   lynch     (cause='day',   cycle C) → visible once cycle advances past C
+    const phaseRank: Record<WerewolfPhase, number> = {
+      NIGHT_WOLVES: 0,
+      NIGHT_SEER: 1,
+      DAY_DISCUSSION: 2,
+      DAY_VOTE: 3,
+      FINISHED: 4,
+    };
+    const currentRank = phaseRank[phase];
+    const deathVisible = (d: WerewolfDeathView) => {
+      if (d.cycle < cycle) return true;
+      if (d.cycle > cycle) return false;
+      // Same cycle
+      if (d.cause === "night") return currentRank >= phaseRank.DAY_DISCUSSION;
+      return false; // day lynch only visible after cycle advances
+    };
+
+    const visibleDeaths = wwDeaths.filter(deathVisible);
+    const deadSides = new Set(visibleDeaths.map((d) => d.side));
+
+    const playersOut: Record<string, WerewolfPlayerView> = {};
+    for (const [side, p] of Object.entries(wwPlayers)) {
+      const dead = deadSides.has(side);
+      const death = visibleDeaths.find((d) => d.side === side);
+      playersOut[side] = {
+        ...p,
+        isAlive: !dead,
+        deathCycle: dead ? death?.cycle ?? null : null,
+        deathCause: dead ? death?.cause ?? null : null,
+        // Roles: only revealed at match end (or for dead players, once their death is visible)
+        role: dead ? death?.role ?? p.role : undefined,
+      };
+    }
+
+    // Discussion: every DAY_DISCUSSION statement becomes public immediately,
+    // so we can filter by cycle and chronological position in the log.
+    const visibleDiscussion = wwDiscussion.filter((e) => {
+      if (e.cycle < cycle) return true;
+      if (e.cycle > cycle) return false;
+      return currentRank >= phaseRank.DAY_DISCUSSION;
+    });
+
     return {
-      players: snap.players as Record<string, WerewolfPlayerView>,
-      phase: snap.phase as WerewolfPhase,
-      cycle: snap.cycle as number,
-      activeSide: (snap.activeSide as string | null) ?? null,
-      discussionLog: (snap.discussionLog as WerewolfDiscussionEventView[]) || [],
-      deaths: (snap.deaths as WerewolfDeathView[]) || [],
-      status: (snap.status as "waiting" | "playing" | "finished") || "playing",
-      winner: (snap.winner as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null) ?? null,
+      players: playersOut,
+      phase,
+      cycle,
+      activeSide: (move.side as string) || null,
+      discussionLog: visibleDiscussion,
+      deaths: visibleDeaths,
+      status: "playing" as const,
+      winner: null as "VILLAGERS" | "WEREWOLVES" | "DRAW" | null,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.gameType, isLiveMode, replayStep, moves, wwPlayers, wwPhase, wwCycle, wwDiscussion, wwDeaths]);
