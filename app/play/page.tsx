@@ -1561,14 +1561,23 @@ function PlayContent() {
                             socketRef.current = sock;
                             attachMatchListeners(sock);
                           }
-                          // For werewolf, fetch private role info (delivered via HTTP, not sockets)
+                          // For werewolf, fetch full private+public state via HTTP
+                          // (we may miss match:started/match:move during socket handshake)
                           if (gameType === "werewolf") {
                             try {
-                              const priv = await api.getWerewolfPrivateState(mid);
-                              setMySide(priv.mySide as any);
+                              const priv = await api.getWerewolfPrivateState(mid) as any;
+                              setMySide(priv.mySide);
                               setWwMyRole(priv.yourRole);
                               if (priv.knownWerewolves) setWwKnownWerewolves(priv.knownWerewolves);
-                              if (priv.seerMemory) setWwSeerMemory(priv.seerMemory as any);
+                              if (priv.seerMemory) setWwSeerMemory(priv.seerMemory);
+                              if (priv.players) setWwPlayers(priv.players);
+                              if (priv.phase) setWwPhase(priv.phase);
+                              if (priv.cycle != null) setWwCycle(priv.cycle);
+                              if (priv.activeSide !== undefined) setWwActiveSide(priv.activeSide);
+                              if (priv.discussionLog) setWwDiscussion(priv.discussionLog);
+                              if (priv.deaths) setWwDeaths(priv.deaths);
+                              if (priv.status) setWwStatus(priv.status);
+                              if (priv.winner !== undefined) setWwWinner(priv.winner);
                             } catch (e) {
                               console.warn("Failed to fetch werewolf private state", e);
                             }
