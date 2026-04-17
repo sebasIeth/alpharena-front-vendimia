@@ -728,19 +728,19 @@ export default function WerewolfBoard(props: WerewolfBoardProps) {
 
       <Fog />
 
-      {/* How-to-play toggle */}
+      {/* How-to-play toggle — always visible (live + replay) */}
       <button
         onClick={() => setShowGuide(true)}
-        className="absolute top-4 left-4 z-20 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-serif transition"
+        className="absolute top-4 left-4 z-20 inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-serif font-semibold transition hover:scale-[1.04]"
         style={{
-          background: "rgba(0,0,0,0.55)",
-          border: "1px solid rgba(255,255,255,0.18)",
-          color: "#f5f5f4",
-          backdropFilter: "blur(6px)",
+          background: "linear-gradient(135deg, rgba(251,191,36,0.95), rgba(217,119,6,0.95))",
+          color: "#1c1917",
+          border: "1px solid rgba(255,255,255,0.35)",
+          boxShadow: "0 4px 18px rgba(251,191,36,0.45), 0 0 0 2px rgba(0,0,0,0.25)",
         }}
         aria-label="How to play"
       >
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="12" cy="12" r="10" />
           <path d="M9.5 9 Q10 6 12 6 Q15 6 15 9 Q15 11 12 12 L12 14" strokeLinecap="round" />
           <circle cx="12" cy="17.5" r="0.8" fill="currentColor" />
